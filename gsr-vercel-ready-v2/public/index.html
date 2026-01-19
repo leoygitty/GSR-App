@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gold-to-Silver Ratio (GSR)</title>
   <meta name="description" content="Daily-updating Gold-to-Silver Ratio (GSR) with history." />
-  <link rel="manifest" href="/manifest.json" />
+
+  <!-- All assets live under /public in your repo, so reference them with /public/... -->
+  <link rel="manifest" href="/public/manifest.json" />
   <link rel="icon" href="/public/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/public/styles.css" />
 </head>
+
 <body>
   <main class="container">
     <header class="header">
@@ -69,10 +72,15 @@
     </footer>
   </main>
 
-  <script src="/app.js"></script>
+  <!-- Load JS from /public and defer so DOM is ready -->
+  <script src="/public/app.js" defer></script>
+
+  <!-- Service worker also lives under /public -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/public/sw.js').catch(() => {});
+      });
     }
   </script>
 </body>
