@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gold-to-Silver Ratio (GSR)</title>
+  <meta name="description" content="Daily-updating Gold-to-Silver Ratio (GSR) with history." />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/public/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div>
+        <h1>Gold-to-Silver Ratio</h1>
+        <p class="sub">Daily snapshot stored in your database (Vercel Cron + Python).</p>
+      </div>
+      <button id="refreshBtn" class="btn">Refresh</button>
+    </header>
+
+    <section class="card">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="label">GSR</div>
+          <div class="value" id="gsr">—</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Gold (USD)</div>
+          <div class="value" id="gold">—</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Silver (USD)</div>
+          <div class="value" id="silver">—</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div><span class="muted">Date (UTC):</span> <span id="date">—</span></div>
+        <div><span class="muted">Fetched at (UTC):</span> <span id="fetchedAt">—</span></div>
+      </div>
+
+      <div class="chartWrap">
+        <div class="chartTitle">History</div>
+        <svg id="spark" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+        <div class="chartFoot" id="range">—</div>
+      </div>
+
+      <details class="details">
+        <summary>Show history table</summary>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr><th>Date (UTC)</th><th>GSR</th></tr>
+            </thead>
+            <tbody id="historyTable"></tbody>
+          </table>
+        </div>
+      </details>
+
+      <div class="hint">
+        If this page says “No data yet,” trigger your cron endpoint once after deploying.
+        See <code>README.md</code> for the exact steps.
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span class="muted">Tip:</span> Install this as an app (PWA) from your browser menu.
+    </footer>
+  </main>
+
+  <script src="/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
