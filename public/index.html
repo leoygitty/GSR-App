@@ -4,8 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gold-to-Silver Ratio (GSR)</title>
-  <meta name="description" content="Daily-updating Gold-to-Silver Ratio (GSR) with history, alerts, and a premium UI." />
-  <meta name="theme-color" content="#0a84ff" />
+  <meta name="description" content="Gold-to-silver ratio with historical charts for GSR, gold spot, and silver spot." />
   <meta name="color-scheme" content="light dark" />
 
   <link rel="manifest" href="/manifest.json" />
@@ -16,78 +15,92 @@
   <main class="container">
     <header class="header">
       <div class="titleBlock">
-        <div class="titleRow">
-          <h1>Gold-to-Silver Ratio</h1>
-          <span class="pill" id="alertPill" aria-live="polite">Alerts: Off</span>
-        </div>
-        <p class="sub">Daily snapshot stored in your database (Vercel Cron + Python).</p>
+        <h1>Gold-to-Silver Ratio</h1>
+        <p class="sub">Live snapshot + historical charts (stored in your DB).</p>
         <div class="metaRow">
-          <div class="metaItem">
-            <span class="muted">Last updated:</span>
-            <span id="updatedHuman">—</span>
-          </div>
+          <div><span class="muted">Last updated:</span> <span id="updatedHuman">—</span></div>
+          <div><span class="muted">UTC date:</span> <span id="date">—</span></div>
         </div>
       </div>
-
-      <div class="headerActions">
-        <button id="refreshBtn" class="btn" type="button">Refresh</button>
-      </div>
+      <button id="refreshBtn" class="btn" type="button">Refresh</button>
     </header>
 
     <section class="card">
       <div class="kpis">
-        <div class="kpi kpiGsr">
+        <div class="kpi">
           <div class="label">GSR</div>
           <div class="value" id="gsr">—</div>
-          <div class="delta" id="gsrDeltaWrap" aria-live="polite">
-            <span class="deltaLabel">vs yesterday</span>
-            <span class="deltaValue" id="gsrDelta">—</span>
-            <span class="deltaPct" id="gsrDeltaPct">—</span>
-          </div>
         </div>
-
         <div class="kpi">
           <div class="label">Gold (USD)</div>
           <div class="value" id="gold">—</div>
-          <div class="miniMeta">
-            <span class="muted">Spot</span>
-          </div>
         </div>
-
         <div class="kpi">
           <div class="label">Silver (USD)</div>
           <div class="value" id="silver">—</div>
-          <div class="miniMeta">
-            <span class="muted">Spot</span>
-          </div>
         </div>
       </div>
 
-      <div class="meta">
-        <div><span class="muted">Date (UTC):</span> <span id="date">—</span></div>
-        <div><span class="muted">Fetched at (UTC):</span> <span id="fetchedAt">—</span></div>
-      </div>
-
-      <div class="chartWrap">
-        <div class="chartTitle">
-          <span>History</span>
-          <span class="chartHint" id="range">—</span>
+      <div class="controls">
+        <div class="segmented" role="group" aria-label="Range">
+          <button class="segBtn active" data-range="30" type="button">1M</button>
+          <button class="segBtn" data-range="90" type="button">3M</button>
+          <button class="segBtn" data-range="180" type="button">6M</button>
+          <button class="segBtn" data-range="365" type="button">1Y</button>
+          <button class="segBtn" data-range="max" type="button">MAX</button>
         </div>
 
-        <div class="chartBody">
-          <svg id="spark" viewBox="0 0 1000 260" preserveAspectRatio="none" role="img" aria-label="GSR history chart"></svg>
-          <div class="emptyState" id="emptyState" hidden>
-            <div class="emptyTitle">Collecting history</div>
-            <div class="emptySub">You have only one data point so far. After the next cron run, the chart will populate.</div>
-            <div class="emptyActions">
-              <button class="btn btnSecondary" id="runNowBtn" type="button">Run Cron Now</button>
-              <span class="muted small">Requires your CRON secret.</span>
-            </div>
+        <div class="toggleRow">
+          <label class="toggle">
+            <input id="showGold" type="checkbox" checked />
+            <span>Gold</span>
+          </label>
+          <label class="toggle">
+            <input id="showSilver" type="checkbox" checked />
+            <span>Silver</span>
+          </label>
+          <label class="toggle">
+            <input id="showGsr" type="checkbox" checked />
+            <span>GSR</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="chartGrid">
+        <div class="chartCard" id="chartCardGsr">
+          <div class="chartTop">
+            <div class="chartTitle">GSR</div>
+            <div class="chartMeta" id="rangeGsr">—</div>
+          </div>
+          <svg id="sparkGsr" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+          <div class="emptyState" id="emptyGsr" hidden>
+            <div class="emptyTitle">No history yet</div>
+            <div class="emptySub">Your database only has one data point. Backfill or let the cron run daily.</div>
           </div>
         </div>
 
-        <div class="chartFoot" id="chartFoot">
-          <span class="muted">Tip:</span> Install this as an app (PWA) from your browser menu.
+        <div class="chartCard" id="chartCardGold">
+          <div class="chartTop">
+            <div class="chartTitle">Gold Spot (USD)</div>
+            <div class="chartMeta" id="rangeGold">—</div>
+          </div>
+          <svg id="sparkGold" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+          <div class="emptyState" id="emptyGold" hidden>
+            <div class="emptyTitle">No history yet</div>
+            <div class="emptySub">Backfill required to show prior gold prices.</div>
+          </div>
+        </div>
+
+        <div class="chartCard" id="chartCardSilver">
+          <div class="chartTop">
+            <div class="chartTitle">Silver Spot (USD)</div>
+            <div class="chartMeta" id="rangeSilver">—</div>
+          </div>
+          <svg id="sparkSilver" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+          <div class="emptyState" id="emptySilver" hidden>
+            <div class="emptyTitle">No history yet</div>
+            <div class="emptySub">Backfill required to show prior silver prices.</div>
+          </div>
         </div>
       </div>
 
@@ -96,98 +109,17 @@
         <div class="tableWrap">
           <table>
             <thead>
-              <tr><th>Date (UTC)</th><th>GSR</th></tr>
+              <tr><th>Date (UTC)</th><th>Gold</th><th>Silver</th><th>GSR</th></tr>
             </thead>
             <tbody id="historyTable"></tbody>
           </table>
         </div>
       </details>
-    </section>
 
-    <section class="card alertsCard">
-      <div class="alertsHeader">
-        <div>
-          <div class="sectionTitle">Alerts</div>
-          <div class="sectionSub">In-browser alerts when thresholds are crossed. Saved to this device.</div>
-        </div>
-        <div class="alertsActions">
-          <button class="btn btnSecondary" id="testAlertBtn" type="button">Test Alert</button>
-          <button class="btn" id="saveAlertsBtn" type="button">Save</button>
-        </div>
-      </div>
-
-      <div class="alertsGrid">
-        <div class="alertGroup">
-          <div class="groupTitle">GSR</div>
-          <div class="fields">
-            <label class="field">
-              <span class="fieldLabel">Alert if below</span>
-              <input class="input" id="gsrBelow" inputmode="decimal" placeholder="e.g., 45" />
-            </label>
-            <label class="field">
-              <span class="fieldLabel">Alert if above</span>
-              <input class="input" id="gsrAbove" inputmode="decimal" placeholder="e.g., 60" />
-            </label>
-          </div>
-        </div>
-
-        <div class="alertGroup">
-          <div class="groupTitle">Gold Spot (USD)</div>
-          <div class="fields">
-            <label class="field">
-              <span class="fieldLabel">Alert if below</span>
-              <input class="input" id="goldBelow" inputmode="decimal" placeholder="e.g., 4500" />
-            </label>
-            <label class="field">
-              <span class="fieldLabel">Alert if above</span>
-              <input class="input" id="goldAbove" inputmode="decimal" placeholder="e.g., 5000" />
-            </label>
-          </div>
-        </div>
-
-        <div class="alertGroup">
-          <div class="groupTitle">Silver Spot (USD)</div>
-          <div class="fields">
-            <label class="field">
-              <span class="fieldLabel">Alert if below</span>
-              <input class="input" id="silverBelow" inputmode="decimal" placeholder="e.g., 90" />
-            </label>
-            <label class="field">
-              <span class="fieldLabel">Alert if above</span>
-              <input class="input" id="silverAbove" inputmode="decimal" placeholder="e.g., 110" />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div class="toggles">
-        <label class="toggle">
-          <input type="checkbox" id="alertsEnabled" />
-          <span class="toggleUi"></span>
-          <span class="toggleText">Enable alerts on this device</span>
-        </label>
-
-        <label class="toggle">
-          <input type="checkbox" id="soundEnabled" />
-          <span class="toggleUi"></span>
-          <span class="toggleText">Play sound when triggered</span>
-        </label>
-      </div>
-
-      <div class="alertsFooter">
-        <div class="muted small" id="alertsStatus">—</div>
+      <div class="footerRow">
+        <span class="muted">Fetched at (UTC):</span> <span id="fetchedAt">—</span>
       </div>
     </section>
-
-    <div class="toast" id="toast" role="status" aria-live="polite" hidden>
-      <div class="toastTitle" id="toastTitle">Alert</div>
-      <div class="toastBody" id="toastBody">—</div>
-      <button class="toastClose" id="toastClose" type="button" aria-label="Close alert">×</button>
-    </div>
-
-    <footer class="footer">
-      <span class="muted">Note:</span> Alerts require this page to be open (until you add push notifications later).
-    </footer>
   </main>
 
   <script src="/app.js"></script>
