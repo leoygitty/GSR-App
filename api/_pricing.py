@@ -1,31 +1,73 @@
-import json
-from decimal import Decimal
-from typing import Dict, Tuple
-from urllib.request import Request, urlopen
+from http.server import BaseHTTPRequestHandler
+from ._utils import db_connect, send_json
 
 
-GOLD_API_XAU = "https://api.gold-api.com/price/XAU"
-GOLD_API_XAG = "https://api.gold-api.com/price/XAG"
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            conn = db_connect()
+            try:
+                cur = conn.cursor()
 
+                # Latest row
+                cur.execute(
+                    """
+                    select d, gold_usd, silver_usd, gsr, fetched_at_utc, source
+                    from gsr_daily
+                    order by d desc
+                    limit 1;
+                    """
+                )
+                row = cur.fetchone()
 
-def _fetch_json(url: str) -> Dict:
-    req = Request(url, headers={"User-Agent": "gsr-vercel-app/1.0"})
-    with urlopen(req, timeout=15) as resp:
-        raw = resp.read().decode("utf-8")
-    return json.loads(raw)
+                # Full history for charts (ASC by date)
+                cur.execute(
+                    """
+                    select d, gold_usd, silver_usd, gsr
+                    from gsr_daily
+                    order by d asc;
+                    """
+                )
+                history = cur.fetchall() or []
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
+            if not row:
+                return send_json(self, 404, {
+                    "ok": False,
+                    "error": "No data yet",
+                    "hint": "Run /api/backfill_gsr once (with secret) to backfill history, then refresh."
+                })
 
-def fetch_spot_prices_usd() -> Tuple[Decimal, Decimal, Dict, Dict]:
-    """Returns (gold_usd, silver_usd, gold_raw, silver_raw)."""
-    g = _fetch_json(GOLD_API_XAU)
-    s = _fetch_json(GOLD_API_XAG)
+            latest = {
+                "date": str(row[0]),
+                "gold_usd": str(row[1]),
+                "silver_usd": str(row[2]),
+                "gsr": str(row[3]),
+                "fetched_at_utc": str(row[4]),
+                "source": row[5],  # jsonb is fine to return directly
+            }
 
-    # gold-api commonly returns a JSON with a 'price' field.
-    # Keep this resilient in case the shape changes.
-    def price_of(obj: Dict) -> Decimal:
-        for key in ("price", "value", "rate", "usd"):
-            if key in obj:
-                return Decimal(str(obj[key]))
-        raise ValueError(f"Unsupported pricing payload (missing price-like field): {obj.keys()}")
+            hist = [
+                {
+                    "date": str(d),
+                    "gold_usd": str(g),
+                    "silver_usd": str(s),
+                    "gsr": str(gsr),
+                }
+                for (d, g, s, gsr) in history
+            ]
 
-    return price_of(g), price_of(s), g, s
+            return send_json(self, 200, {
+                "ok": True,
+                "latest": latest,
+                "history": hist,
+            })
+        except Exception as e:
+            return send_json(self, 500, {"ok": False, "error": str(e)})
+
+    def log_message(self, format, *args):
+        return
