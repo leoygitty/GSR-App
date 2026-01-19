@@ -1,193 +1,155 @@
 from http.server import BaseHTTPRequestHandler
-from datetime import datetime, timezone
-import csv
-import io
-import json
-import os
-import urllib.request
-import http.cookiejar
 from urllib.parse import urlparse, parse_qs
+from datetime import datetime, timezone
+import os
+import csv
+import json
 
 from ._utils import db_connect, send_json
 
 
-def _fetch_stooq_daily_csv(symbol: str) -> list[dict]:
+def _read_prices_by_date(csv_path: str) -> dict:
     """
-    Fetch Stooq daily historical CSV:
-    https://stooq.com/q/d/l/?s=<symbol>&i=d
-
-    Returns list of dict rows with keys like:
-      Date, Open, High, Low, Close, Volume
+    Expects CSV columns like:
+    Symbol,Date,Time,Open,High,Low,Close
+    Returns { 'YYYY-MM-DD': close_float }
+    If multiple rows per day exist, last one wins.
     """
-    # Some hosts behave better with a cookie jar + user-agent
-    cj = http.cookiejar.CookieJar()
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-    opener.addheaders = [
-        ("User-Agent", "Mozilla/5.0 (compatible; gsr-app/1.0)"),
-        ("Accept", "text/csv,*/*"),
-    ]
+    prices = {}
+    if not os.path.exists(csv_path):
+        return prices
 
-    # Warm-up (harmless)
-    try:
-        opener.open("https://stooq.com/", timeout=20)
-    except Exception:
-        pass
-
-    url = f"https://stooq.com/q/d/l/?s={symbol}&i=d"
-    with opener.open(url, timeout=30) as resp:
-        raw = resp.read().decode("utf-8", errors="replace")
-
-    buf = io.StringIO(raw)
-    reader = csv.DictReader(buf)
-
-    rows = []
-    for r in reader:
-        # Stooq uses "Date" + "Close"
-        if r.get("Date") and r.get("Close"):
-            rows.append(r)
-    return rows
-
-
-def _rows_to_close_map(rows: list[dict]) -> dict:
-    """
-    Convert Stooq rows into { "YYYY-MM-DD": float(close) }
-    """
-    out = {}
-    for r in rows:
-        d = (r.get("Date") or "").strip()
-        c = (r.get("Close") or "").strip()
-        if not d or not c:
-            continue
-        try:
-            out[d] = float(c)
-        except Exception:
-            continue
-    return out
-
-
-def _auth_ok(handler) -> bool:
-    """
-    Auth rule:
-    - If CRON_SECRET is set in env, require either:
-        Authorization: Bearer <CRON_SECRET>
-      OR
-        ?secret=<CRON_SECRET>
-    - If CRON_SECRET is NOT set, allow (not recommended).
-    """
-    secret = os.environ.get("CRON_SECRET", "").strip()
-    if not secret:
-        return True
-
-    auth = (handler.headers.get("Authorization") or "").strip()
-    if auth.lower().startswith("bearer "):
-        token = auth[7:].strip()
-        if token == secret:
-            return True
-
-    try:
-        q = parse_qs(urlparse(handler.path).query)
-        qs = (q.get("secret", [""])[0] or "").strip()
-        if qs == secret:
-            return True
-    except Exception:
-        pass
-
-    return False
+    with open(csv_path, "r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            d = (row.get("Date") or "").strip()
+            close = row.get("Close")
+            if not d or close is None:
+                continue
+            try:
+                prices[d] = float(str(close).strip())
+            except Exception:
+                continue
+    return prices
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            if not _auth_ok(self):
-                return send_json(self, 401, {
+            # --- Auth (reuse CRON_SECRET so random people can't spam inserts) ---
+            qs = parse_qs(urlparse(self.path).query)
+            secret = (qs.get("secret", [""])[0] or "").strip()
+            expected = (os.environ.get("CRON_SECRET") or "").strip()
+
+            if expected:
+                auth = (self.headers.get("Authorization") or "").strip()
+                bearer_ok = auth == f"Bearer {expected}"
+                query_ok = secret == expected
+                if not (bearer_ok or query_ok):
+                    return send_json(self, 401, {
+                        "ok": False,
+                        "error": "Unauthorized",
+                        "hint": "Provide Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>"
+                    })
+
+            # --- Locate CSVs in repo ---
+            root = os.path.dirname(os.path.dirname(__file__))  # repo root (api/ is one level down)
+            gold_csv = os.path.join(root, "data", "xauusd.csv")
+            silver_csv = os.path.join(root, "data", "xagusd.csv")
+
+            gold = _read_prices_by_date(gold_csv)
+            silver = _read_prices_by_date(silver_csv)
+
+            if not gold or not silver:
+                return send_json(self, 400, {
                     "ok": False,
-                    "error": "Unauthorized",
-                    "hint": "Set CRON_SECRET in Vercel env vars, then call /api/backfill_gsr?secret=... or use Authorization: Bearer ..."
+                    "error": "Missing or empty CSVs",
+                    "details": {
+                        "gold_csv_exists": os.path.exists(gold_csv),
+                        "silver_csv_exists": os.path.exists(silver_csv),
+                        "gold_rows": len(gold),
+                        "silver_rows": len(silver),
+                        "expected_paths": {
+                            "gold": "data/xauusd.csv",
+                            "silver": "data/xagusd.csv"
+                        }
+                    }
                 })
 
-            # Fetch long history (daily EOD)
-            gold_rows = _fetch_stooq_daily_csv("xauusd")
-            silver_rows = _fetch_stooq_daily_csv("xagusd")
-
-            gold_map = _rows_to_close_map(gold_rows)
-            silver_map = _rows_to_close_map(silver_rows)
-
-            common_dates = sorted(set(gold_map.keys()) & set(silver_map.keys()))
-            if not common_dates:
-                return send_json(self, 500, {
+            # Intersection of dates
+            dates = sorted(set(gold.keys()) & set(silver.keys()))
+            if not dates:
+                return send_json(self, 400, {
                     "ok": False,
-                    "error": "No overlapping dates between XAUUSD and XAGUSD series.",
+                    "error": "No overlapping dates between gold and silver CSVs",
+                    "gold_dates": len(gold),
+                    "silver_dates": len(silver)
                 })
 
-            now_utc = datetime.now(timezone.utc).isoformat()
+            now_utc = datetime.now(timezone.utc)
 
-            # Insert/Upsert into Neon
+            # --- Insert / upsert into Neon ---
             conn = db_connect()
-            upserted = 0
+            inserted = 0
+            updated = 0
+            skipped = 0
+
             try:
                 cur = conn.cursor()
-
-                # Ensure table exists with the columns you use
-                cur.execute(
-                    """
-                    create table if not exists gsr_daily (
-                      d date primary key,
-                      gold_usd numeric not null,
-                      silver_usd numeric not null,
-                      gsr numeric not null,
-                      fetched_at_utc timestamptz not null default now(),
-                      source jsonb not null default '{}'::jsonb
-                    );
-                    """
-                )
-
-                source_obj = {
-                    "provider": "stooq",
-                    "symbols": {"gold": "xauusd", "silver": "xagusd"},
-                    "kind": "daily_eod_close",
-                    "note": "Backfilled from public daily CSV series; not intraday spot."
-                }
-                source_json = json.dumps(source_obj)
-
-                for d in common_dates:
-                    g = gold_map.get(d)
-                    s = silver_map.get(d)
-                    if g is None or s is None:
-                        continue
-                    if s == 0:
+                for d in dates:
+                    g = gold.get(d)
+                    s = silver.get(d)
+                    if g is None or s is None or s == 0:
+                        skipped += 1
                         continue
 
                     gsr = g / s
 
+                    src = {
+                        "type": "csv_backfill",
+                        "gold_file": "data/xauusd.csv",
+                        "silver_file": "data/xagusd.csv",
+                        "as_of": d
+                    }
+
+                    # Upsert by primary key (d)
                     cur.execute(
                         """
                         insert into gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
                         values (%s, %s, %s, %s, %s, %s::jsonb)
-                        on conflict (d) do update set
-                          gold_usd = excluded.gold_usd,
-                          silver_usd = excluded.silver_usd,
-                          gsr = excluded.gsr,
-                          fetched_at_utc = excluded.fetched_at_utc,
-                          source = excluded.source;
+                        on conflict (d) do update
+                        set gold_usd = excluded.gold_usd,
+                            silver_usd = excluded.silver_usd,
+                            gsr = excluded.gsr,
+                            fetched_at_utc = excluded.fetched_at_utc,
+                            source = excluded.source
                         """,
-                        (d, g, s, gsr, now_utc, source_json)
+                        (d, g, s, gsr, now_utc, json.dumps(src))
                     )
-                    upserted += 1
-
                 conn.commit()
+
+                # Count rows after backfill
+                cur.execute("select count(*) from gsr_daily;")
+                total = cur.fetchone()[0]
+
+                # Compute how many rows were upserted isn’t directly returned by psycopg cursor reliably here,
+                # so we return the date range + total count as proof.
+                return send_json(self, 200, {
+                    "ok": True,
+                    "message": "Backfill complete (upserted by date).",
+                    "dates": {
+                        "first": dates[0],
+                        "last": dates[-1],
+                        "count": len(dates)
+                    },
+                    "table_rows_now": total
+                })
+
             finally:
                 try:
                     conn.close()
                 except Exception:
                     pass
-
-            return send_json(self, 200, {
-                "ok": True,
-                "rows_upserted": upserted,
-                "date_range": {"start": common_dates[0], "end": common_dates[-1]},
-                "series": {"gold": "xauusd", "silver": "xagusd"},
-                "note": "This backfill uses daily EOD close values. Your cron can continue storing the latest spot snapshot separately."
-            })
 
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
