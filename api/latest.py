@@ -38,29 +38,24 @@ class handler(BaseHTTPRequestHandler):
                 return send_json(self, 404, {
                     "ok": False,
                     "error": "No data yet",
-                    "hint": "Run /api/cron_gsr once (with secret) after creating the table, or run /api/backfill."
+                    "hint": "Run /api/cron_gsr once (with secret) or run /api/backfill_gsr to backfill history."
                 })
 
-            # latest
             latest = {
                 "date": str(row[0]),
                 "gold_usd": str(row[1]),
                 "silver_usd": str(row[2]),
                 "gsr": str(row[3]),
                 "fetched_at_utc": str(row[4]),
-                # source is jsonb; return as object when possible
-                "source": row[5] if isinstance(row[5], (dict, list)) else (row[5] or {})
+                "source": str(row[5]),
             }
 
-            # history
-            history = []
-            for (d, g, s, gsr) in history_rows:
-                history.append({
-                    "date": str(d),
-                    "gold_usd": str(g),
-                    "silver_usd": str(s),
-                    "gsr": str(gsr),
-                })
+            history = [{
+                "date": str(r[0]),
+                "gold_usd": str(r[1]),
+                "silver_usd": str(r[2]),
+                "gsr": str(r[3]),
+            } for r in history_rows]
 
             return send_json(self, 200, {
                 "ok": True,
