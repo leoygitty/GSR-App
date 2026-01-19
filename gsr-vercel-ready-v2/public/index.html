@@ -6,12 +6,11 @@
   <title>Gold-to-Silver Ratio (GSR)</title>
   <meta name="description" content="Daily-updating Gold-to-Silver Ratio (GSR) with history." />
 
-  <!-- All assets live under /public in your repo, so reference them with /public/... -->
-  <link rel="manifest" href="/public/manifest.json" />
-  <link rel="icon" href="/public/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/public/styles.css" />
+  <!-- IMPORTANT: no /public prefix -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
-
 <body>
   <main class="container">
     <header class="header">
@@ -19,7 +18,7 @@
         <h1>Gold-to-Silver Ratio</h1>
         <p class="sub">Daily snapshot stored in your database (Vercel Cron + Python).</p>
       </div>
-      <button id="refreshBtn" class="btn">Refresh</button>
+      <button id="refreshBtn" class="btn" type="button">Refresh</button>
     </header>
 
     <section class="card">
@@ -72,15 +71,11 @@
     </footer>
   </main>
 
-  <!-- Load JS from /public and defer so DOM is ready -->
-  <script src="/public/app.js" defer></script>
-
-  <!-- Service worker also lives under /public -->
+  <!-- IMPORTANT: this MUST load (currently yours is 404) -->
+  <script src="/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/public/sw.js').catch(() => {});
-      });
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
     }
   </script>
 </body>
