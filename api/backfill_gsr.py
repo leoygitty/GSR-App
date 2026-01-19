@@ -1,155 +1,176 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone
-import os
 import csv
-import json
+import os
 
 from ._utils import db_connect, send_json
 
 
-def _read_prices_by_date(csv_path: str) -> dict:
-    """
-    Expects CSV columns like:
-    Symbol,Date,Time,Open,High,Low,Close
-    Returns { 'YYYY-MM-DD': close_float }
-    If multiple rows per day exist, last one wins.
-    """
-    prices = {}
-    if not os.path.exists(csv_path):
-        return prices
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+GOLD_CSV = os.path.join(DATA_DIR, "xauusd.csv")
+SILVER_CSV = os.path.join(DATA_DIR, "xagusd.csv")
 
-    with open(csv_path, "r", newline="", encoding="utf-8") as f:
+
+def _read_close_map(path: str):
+    """
+    Reads a CSV with header: Date,Open,High,Low,Close
+    Returns dict: { 'YYYY-MM-DD': close_float }
+    """
+    out = {}
+    with open(path, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        # Normalize header keys
+        # Expect at least Date and Close
         for row in reader:
-            d = (row.get("Date") or "").strip()
-            close = row.get("Close")
-            if not d or close is None:
+            d = (row.get("Date") or row.get("date") or "").strip()
+            c = (row.get("Close") or row.get("close") or "").strip()
+            if not d or not c:
                 continue
             try:
-                prices[d] = float(str(close).strip())
+                out[d] = float(c)
             except Exception:
+                # Skip bad numeric rows
                 continue
-    return prices
+    return out
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            # --- Auth (reuse CRON_SECRET so random people can't spam inserts) ---
             qs = parse_qs(urlparse(self.path).query)
-            secret = (qs.get("secret", [""])[0] or "").strip()
-            expected = (os.environ.get("CRON_SECRET") or "").strip()
 
-            if expected:
-                auth = (self.headers.get("Authorization") or "").strip()
-                bearer_ok = auth == f"Bearer {expected}"
-                query_ok = secret == expected
-                if not (bearer_ok or query_ok):
-                    return send_json(self, 401, {
-                        "ok": False,
-                        "error": "Unauthorized",
-                        "hint": "Provide Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>"
+            # auth (same pattern as your cron endpoint)
+            cron_secret = os.getenv("CRON_SECRET", "")
+            provided = (qs.get("secret", [""])[0] or "").strip()
+
+            auth_header = (self.headers.get("Authorization") or "").strip()
+            bearer = ""
+            if auth_header.lower().startswith("bearer "):
+                bearer = auth_header.split(" ", 1)[1].strip()
+
+            ok_auth = False
+            if cron_secret and (provided == cron_secret or bearer == cron_secret):
+                ok_auth = True
+
+            if not ok_auth:
+                return send_json(self, 401, {
+                    "ok": False,
+                    "error": "Unauthorized",
+                    "hint": "Provide Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>"
+                })
+
+            # chunk control
+            # cursor = start date (inclusive). If omitted, start at earliest overlap date.
+            cursor = (qs.get("cursor", [""])[0] or "").strip()
+            limit = int((qs.get("limit", ["500"])[0] or "500").strip())
+            if limit < 50:
+                limit = 50
+            if limit > 2000:
+                limit = 2000
+
+            # Load CSVs
+            if not os.path.exists(GOLD_CSV):
+                return send_json(self, 400, {"ok": False, "error": f"Missing {GOLD_CSV} in repo"})
+            if not os.path.exists(SILVER_CSV):
+                return send_json(self, 400, {"ok": False, "error": f"Missing {SILVER_CSV} in repo"})
+
+            gold = _read_close_map(GOLD_CSV)
+            silver = _read_close_map(SILVER_CSV)
+
+            # intersection of dates
+            common_dates = sorted(set(gold.keys()) & set(silver.keys()))
+            if not common_dates:
+                return send_json(self, 400, {
+                    "ok": False,
+                    "error": "No overlapping dates found between gold and silver CSV files.",
+                    "hint": "Verify both CSVs have matching Date values and similar date ranges."
+                })
+
+            # determine start index by cursor
+            start_idx = 0
+            if cursor:
+                # move to first date >= cursor
+                # (cursor must be YYYY-MM-DD)
+                for i, d in enumerate(common_dates):
+                    if d >= cursor:
+                        start_idx = i
+                        break
+                else:
+                    # cursor is after last date
+                    return send_json(self, 200, {
+                        "ok": True,
+                        "inserted": 0,
+                        "updated": 0,
+                        "next_cursor": None,
+                        "message": "Cursor beyond last date; backfill already complete."
                     })
 
-            # --- Locate CSVs in repo ---
-            root = os.path.dirname(os.path.dirname(__file__))  # repo root (api/ is one level down)
-            gold_csv = os.path.join(root, "data", "xauusd.csv")
-            silver_csv = os.path.join(root, "data", "xagusd.csv")
-
-            gold = _read_prices_by_date(gold_csv)
-            silver = _read_prices_by_date(silver_csv)
-
-            if not gold or not silver:
-                return send_json(self, 400, {
-                    "ok": False,
-                    "error": "Missing or empty CSVs",
-                    "details": {
-                        "gold_csv_exists": os.path.exists(gold_csv),
-                        "silver_csv_exists": os.path.exists(silver_csv),
-                        "gold_rows": len(gold),
-                        "silver_rows": len(silver),
-                        "expected_paths": {
-                            "gold": "data/xauusd.csv",
-                            "silver": "data/xagusd.csv"
-                        }
-                    }
+            batch = common_dates[start_idx:start_idx + limit]
+            if not batch:
+                return send_json(self, 200, {
+                    "ok": True,
+                    "inserted": 0,
+                    "updated": 0,
+                    "next_cursor": None,
+                    "message": "No rows to process."
                 })
 
-            # Intersection of dates
-            dates = sorted(set(gold.keys()) & set(silver.keys()))
-            if not dates:
-                return send_json(self, 400, {
-                    "ok": False,
-                    "error": "No overlapping dates between gold and silver CSVs",
-                    "gold_dates": len(gold),
-                    "silver_dates": len(silver)
-                })
+            now_utc = datetime.now(timezone.utc).isoformat()
 
-            now_utc = datetime.now(timezone.utc)
-
-            # --- Insert / upsert into Neon ---
-            conn = db_connect()
             inserted = 0
             updated = 0
-            skipped = 0
 
+            conn = db_connect()
             try:
                 cur = conn.cursor()
-                for d in dates:
-                    g = gold.get(d)
-                    s = silver.get(d)
-                    if g is None or s is None or s == 0:
-                        skipped += 1
-                        continue
 
+                for d in batch:
+                    g = gold[d]
+                    s = silver[d]
+                    if s == 0:
+                        continue
                     gsr = g / s
 
-                    src = {
-                        "type": "csv_backfill",
-                        "gold_file": "data/xauusd.csv",
-                        "silver_file": "data/xagusd.csv",
-                        "as_of": d
-                    }
-
-                    # Upsert by primary key (d)
+                    # Upsert
                     cur.execute(
                         """
                         insert into gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
-                        values (%s, %s, %s, %s, %s, %s::jsonb)
+                        values (%s, %s, %s, %s, %s, %s)
                         on conflict (d) do update
-                        set gold_usd = excluded.gold_usd,
-                            silver_usd = excluded.silver_usd,
-                            gsr = excluded.gsr,
-                            fetched_at_utc = excluded.fetched_at_utc,
-                            source = excluded.source
+                          set gold_usd = excluded.gold_usd,
+                              silver_usd = excluded.silver_usd,
+                              gsr = excluded.gsr,
+                              fetched_at_utc = excluded.fetched_at_utc,
+                              source = excluded.source
                         """,
-                        (d, g, s, gsr, now_utc, json.dumps(src))
+                        (d, g, s, gsr, now_utc, "csv_backfill")
                     )
+
                 conn.commit()
 
-                # Count rows after backfill
-                cur.execute("select count(*) from gsr_daily;")
-                total = cur.fetchone()[0]
-
-                # Compute how many rows were upserted isn’t directly returned by psycopg cursor reliably here,
-                # so we return the date range + total count as proof.
-                return send_json(self, 200, {
-                    "ok": True,
-                    "message": "Backfill complete (upserted by date).",
-                    "dates": {
-                        "first": dates[0],
-                        "last": dates[-1],
-                        "count": len(dates)
-                    },
-                    "table_rows_now": total
-                })
+                # We can’t easily distinguish inserted vs updated without extra queries;
+                # but we can still return how many dates processed.
+                inserted = len(batch)
 
             finally:
                 try:
                     conn.close()
                 except Exception:
                     pass
+
+            next_cursor = None
+            if (start_idx + limit) < len(common_dates):
+                next_cursor = common_dates[start_idx + limit]
+
+            return send_json(self, 200, {
+                "ok": True,
+                "processed": len(batch),
+                "next_cursor": next_cursor,
+                "limit": limit,
+                "range": {"from": batch[0], "to": batch[-1]},
+                "note": "Call again with ?cursor=<next_cursor> until next_cursor is null."
+            })
 
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
