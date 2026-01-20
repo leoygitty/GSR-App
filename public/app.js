@@ -4,10 +4,7 @@ const $ = (id) => document.getElementById(id);
 function fmtNum(x, digits = 2) {
   const n = Number(x);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(undefined, {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits
-  });
+  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 
 function fmtUSD(x, digits = 2) {
@@ -22,7 +19,6 @@ function fmtUSD(x, digits = 2) {
 }
 
 function parseISODate(d) {
-  // "YYYY-MM-DD" -> Date (UTC midnight)
   const [y, m, day] = String(d || "").split("-").map((v) => parseInt(v, 10));
   return new Date(Date.UTC(y || 1970, (m || 1) - 1, day || 1, 0, 0, 0));
 }
@@ -46,7 +42,6 @@ function timeAgo(iso) {
   return `${day} day${day === 1 ? "" : "s"} ago`;
 }
 
-// Keep MAX fast
 function downsample(points, maxPts = 3000) {
   if (!Array.isArray(points) || points.length <= maxPts) return points || [];
   const out = [];
@@ -104,12 +99,8 @@ function destroyCharts() {
 }
 
 function buildSeries(points, key) {
-  return points
-    .map(p => {
-      const x = parseISODate(p.date);
-      const y = Number(p[key]);
-      return { x, y };
-    })
+  return (points || [])
+    .map(p => ({ x: parseISODate(p.date), y: Number(p[key]) }))
     .filter(pt => pt.x instanceof Date && !isNaN(pt.x.getTime()) && Number.isFinite(pt.y));
 }
 
@@ -118,7 +109,7 @@ function pickTimeUnit(range) {
   if (range === "3M") return "week";
   if (range === "6M") return "month";
   if (range === "1Y") return "month";
-  return "year"; // MAX
+  return "year";
 }
 
 function makeLineChart(canvasId, label, series, yFmtFn, unit) {
@@ -159,23 +150,13 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit) {
           time: {
             unit,
             tooltipFormat: "yyyy-MM-dd",
-            displayFormats: {
-              day: "MMM d",
-              week: "MMM d",
-              month: "MMM yyyy",
-              year: "yyyy"
-            }
+            displayFormats: { day: "MMM d", week: "MMM d", month: "MMM yyyy", year: "yyyy" }
           },
-          ticks: {
-            maxTicksLimit: 8,
-            autoSkip: true
-          },
+          ticks: { maxTicksLimit: 8, autoSkip: true },
           grid: { color: "rgba(0,0,0,0.06)" }
         },
         y: {
-          ticks: {
-            callback: (v) => yFmtFn(v)
-          },
+          ticks: { callback: (v) => yFmtFn(v) },
           grid: { color: "rgba(0,0,0,0.06)" }
         }
       }
@@ -216,35 +197,9 @@ function renderCharts(history) {
   const unit = pickTimeUnit(CURRENT_RANGE);
   const pts = (CURRENT_RANGE === "MAX") ? downsample(history, 3000) : history;
 
-  if (showGsr) {
-    CHART_GSR = makeLineChart(
-      "chartGsrCanvas",
-      "GSR",
-      buildSeries(pts, "gsr"),
-      (v) => fmtNum(v, 2),
-      unit
-    );
-  }
-
-  if (showGold) {
-    CHART_GOLD = makeLineChart(
-      "chartGoldCanvas",
-      "Gold Spot (USD)",
-      buildSeries(pts, "gold_usd"),
-      (v) => fmtUSD(v, 2),
-      unit
-    );
-  }
-
-  if (showSilver) {
-    CHART_SILVER = makeLineChart(
-      "chartSilverCanvas",
-      "Silver Spot (USD)",
-      buildSeries(pts, "silver_usd"),
-      (v) => fmtUSD(v, 2),
-      unit
-    );
-  }
+  if (showGsr) CHART_GSR = makeLineChart("chartGsrCanvas", "GSR", buildSeries(pts, "gsr"), (v) => fmtNum(v, 2), unit);
+  if (showGold) CHART_GOLD = makeLineChart("chartGoldCanvas", "Gold Spot (USD)", buildSeries(pts, "gold_usd"), (v) => fmtUSD(v, 2), unit);
+  if (showSilver) CHART_SILVER = makeLineChart("chartSilverCanvas", "Silver Spot (USD)", buildSeries(pts, "silver_usd"), (v) => fmtUSD(v, 2), unit);
 
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
@@ -272,9 +227,7 @@ function setNoData(errMsg) {
   renderCharts([]);
 }
 
-/* ===========================
-   UPGRADE: live spot endpoint
-   =========================== */
+/* UPGRADE: Live KPIs via /api/spot */
 async function fetchSpot() {
   const res = await fetch(`/api/spot`, { cache: "no-store" });
   const data = await res.json();
@@ -282,7 +235,7 @@ async function fetchSpot() {
   return data;
 }
 
-/* existing history fetch (unchanged behavior) */
+/* Existing: DB history */
 async function fetchHistory(limit) {
   const res = await fetch(`/api/latest?limit=${encodeURIComponent(limit)}`, { cache: "no-store" });
   const data = await res.json();
@@ -295,9 +248,7 @@ async function load(forRange = CURRENT_RANGE) {
   $("refreshBtn").textContent = "Refreshing…";
 
   try {
-    /* ===========================
-       UPGRADE: refresh KPIs live
-       =========================== */
+    // 1) Live spot snapshot for the KPIs (updates immediately on refresh)
     const spot = await fetchSpot();
 
     $("gsr").textContent = fmtNum(spot.gsr, 4);
@@ -308,13 +259,12 @@ async function load(forRange = CURRENT_RANGE) {
     $("utcDate").textContent = spot.date || "—";
     $("lastUpdatedHuman").textContent = spot.fetched_at_utc ? timeAgo(spot.fetched_at_utc) : "—";
 
-    /* history stays DB-backed for charts */
+    // 2) DB history for charts
     const want = desiredLimitForRange(forRange);
     const data = await fetchHistory(want);
 
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
-    // Delta vs previous (from history if available)
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
@@ -350,7 +300,6 @@ document.querySelectorAll(".segBtn").forEach((b) => {
     CURRENT_RANGE = b.dataset.range;
     setActiveRange(CURRENT_RANGE);
 
-    // For MAX we fetch bigger history; for others, reuse the already-fetched history
     if (CURRENT_RANGE === "MAX") {
       await load("MAX");
     } else {
