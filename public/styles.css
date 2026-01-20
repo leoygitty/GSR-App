@@ -54,7 +54,47 @@ h1{
 .muted{ color: var(--muted); }
 .dot{ margin: 0 8px; opacity:.5; }
 
-.actions{ display:flex; gap:10px; }
+/* Actions area now contains nav links + refresh button */
+.actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+}
+
+/* NEW: Pro/Elite links (matches pill-button style) */
+.navLinks{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.navLink{
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,.75);
+  backdrop-filter: blur(10px);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  color: rgba(17,17,20,.86);
+  text-decoration: none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height: 1;
+}
+
+.navLink:hover{
+  border-color: rgba(17,17,20,.18);
+  background: rgba(255,255,255,.95);
+}
+
+.navLink--primary{
+  background: rgba(10,132,255,.12);
+  border-color: rgba(10,132,255,.25);
+  color: #0a84ff;
+}
 
 .btn{
   border: 1px solid var(--stroke);
@@ -62,8 +102,12 @@ h1{
   backdrop-filter: blur(10px);
   padding: 10px 14px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+}
+.btn:hover{
+  border-color: rgba(17,17,20,.18);
+  background: rgba(255,255,255,.95);
 }
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
@@ -92,7 +136,7 @@ h1{
 
 .kpiValue{
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 6px;
 }
@@ -102,8 +146,8 @@ h1{
   color: var(--muted);
 }
 
-.pos{ color: #0a7a3d; font-weight: 700; }
-.neg{ color: #b00020; font-weight: 700; }
+.pos{ color: #0a7a3d; font-weight: 800; }
+.neg{ color: #b00020; font-weight: 800; }
 
 .controls{
   display:flex;
@@ -128,9 +172,12 @@ h1{
   background: transparent;
   padding: 9px 12px;
   border-radius: 999px;
-  font-weight: 700;
+  font-weight: 800;
   color: rgba(17,17,20,.72);
   cursor: pointer;
+}
+.segBtn:hover{
+  background: rgba(17,17,20,.05);
 }
 .segBtn.isActive{
   background: rgba(10,132,255,.15);
@@ -142,7 +189,7 @@ h1{
   gap: 14px;
   align-items:center;
   color: rgba(17,17,20,.74);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .toggle{
@@ -168,7 +215,7 @@ h1{
 }
 
 .cardTitle{
-  font-weight: 800;
+  font-weight: 900;
   font-size: 18px;
 }
 
@@ -199,7 +246,7 @@ h1{
   background: rgba(246,246,247,.6);
 }
 
-.chartName{ font-weight: 800; }
+.chartName{ font-weight: 900; }
 .chartHint{ font-size: 12px; }
 
 svg{
@@ -234,7 +281,7 @@ th, td{
 
 th{
   background: rgba(246,246,247,.7);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .emptyState{
@@ -268,4 +315,5 @@ th{
   .kpiGrid{ grid-template-columns: 1fr; }
   h1{ font-size: 34px; }
   .controls{ flex-direction: column; align-items:flex-start; }
+  .actions{ width: 100%; justify-content:flex-start; }
 }
