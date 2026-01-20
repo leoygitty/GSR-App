@@ -19,7 +19,7 @@ YAHOO_URL = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=GC=F,SI=F
 # - If fetched_at_utc older than STALE_MINUTES -> update
 STALE_MINUTES_DEFAULT = 55
 
-# If force=1, we still avoid hammering Yahoo on rapid clicks:
+# If force=1, avoid hammering Yahoo on rapid clicks
 FORCE_COOLDOWN_SECONDS = 60
 
 # Advisory lock key (any consistent 64-bit int is fine)
@@ -40,8 +40,8 @@ def _fetch_yahoo_prices():
         raw = resp.read().decode("utf-8")
     data = json.loads(raw)
 
-    result = data.get("quoteResponse", {}).get("result", [])
-    by_symbol = {r.get("symbol"): r for r in result}
+    result = (data.get("quoteResponse") or {}).get("result") or []
+    by_symbol = {r.get("symbol"): r for r in result if r.get("symbol")}
 
     gc = by_symbol.get("GC=F") or {}
     si = by_symbol.get("SI=F") or {}
@@ -79,7 +79,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             qs = parse_qs(urlparse(self.path).query)
 
-            # limit parsing (unchanged)
+            # limit parsing
             limit_raw = (qs.get("limit", ["5000"])[0] or "5000").strip()
             try:
                 limit = int(limit_raw)
@@ -91,16 +91,13 @@ class handler(BaseHTTPRequestHandler):
                 limit = 50000
 
             # self-heal controls
-            force = (qs.get("force", ["0"])[0] or "0").strip() in ("1", "true", "yes", "on")
+            force = (qs.get("force", ["0"])[0] or "0").strip().lower() in ("1", "true", "yes", "on")
             stale_minutes_raw = (qs.get("stale_minutes", [str(STALE_MINUTES_DEFAULT)])[0] or str(STALE_MINUTES_DEFAULT)).strip()
             try:
                 stale_minutes = int(stale_minutes_raw)
             except Exception:
                 stale_minutes = STALE_MINUTES_DEFAULT
-            if stale_minutes < 1:
-                stale_minutes = 1
-            if stale_minutes > 24 * 60:
-                stale_minutes = 24 * 60
+            stale_minutes = max(1, min(stale_minutes, 24 * 60))
 
             now_utc = _utc_now()
             today_utc = now_utc.date()
@@ -111,38 +108,42 @@ class handler(BaseHTTPRequestHandler):
             try:
                 cur = conn.cursor()
 
-                # 1) Read today's row (UTC) if present
-                cur.execute(
-                    """
-                    SELECT d, gold_usd, silver_usd, gsr, fetched_at_utc, source
-                    FROM gsr_daily
-                    WHERE d = %s
-                    LIMIT 1;
-                    """,
-                    (today_utc,),
-                )
-                today_row = cur.fetchone()
+                # Helper: read today's row
+                def read_today():
+                    cur.execute(
+                        """
+                        SELECT d, gold_usd, silver_usd, gsr, fetched_at_utc, source
+                        FROM gsr_daily
+                        WHERE d = %s
+                        LIMIT 1;
+                        """,
+                        (today_utc,),
+                    )
+                    return cur.fetchone()
 
-                # Determine whether we should update
+                # 1) Read today's row (UTC) if present
+                today_row = read_today()
+
+                # 2) Decide whether we should update
                 should_update = False
+                fetched_at = None
+
                 if not today_row:
                     should_update = True
                 else:
                     fetched_at = today_row[4]
-                    # fetched_at should be a datetime from pg8000; but guard anyway
                     try:
                         if force:
-                            # Only force-update if not updated very recently
                             should_update = fetched_at < force_cutoff
                         else:
                             should_update = fetched_at < stale_cutoff
                     except Exception:
-                        # If fetched_at parsing is weird, treat as stale
                         should_update = True
 
-                # 2) If missing/stale, try to acquire advisory lock and update
+                # 3) If missing/stale, try to acquire advisory lock and update
                 updated = False
                 update_error = None
+                got_lock = False
 
                 if should_update:
                     try:
@@ -154,6 +155,8 @@ class handler(BaseHTTPRequestHandler):
                     if got_lock:
                         try:
                             gold, silver, gsr = _fetch_yahoo_prices()
+                            # Use a fresh timestamp at write time (don’t reuse an old now_utc if queued)
+                            write_ts = _utc_now()
 
                             cur.execute(
                                 """
@@ -166,12 +169,11 @@ class handler(BaseHTTPRequestHandler):
                                   fetched_at_utc = EXCLUDED.fetched_at_utc,
                                   source         = EXCLUDED.source;
                                 """,
-                                (today_utc, gold, silver, gsr, now_utc, "latest"),
+                                (today_utc, gold, silver, gsr, write_ts, "latest"),
                             )
                             conn.commit()
                             updated = True
                         except (urllib.error.HTTPError, urllib.error.URLError, ValueError) as e:
-                            # Yahoo fetch issues: do not fail the entire request if we still have data
                             update_error = str(e)
                             try:
                                 conn.rollback()
@@ -188,30 +190,34 @@ class handler(BaseHTTPRequestHandler):
                                 cur.execute("SELECT pg_advisory_unlock(%s);", (ADVISORY_LOCK_KEY,))
                             except Exception:
                                 pass
-                    else:
-                        # Another request is updating right now; we’ll just continue and read latest
-                        pass
 
-                # 3) Read latest row (DESC) (unchanged semantics)
-                cur.execute(
-                    """
-                    SELECT d, gold_usd, silver_usd, gsr, fetched_at_utc, source
-                    FROM gsr_daily
-                    ORDER BY d DESC
-                    LIMIT 1;
-                    """
-                )
-                row = cur.fetchone()
-                if not row:
+                # 4) Determine latest to return:
+                # Prefer today's row if it exists; otherwise fallback to newest date.
+                # (This is the key behavior that prevents “yesterday” when today exists.)
+                today_row_after = read_today()
+                if today_row_after:
+                    latest_row = today_row_after
+                else:
+                    cur.execute(
+                        """
+                        SELECT d, gold_usd, silver_usd, gsr, fetched_at_utc, source
+                        FROM gsr_daily
+                        ORDER BY d DESC
+                        LIMIT 1;
+                        """
+                    )
+                    latest_row = cur.fetchone()
+
+                if not latest_row:
                     return send_json(self, 404, {
                         "ok": False,
                         "error": "No data yet",
                         "hint": "Run /api/cron_gsr once, then /api/backfill_gsr until next_cursor is null."
                     })
 
-                latest = _row_to_latest(row)
+                latest = _row_to_latest(latest_row)
 
-                # 4) History (DESC then reverse to ASC) (unchanged)
+                # 5) History (DESC then reverse to ASC)
                 cur.execute(
                     """
                     SELECT d, gold_usd, silver_usd, gsr
@@ -234,7 +240,6 @@ class handler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
 
-            # Include debug fields so you can see if the self-heal ran
             return send_json(self, 200, {
                 "ok": True,
                 "latest": latest,
@@ -245,6 +250,7 @@ class handler(BaseHTTPRequestHandler):
                     "stale_minutes": stale_minutes,
                     "attempted": bool(should_update),
                     "updated": bool(updated),
+                    "had_lock": bool(got_lock),
                     "error": update_error
                 }
             })
