@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone
 import json
 import urllib.request
@@ -26,14 +27,32 @@ def _fetch_yahoo_quotes():
         data = json.loads(raw)
 
     results = (data.get("quoteResponse") or {}).get("result") or []
-    by_symbol = {r.get("symbol"): r for r in results if r.get("symbol")}
-    return by_symbol
+    return {r.get("symbol"): r for r in results if r.get("symbol")}
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            by_symbol = _fetch_yahoo_quotes()
+            # Optional: allow ?symbols=GC=F,SI=F (defaults if not provided)
+            qs = parse_qs(urlparse(self.path).query)
+            symbols = (qs.get("symbols", ["GC=F,SI=F"])[0] or "GC=F,SI=F").strip()
+            url = f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={symbols}"
+
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json",
+                },
+                method="GET",
+            )
+
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                raw = resp.read().decode("utf-8")
+                data = json.loads(raw)
+
+            results = (data.get("quoteResponse") or {}).get("result") or []
+            by_symbol = {r.get("symbol"): r for r in results if r.get("symbol")}
 
             gold = by_symbol.get("GC=F") or {}
             silver = by_symbol.get("SI=F") or {}
@@ -45,15 +64,11 @@ class handler(BaseHTTPRequestHandler):
                 return send_json(self, 502, {
                     "ok": False,
                     "error": "Price source unavailable (missing regularMarketPrice).",
-                    "debug": {
-                        "has_gold": bool(gold),
-                        "has_silver": bool(silver),
-                    }
+                    "debug": {"has_gold": bool(gold), "has_silver": bool(silver)}
                 })
 
             gold_px = float(gold_px)
             silver_px = float(silver_px)
-
             if silver_px == 0:
                 return send_json(self, 502, {"ok": False, "error": "Invalid silver price (0)."})
 
@@ -69,8 +84,7 @@ class handler(BaseHTTPRequestHandler):
                 "silver_usd": silver_px,
                 "gsr": gsr,
                 "fetched_at_utc": now_utc,
-                "source": "yahoo_finance_futures",
-                "symbols": {"gold": "GC=F", "silver": "SI=F"},
+                "source": "spot_yahoo"
             })
 
         except Exception as e:
