@@ -4,103 +4,104 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gold-to-Silver Ratio (GSR)</title>
-  <meta name="description" content="Gold-to-silver ratio with historical charts for GSR, gold spot, and silver spot." />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="Gold-to-Silver Ratio with historical charts." />
 
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <main class="container">
-    <header class="header">
+  <main class="shell">
+    <header class="topbar">
       <div class="titleBlock">
         <h1>Gold-to-Silver Ratio</h1>
         <p class="sub">Live snapshot + historical charts (stored in your DB).</p>
-        <div class="metaRow">
-          <div><span class="muted">Last updated:</span> <span id="updatedHuman">—</span></div>
-          <div><span class="muted">UTC date:</span> <span id="date">—</span></div>
-        </div>
+        <p class="metaLine">
+          <span class="muted">Last updated:</span> <span id="lastUpdatedHuman">—</span>
+          <span class="dot">•</span>
+          <span class="muted">UTC date:</span> <span id="utcDate">—</span>
+        </p>
       </div>
-      <button id="refreshBtn" class="btn" type="button">Refresh</button>
+
+      <div class="actions">
+        <button id="refreshBtn" class="btn" type="button">Refresh</button>
+      </div>
     </header>
 
+    <section class="kpiGrid">
+      <div class="kpiCard">
+        <div class="kpiLabel">GSR</div>
+        <div class="kpiValue" id="gsr">—</div>
+        <div class="kpiSub">
+          <span class="muted">Δ vs prev:</span>
+          <span id="deltaAbs">—</span>
+          <span class="muted"> (</span><span id="deltaPct">—</span><span class="muted">)</span>
+        </div>
+      </div>
+
+      <div class="kpiCard">
+        <div class="kpiLabel">GOLD (USD)</div>
+        <div class="kpiValue" id="gold">—</div>
+        <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="fetchedAt">—</span></div>
+      </div>
+
+      <div class="kpiCard">
+        <div class="kpiLabel">SILVER (USD)</div>
+        <div class="kpiValue" id="silver">—</div>
+        <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <div class="segmented" role="tablist" aria-label="Range">
+        <button class="segBtn isActive" data-range="1M">1M</button>
+        <button class="segBtn" data-range="3M">3M</button>
+        <button class="segBtn" data-range="6M">6M</button>
+        <button class="segBtn" data-range="1Y">1Y</button>
+        <button class="segBtn" data-range="MAX">MAX</button>
+      </div>
+
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="showGold" checked> <span>Gold</span></label>
+        <label class="toggle"><input type="checkbox" id="showSilver" checked> <span>Silver</span></label>
+        <label class="toggle"><input type="checkbox" id="showGsr" checked> <span>GSR</span></label>
+      </div>
+    </section>
+
     <section class="card">
-      <div class="kpis">
-        <div class="kpi">
-          <div class="label">GSR</div>
-          <div class="value" id="gsr">—</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Gold (USD)</div>
-          <div class="value" id="gold">—</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Silver (USD)</div>
-          <div class="value" id="silver">—</div>
-        </div>
+      <div class="cardHead">
+        <div class="cardTitle">Charts</div>
+        <div class="cardMeta" id="rangeLabel">—</div>
       </div>
 
-      <div class="controls">
-        <div class="segmented" role="group" aria-label="Range">
-          <button class="segBtn active" data-range="30" type="button">1M</button>
-          <button class="segBtn" data-range="90" type="button">3M</button>
-          <button class="segBtn" data-range="180" type="button">6M</button>
-          <button class="segBtn" data-range="365" type="button">1Y</button>
-          <button class="segBtn" data-range="max" type="button">MAX</button>
-        </div>
-
-        <div class="toggleRow">
-          <label class="toggle">
-            <input id="showGold" type="checkbox" checked />
-            <span>Gold</span>
-          </label>
-          <label class="toggle">
-            <input id="showSilver" type="checkbox" checked />
-            <span>Silver</span>
-          </label>
-          <label class="toggle">
-            <input id="showGsr" type="checkbox" checked />
-            <span>GSR</span>
-          </label>
-        </div>
+      <div id="emptyState" class="emptyState hidden">
+        <div class="emptyTitle">No history yet</div>
+        <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
       </div>
 
-      <div class="chartGrid">
-        <div class="chartCard" id="chartCardGsr">
-          <div class="chartTop">
-            <div class="chartTitle">GSR</div>
-            <div class="chartMeta" id="rangeGsr">—</div>
+      <div id="chartsWrap" class="chartsWrap">
+        <div class="chartBlock" id="chartGsr">
+          <div class="chartHeader">
+            <div class="chartName">GSR</div>
+            <div class="chartHint muted">ratio</div>
           </div>
           <svg id="sparkGsr" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
-          <div class="emptyState" id="emptyGsr" hidden>
-            <div class="emptyTitle">No history yet</div>
-            <div class="emptySub">Your database only has one data point. Backfill or let the cron run daily.</div>
-          </div>
         </div>
 
-        <div class="chartCard" id="chartCardGold">
-          <div class="chartTop">
-            <div class="chartTitle">Gold Spot (USD)</div>
-            <div class="chartMeta" id="rangeGold">—</div>
+        <div class="chartBlock" id="chartGold">
+          <div class="chartHeader">
+            <div class="chartName">Gold Spot (USD)</div>
+            <div class="chartHint muted">close</div>
           </div>
           <svg id="sparkGold" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
-          <div class="emptyState" id="emptyGold" hidden>
-            <div class="emptyTitle">No history yet</div>
-            <div class="emptySub">Backfill required to show prior gold prices.</div>
-          </div>
         </div>
 
-        <div class="chartCard" id="chartCardSilver">
-          <div class="chartTop">
-            <div class="chartTitle">Silver Spot (USD)</div>
-            <div class="chartMeta" id="rangeSilver">—</div>
+        <div class="chartBlock" id="chartSilver">
+          <div class="chartHeader">
+            <div class="chartName">Silver Spot (USD)</div>
+            <div class="chartHint muted">close</div>
           </div>
           <svg id="sparkSilver" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
-          <div class="emptyState" id="emptySilver" hidden>
-            <div class="emptyTitle">No history yet</div>
-            <div class="emptySub">Backfill required to show prior silver prices.</div>
-          </div>
         </div>
       </div>
 
@@ -109,23 +110,30 @@
         <div class="tableWrap">
           <table>
             <thead>
-              <tr><th>Date (UTC)</th><th>Gold</th><th>Silver</th><th>GSR</th></tr>
+              <tr>
+                <th>Date (UTC)</th>
+                <th>GSR</th>
+                <th>Gold</th>
+                <th>Silver</th>
+              </tr>
             </thead>
             <tbody id="historyTable"></tbody>
           </table>
         </div>
       </details>
-
-      <div class="footerRow">
-        <span class="muted">Fetched at (UTC):</span> <span id="fetchedAt">—</span>
-      </div>
     </section>
+
+    <footer class="footer">
+      <span class="muted">Tip:</span> If numbers don’t update after a deploy, hard refresh and clear the service worker cache.
+    </footer>
   </main>
 
   <script src="/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
     }
   </script>
 </body>
