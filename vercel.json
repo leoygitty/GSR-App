@@ -1,5 +1,9 @@
 {
   "crons": [
     { "path": "/api/cron_gsr", "schedule": "0 * * * *" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(?!api/)(.*)", "dest": "/public/index.html" }
   ]
 }
