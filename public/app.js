@@ -1,15 +1,35 @@
+/* global Chart */
 const $ = (id) => document.getElementById(id);
 
 function fmtNum(x, digits = 2) {
   const n = Number(x);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+  return n.toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits
+  });
+}
+
+function fmtUSD(x, digits = 2) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits
+  });
 }
 
 function parseISODate(d) {
-  // "YYYY-MM-DD" -> Date
+  // "YYYY-MM-DD" -> Date (UTC midnight)
   const [y, m, day] = String(d || "").split("-").map((v) => parseInt(v, 10));
   return new Date(Date.UTC(y || 1970, (m || 1) - 1, day || 1, 0, 0, 0));
+}
+
+function isoFromDate(dt) {
+  if (!(dt instanceof Date) || isNaN(dt.getTime())) return "";
+  return dt.toISOString().slice(0, 10);
 }
 
 function timeAgo(iso) {
@@ -26,14 +46,12 @@ function timeAgo(iso) {
   return `${day} day${day === 1 ? "" : "s"} ago`;
 }
 
-// Downsample for MAX so charts stay responsive.
-function downsample(points, maxPts = 2500) {
+// Keep MAX fast
+function downsample(points, maxPts = 3000) {
   if (!Array.isArray(points) || points.length <= maxPts) return points || [];
   const out = [];
   const step = (points.length - 1) / (maxPts - 1);
-  for (let i = 0; i < maxPts; i++) {
-    out.push(points[Math.round(i * step)]);
-  }
+  for (let i = 0; i < maxPts; i++) out.push(points[Math.round(i * step)]);
   return out;
 }
 
@@ -59,11 +77,11 @@ function filterByRange(history, range) {
 }
 
 function desiredLimitForRange(range) {
-  if (range === "1M") return 2000;
-  if (range === "3M") return 6000;
-  if (range === "6M") return 12000;
-  if (range === "1Y") return 20000;
-  if (range === "MAX") return 50000;
+  if (range === "1M") return 3000;
+  if (range === "3M") return 9000;
+  if (range === "6M") return 18000;
+  if (range === "1Y") return 30000;
+  if (range === "MAX") return 80000;
   return 5000;
 }
 
@@ -74,7 +92,6 @@ function sortHistoryAsc(hist) {
 let FULL_HISTORY = [];
 let CURRENT_RANGE = "1M";
 
-// Chart.js instances
 let CHART_GSR = null;
 let CHART_GOLD = null;
 let CHART_SILVER = null;
@@ -86,15 +103,29 @@ function destroyCharts() {
   CHART_GSR = CHART_GOLD = CHART_SILVER = null;
 }
 
-function buildSeries(points, valueKey) {
-  // Chart.js time scale requires {x: Date, y: Number}
+function buildSeries(points, key) {
   return points
-    .map(p => ({ x: parseISODate(p.date), y: Number(p[valueKey]) }))
-    .filter(pt => Number.isFinite(pt.y) && pt.x instanceof Date && !isNaN(pt.x.getTime()));
+    .map(p => {
+      const x = parseISODate(p.date);
+      const y = Number(p[key]);
+      return { x, y };
+    })
+    .filter(pt => pt.x instanceof Date && !isNaN(pt.x.getTime()) && Number.isFinite(pt.y));
 }
 
-function makeChart(canvasId, label, series, yDigits, isRatio = false) {
-  const ctx = $(canvasId).getContext("2d");
+function pickTimeUnit(range) {
+  // Makes x-axis readable at different ranges
+  if (range === "1M") return "day";
+  if (range === "3M") return "week";
+  if (range === "6M") return "month";
+  if (range === "1Y") return "month";
+  return "year"; // MAX
+}
+
+function makeLineChart(canvasId, label, series, yFmtFn, unit) {
+  const el = $(canvasId);
+  if (!el) return null;
+  const ctx = el.getContext("2d");
 
   return new Chart(ctx, {
     type: "line",
@@ -104,7 +135,7 @@ function makeChart(canvasId, label, series, yDigits, isRatio = false) {
         data: series,
         borderWidth: 2,
         pointRadius: 0,
-        tension: 0.15
+        tension: 0.18
       }]
     },
     options: {
@@ -117,14 +148,9 @@ function makeChart(canvasId, label, series, yDigits, isRatio = false) {
           callbacks: {
             title: (items) => {
               const d = items?.[0]?.raw?.x;
-              if (!(d instanceof Date)) return "";
-              // YYYY-MM-DD
-              return d.toISOString().slice(0, 10);
+              return d instanceof Date ? isoFromDate(d) : "";
             },
-            label: (item) => {
-              const v = item?.raw?.y;
-              return `${label}: ${fmtNum(v, yDigits)}`;
-            }
+            label: (item) => `${label}: ${yFmtFn(item?.raw?.y)}`
           }
         }
       },
@@ -132,22 +158,26 @@ function makeChart(canvasId, label, series, yDigits, isRatio = false) {
         x: {
           type: "time",
           time: {
-            tooltipFormat: "yyyy-MM-dd"
+            unit,
+            tooltipFormat: "yyyy-MM-dd",
+            displayFormats: {
+              day: "MMM d",
+              week: "MMM d",
+              month: "MMM yyyy",
+              year: "yyyy"
+            }
           },
           ticks: {
-            maxTicksLimit: 8
+            maxTicksLimit: 8,
+            autoSkip: true
           },
-          grid: {
-            color: "rgba(0,0,0,0.06)"
-          }
+          grid: { color: "rgba(0,0,0,0.06)" }
         },
         y: {
           ticks: {
-            callback: (v) => fmtNum(v, isRatio ? 2 : yDigits)
+            callback: (v) => yFmtFn(v)
           },
-          grid: {
-            color: "rgba(0,0,0,0.06)"
-          }
+          grid: { color: "rgba(0,0,0,0.06)" }
         }
       }
     }
@@ -163,6 +193,7 @@ function renderCharts(history) {
     chartsWrap.classList.add("hidden");
     $("rangeLabel").textContent = history?.length ? `${history[0].date} → ${history[0].date} (1 pt)` : "—";
     destroyCharts();
+    $("historyTable").innerHTML = "";
     return;
   }
 
@@ -181,29 +212,49 @@ function renderCharts(history) {
   $("chartGold").classList.toggle("hidden", !showGold);
   $("chartSilver").classList.toggle("hidden", !showSilver);
 
-  // Rebuild charts (simple + reliable)
   destroyCharts();
 
-  const ptsForCharts = (CURRENT_RANGE === "MAX") ? downsample(history, 2500) : history;
+  const unit = pickTimeUnit(CURRENT_RANGE);
+  const pts = (CURRENT_RANGE === "MAX") ? downsample(history, 3000) : history;
 
   if (showGsr) {
-    CHART_GSR = makeChart("chartGsrCanvas", "GSR", buildSeries(ptsForCharts, "gsr"), 4, true);
-  }
-  if (showGold) {
-    CHART_GOLD = makeChart("chartGoldCanvas", "Gold Spot (USD)", buildSeries(ptsForCharts, "gold_usd"), 2, false);
-  }
-  if (showSilver) {
-    CHART_SILVER = makeChart("chartSilverCanvas", "Silver Spot (USD)", buildSeries(ptsForCharts, "silver_usd"), 2, false);
+    CHART_GSR = makeLineChart(
+      "chartGsrCanvas",
+      "GSR",
+      buildSeries(pts, "gsr"),
+      (v) => fmtNum(v, 2),
+      unit
+    );
   }
 
-  // Table (cap last 200)
+  if (showGold) {
+    CHART_GOLD = makeLineChart(
+      "chartGoldCanvas",
+      "Gold Spot (USD)",
+      buildSeries(pts, "gold_usd"),
+      (v) => fmtUSD(v, 2),
+      unit
+    );
+  }
+
+  if (showSilver) {
+    CHART_SILVER = makeLineChart(
+      "chartSilverCanvas",
+      "Silver Spot (USD)",
+      buildSeries(pts, "silver_usd"),
+      (v) => fmtUSD(v, 2),
+      unit
+    );
+  }
+
+  // Table: last 200 rows, newest first
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
     `<tr>
       <td>${r.date}</td>
       <td>${fmtNum(r.gsr, 4)}</td>
-      <td>${fmtNum(r.gold_usd, 2)}</td>
-      <td>${fmtNum(r.silver_usd, 2)}</td>
+      <td>${fmtUSD(r.gold_usd, 2)}</td>
+      <td>${fmtUSD(r.silver_usd, 2)}</td>
     </tr>`
   )).join("");
 }
@@ -240,8 +291,8 @@ async function load(forRange = CURRENT_RANGE) {
 
     const latest = data.latest;
     $("gsr").textContent = fmtNum(latest.gsr, 4);
-    $("gold").textContent = fmtNum(latest.gold_usd, 2);
-    $("silver").textContent = fmtNum(latest.silver_usd, 2);
+    $("gold").textContent = fmtUSD(latest.gold_usd, 2);
+    $("silver").textContent = fmtUSD(latest.silver_usd, 2);
     $("fetchedAt").textContent = latest.fetched_at_utc || "—";
     $("source").textContent = latest.source || "—";
     $("utcDate").textContent = latest.date || "—";
@@ -249,7 +300,7 @@ async function load(forRange = CURRENT_RANGE) {
 
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
-    // Delta
+    // Delta vs previous
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
@@ -264,6 +315,8 @@ async function load(forRange = CURRENT_RANGE) {
     } else {
       $("deltaAbs").textContent = "—";
       $("deltaPct").textContent = "—";
+      $("deltaAbs").className = "";
+      $("deltaPct").className = "";
     }
 
     renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
@@ -283,7 +336,7 @@ document.querySelectorAll(".segBtn").forEach((b) => {
     CURRENT_RANGE = b.dataset.range;
     setActiveRange(CURRENT_RANGE);
 
-    // Fetch more if MAX
+    // For MAX we fetch bigger history; for others, reuse the already-fetched history
     if (CURRENT_RANGE === "MAX") {
       await load("MAX");
     } else {
