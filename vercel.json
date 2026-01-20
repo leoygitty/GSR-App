@@ -2,8 +2,9 @@
   "crons": [
     { "path": "/api/cron_gsr", "schedule": "5 0 * * *" }
   ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(?!api/)(.*)", "dest": "/public/index.html" }
-  ]
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.11"
+    }
+  }
 }
