@@ -9,6 +9,19 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
+
+  <style>
+    /* Ensures Chart.js canvases have a stable height within your existing layout */
+    .chartCanvasWrap {
+      height: 260px;
+      position: relative;
+    }
+    canvas.chartCanvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <main class="shell">
@@ -85,7 +98,9 @@
             <div class="chartName">GSR</div>
             <div class="chartHint muted">ratio</div>
           </div>
-          <svg id="sparkGsr" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+          <div class="chartCanvasWrap">
+            <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
+          </div>
         </div>
 
         <div class="chartBlock" id="chartGold">
@@ -93,7 +108,9 @@
             <div class="chartName">Gold Spot (USD)</div>
             <div class="chartHint muted">close</div>
           </div>
-          <svg id="sparkGold" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+          <div class="chartCanvasWrap">
+            <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
+          </div>
         </div>
 
         <div class="chartBlock" id="chartSilver">
@@ -101,7 +118,9 @@
             <div class="chartName">Silver Spot (USD)</div>
             <div class="chartHint muted">close</div>
           </div>
-          <svg id="sparkSilver" viewBox="0 0 1000 260" preserveAspectRatio="none"></svg>
+          <div class="chartCanvasWrap">
+            <canvas id="chartSilverCanvas" class="chartCanvas"></canvas>
+          </div>
         </div>
       </div>
 
@@ -128,7 +147,12 @@
     </footer>
   </main>
 
-  <script src="/app.js"></script>
+  <!-- Chart.js (interactive charts) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Your app logic (must run after Chart.js is available) -->
+  <script defer src="/app.js"></script>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
