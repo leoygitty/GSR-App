@@ -8,20 +8,24 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             qs = parse_qs(urlparse(self.path).query)
-            # Optional limit for history points (ordered ASC)
-            # Default returns all rows (ok for ~15k).
-            limit_str = (qs.get("limit", [""])[0] or "").strip()
-            limit = None
-            if limit_str:
-                try:
-                    limit = int(limit_str)
-                except Exception:
-                    limit = None
+
+            # Default: last 2000 points (keeps UI fast + avoids huge JSON)
+            limit_raw = (qs.get("limit", ["2000"])[0] or "2000").strip()
+            try:
+                limit = int(limit_raw)
+            except Exception:
+                limit = 2000
+
+            if limit < 50:
+                limit = 50
+            if limit > 10000:
+                limit = 10000
 
             conn = db_connect()
             try:
                 cur = conn.cursor()
 
+                # Latest row
                 cur.execute(
                     """
                     select d, gold_usd, silver_usd, gsr, fetched_at_utc, source
@@ -32,28 +36,17 @@ class handler(BaseHTTPRequestHandler):
                 )
                 row = cur.fetchone()
 
-                if limit and limit > 0:
-                    cur.execute(
-                        """
-                        select d, gold_usd, silver_usd, gsr
-                        from gsr_daily
-                        order by d desc
-                        limit %s;
-                        """,
-                        (limit,)
-                    )
-                    history_rows = cur.fetchall() or []
-                    # reverse to ASC for charting
-                    history_rows = list(reversed(history_rows))
-                else:
-                    cur.execute(
-                        """
-                        select d, gold_usd, silver_usd, gsr
-                        from gsr_daily
-                        order by d asc;
-                        """
-                    )
-                    history_rows = cur.fetchall() or []
+                # History window (last N rows), then sort ascending for charting
+                cur.execute(
+                    """
+                    select d, gold_usd, silver_usd, gsr
+                    from gsr_daily
+                    order by d desc
+                    limit %s;
+                    """,
+                    (limit,)
+                )
+                hist_rows = cur.fetchall() or []
 
             finally:
                 try:
@@ -65,7 +58,7 @@ class handler(BaseHTTPRequestHandler):
                 return send_json(self, 404, {
                     "ok": False,
                     "error": "No data yet",
-                    "hint": "Run /api/cron_gsr once (with secret) after creating the table, then run /api/backfill_gsr (with secret) to load history."
+                    "hint": "Run /api/cron_gsr once (with secret) after creating the table."
                 })
 
             latest = {
@@ -77,20 +70,23 @@ class handler(BaseHTTPRequestHandler):
                 "source": str(row[5]),
             }
 
-            hist = [
-                {
+            # convert to ascending by date
+            hist_rows.reverse()
+
+            history = []
+            for (d, gold_usd, silver_usd, gsr) in hist_rows:
+                history.append({
                     "date": str(d),
-                    "gold_usd": str(gold),
-                    "silver_usd": str(silver),
+                    "gold_usd": str(gold_usd),
+                    "silver_usd": str(silver_usd),
                     "gsr": str(gsr),
-                }
-                for (d, gold, silver, gsr) in history_rows
-            ]
+                })
 
             return send_json(self, 200, {
                 "ok": True,
                 "latest": latest,
-                "history": hist,
+                "history": history,
+                "limit": limit,
             })
 
         except Exception as e:
