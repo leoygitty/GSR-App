@@ -12,14 +12,16 @@ except Exception:
     from api._utils import db_connect, send_json
 
 
-YAHOO_URL = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=GC=F,SI=F"
+# Free / no-key source (GoldPrice.org JSON endpoint)
+# Returns JSON with items[0].xauPrice and items[0].xagPrice in USD
+GOLDPRICE_URL = "https://data-asg.goldprice.org/dbXRates/USD"
 
 # Update policy:
 # - If today's UTC row missing -> update
 # - If fetched_at_utc older than STALE_MINUTES -> update
 STALE_MINUTES_DEFAULT = 55
 
-# If force=1, avoid hammering Yahoo on rapid clicks
+# If force=1, avoid hammering the upstream on rapid clicks
 FORCE_COOLDOWN_SECONDS = 60
 
 # Advisory lock key (any consistent 64-bit int is fine)
@@ -30,27 +32,34 @@ def _utc_now():
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def _fetch_yahoo_prices():
+def _fetch_goldprice_prices():
+    """
+    Fetch gold (XAU) and silver (XAG) spot prices in USD from GOLDPRICE_URL.
+    Expected JSON: { "items": [ { "xauPrice": <num>, "xagPrice": <num>, ... } ], ... }
+    """
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; GSR-App/1.0; +https://vercel.com/)",
+        "User-Agent": "Mozilla/5.0 (compatible; GSR-App/1.0)",
         "Accept": "application/json",
+        # These two headers help with some anti-bot/CDN configs
+        "Referer": "https://goldprice.org/",
+        "Origin": "https://goldprice.org",
     }
-    req = urllib.request.Request(YAHOO_URL, headers=headers, method="GET")
+
+    req = urllib.request.Request(GOLDPRICE_URL, headers=headers, method="GET")
     with urllib.request.urlopen(req, timeout=15) as resp:
         raw = resp.read().decode("utf-8")
+
     data = json.loads(raw)
+    items = data.get("items") or []
+    if not items:
+        raise ValueError("GoldPrice response missing items[]")
 
-    result = (data.get("quoteResponse") or {}).get("result") or []
-    by_symbol = {r.get("symbol"): r for r in result if r.get("symbol")}
-
-    gc = by_symbol.get("GC=F") or {}
-    si = by_symbol.get("SI=F") or {}
-
-    gold = gc.get("regularMarketPrice")
-    silver = si.get("regularMarketPrice")
+    it = items[0] or {}
+    gold = it.get("xauPrice")
+    silver = it.get("xagPrice")
 
     if gold is None or silver is None:
-        raise ValueError(f"Missing regularMarketPrice: gold={gold}, silver={silver}")
+        raise ValueError(f"Missing xauPrice/xagPrice in response: {it}")
 
     gold = float(gold)
     silver = float(silver)
@@ -92,7 +101,9 @@ class handler(BaseHTTPRequestHandler):
 
             # self-heal controls
             force = (qs.get("force", ["0"])[0] or "0").strip().lower() in ("1", "true", "yes", "on")
-            stale_minutes_raw = (qs.get("stale_minutes", [str(STALE_MINUTES_DEFAULT)])[0] or str(STALE_MINUTES_DEFAULT)).strip()
+            stale_minutes_raw = (
+                (qs.get("stale_minutes", [str(STALE_MINUTES_DEFAULT)])[0] or str(STALE_MINUTES_DEFAULT)).strip()
+            )
             try:
                 stale_minutes = int(stale_minutes_raw)
             except Exception:
@@ -126,8 +137,6 @@ class handler(BaseHTTPRequestHandler):
 
                 # 2) Decide whether we should update
                 should_update = False
-                fetched_at = None
-
                 if not today_row:
                     should_update = True
                 else:
@@ -154,8 +163,8 @@ class handler(BaseHTTPRequestHandler):
 
                     if got_lock:
                         try:
-                            gold, silver, gsr = _fetch_yahoo_prices()
-                            # Use a fresh timestamp at write time (don’t reuse an old now_utc if queued)
+                            gold, silver, gsr = _fetch_goldprice_prices()
+                            # Use a fresh timestamp at write time
                             write_ts = _utc_now()
 
                             cur.execute(
@@ -169,7 +178,7 @@ class handler(BaseHTTPRequestHandler):
                                   fetched_at_utc = EXCLUDED.fetched_at_utc,
                                   source         = EXCLUDED.source;
                                 """,
-                                (today_utc, gold, silver, gsr, write_ts, "latest"),
+                                (today_utc, gold, silver, gsr, write_ts, "latest_goldprice"),
                             )
                             conn.commit()
                             updated = True
@@ -193,7 +202,6 @@ class handler(BaseHTTPRequestHandler):
 
                 # 4) Determine latest to return:
                 # Prefer today's row if it exists; otherwise fallback to newest date.
-                # (This is the key behavior that prevents “yesterday” when today exists.)
                 today_row_after = read_today()
                 if today_row_after:
                     latest_row = today_row_after
