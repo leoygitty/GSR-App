@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GSR Elite</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="page page-narrow">
+    <header class="topbar">
+      <a class="brand" href="/">GSR</a>
+      <nav class="nav">
+        <a href="/#pricing">Pricing</a>
+        <a href="/#dashboard">Dashboard</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>Elite</h1>
+      <p class="sub">
+        Advanced signals, more alerts, and premium research tools.
+      </p>
+
+      <div class="pricingCard">
+        <div class="priceRow">
+          <div>
+            <div class="tierName">Elite</div>
+            <div class="tierTag">For power users</div>
+          </div>
+          <div class="price">$19<span class="mo">/mo</span></div>
+        </div>
+
+        <ul class="featureList">
+          <li><strong>Everything in Pro</strong></li>
+          <li><strong>50 alerts</strong> + percentile alerts (top/bottom X%)</li>
+          <li>Hold-time alerts (must remain above/below for N minutes)</li>
+          <li>Weekly premium digest email</li>
+          <li>Confidence score (volatility-adjusted)</li>
+          <li>Signal ladder recommendations (configurable tranches)</li>
+          <li>Scenario tool: implied silver price at target GSR</li>
+          <li>CSV export</li>
+        </ul>
+
+        <button id="btnElite" class="btnPrimary">Subscribe to Elite</button>
+        <div class="fineprint">Apple Pay available when supported by your device/browser and enabled in Stripe.</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <a href="/">Back to Dashboard</a>
+    </footer>
+  </main>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    async function startCheckout(plan) {
+      const res = await fetch("/api/create_checkout_session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ plan })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Checkout failed");
+      window.location.href = data.url;
+    }
+
+    document.getElementById("btnElite").addEventListener("click", async () => {
+      try { await startCheckout("elite"); }
+      catch (e) { alert(e.message || e); }
+    });
+  </script>
+</body>
+</html>
