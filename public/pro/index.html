@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GSR Pro</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="page page-narrow">
+    <header class="topbar">
+      <a class="brand" href="/">GSR</a>
+      <nav class="nav">
+        <a href="/#pricing">Pricing</a>
+        <a href="/#dashboard">Dashboard</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>Pro</h1>
+      <p class="sub">
+        Signals + alerts designed for serious GSR users.
+      </p>
+
+      <div class="pricingCard">
+        <div class="priceRow">
+          <div>
+            <div class="tierName">Pro</div>
+            <div class="tierTag">Most popular</div>
+          </div>
+          <div class="price">$9<span class="mo">/mo</span></div>
+        </div>
+
+        <ul class="featureList">
+          <li><strong>Buy/Sell Score (0–100)</strong> + regime label</li>
+          <li><strong>10 alerts</strong> (GSR, gold, silver thresholds)</li>
+          <li>Crossing alerts (cross up/down) + cooldowns</li>
+          <li>Email notifications</li>
+          <li>Chart overlays: MA(20/50/200), signal markers</li>
+          <li>MAX range + advanced ranges (6M/1Y/MAX)</li>
+          <li>Light backtesting: 30/90/180-day outcome stats</li>
+        </ul>
+
+        <button id="btnPro" class="btnPrimary">Subscribe to Pro</button>
+        <div class="fineprint">Apple Pay available when supported by your device/browser and enabled in Stripe.</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <a href="/">Back to Dashboard</a>
+    </footer>
+  </main>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    async function startCheckout(plan) {
+      const res = await fetch("/api/create_checkout_session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ plan })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Checkout failed");
+      window.location.href = data.url; // hosted Stripe Checkout
+    }
+
+    document.getElementById("btnPro").addEventListener("click", async () => {
+      try { await startCheckout("pro"); }
+      catch (e) { alert(e.message || e); }
+    });
+  </script>
+</body>
+</html>
