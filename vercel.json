@@ -1,5 +1,10 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     { "path": "/api/cron_gsr", "schedule": "5 0 * * *" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(?!api/).*", "dest": "/index.html" }
   ]
 }
