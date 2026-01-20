@@ -5,6 +5,7 @@ import json
 import urllib.request
 import os
 
+# Import fallback to avoid Vercel module-path edge cases
 try:
     from ._utils import db_connect, send_json
 except Exception:
@@ -33,7 +34,11 @@ def _fetch_yahoo_quotes():
 
 
 def _is_authorized(handler_obj, qs):
-    # Allow Vercel Cron header
+    """
+    Allow:
+    - Vercel Cron header: x-vercel-cron: 1
+    - Manual call with CRON_SECRET (query ?secret=... OR Authorization: Bearer ...)
+    """
     if (handler_obj.headers.get("x-vercel-cron") or "").strip() == "1":
         return True
 
@@ -57,11 +62,15 @@ class handler(BaseHTTPRequestHandler):
             qs = parse_qs(urlparse(self.path).query)
 
             if not _is_authorized(self, qs):
-                return send_json(self, 401, {
-                    "ok": False,
-                    "error": "Unauthorized",
-                    "hint": "Vercel cron should pass x-vercel-cron: 1. For manual calls, use Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>."
-                })
+                return send_json(
+                    self,
+                    401,
+                    {
+                        "ok": False,
+                        "error": "Unauthorized",
+                        "hint": "Vercel cron should pass x-vercel-cron: 1. For manual calls, use Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>.",
+                    },
+                )
 
             by_symbol = _fetch_yahoo_quotes()
             gold = by_symbol.get("GC=F") or {}
@@ -71,19 +80,18 @@ class handler(BaseHTTPRequestHandler):
             silver_px = silver.get("regularMarketPrice")
 
             if gold_px is None or silver_px is None:
-                return send_json(self, 502, {
-                    "ok": False,
-                    "error": "Price source unavailable (missing regularMarketPrice).",
-                    "debug": {
-                        "has_gold": bool(gold),
-                        "has_silver": bool(silver),
-                        "symbols": list(by_symbol.keys()),
-                    }
-                })
+                return send_json(
+                    self,
+                    502,
+                    {
+                        "ok": False,
+                        "error": "Price source unavailable (missing regularMarketPrice).",
+                        "debug": {"has_gold": bool(gold), "has_silver": bool(silver)},
+                    },
+                )
 
             gold_px = float(gold_px)
             silver_px = float(silver_px)
-
             if silver_px == 0:
                 return send_json(self, 502, {"ok": False, "error": "Invalid silver price (0)."})
 
@@ -97,16 +105,16 @@ class handler(BaseHTTPRequestHandler):
                 cur = conn.cursor()
                 cur.execute(
                     """
-                    INSERT INTO gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (d) DO UPDATE
-                      SET gold_usd = EXCLUDED.gold_usd,
-                          silver_usd = EXCLUDED.silver_usd,
-                          gsr = EXCLUDED.gsr,
-                          fetched_at_utc = EXCLUDED.fetched_at_utc,
-                          source = EXCLUDED.source;
+                    insert into gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
+                    values (%s, %s, %s, %s, %s, %s)
+                    on conflict (d) do update
+                      set gold_usd = excluded.gold_usd,
+                          silver_usd = excluded.silver_usd,
+                          gsr = excluded.gsr,
+                          fetched_at_utc = excluded.fetched_at_utc,
+                          source = excluded.source;
                     """,
-                    (today_utc, gold_px, silver_px, gsr, now_utc, "cron_hourly_yahoo")
+                    (today_utc, gold_px, silver_px, gsr, now_utc, "cron_hourly_yahoo"),
                 )
                 conn.commit()
             finally:
@@ -115,15 +123,19 @@ class handler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
 
-            return send_json(self, 200, {
-                "ok": True,
-                "date": today_utc,
-                "gold_usd": gold_px,
-                "silver_usd": silver_px,
-                "gsr": gsr,
-                "fetched_at_utc": now_utc,
-                "source": "cron_hourly_yahoo"
-            })
+            return send_json(
+                self,
+                200,
+                {
+                    "ok": True,
+                    "date": today_utc,
+                    "gold_usd": gold_px,
+                    "silver_usd": silver_px,
+                    "gsr": gsr,
+                    "fetched_at_utc": now_utc,
+                    "source": "cron_hourly_yahoo",
+                },
+            )
 
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
