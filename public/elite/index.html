@@ -3,73 +3,372 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GSR Elite</title>
+  <title>GSR Elite — Advanced Signals</title>
+  <meta name="description" content="Elite adds advanced signals, more alerts, percentile triggers, and premium research tools." />
+
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
+
+  <style>
+    /* Page-local polish */
+    .pWrap{ max-width:1120px; margin:0 auto; padding:28px 20px 60px; }
+    .pTop{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; }
+    .brand{ display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text); font-weight:900; letter-spacing:-0.02em; }
+    .brandDot{
+      width:12px; height:12px; border-radius:999px;
+      background: linear-gradient(135deg, rgba(10,132,255,1), rgba(153,69,255,1));
+      box-shadow:0 10px 30px rgba(153,69,255,.22);
+    }
+    .pNav{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .btn2{
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.75);
+      backdrop-filter: blur(10px);
+      padding:10px 14px; border-radius:999px;
+      font-weight:800; cursor:pointer; text-decoration:none; color:var(--text);
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn2.primary{
+      border-color: rgba(153,69,255,.35);
+      background: rgba(153,69,255,.12);
+      color: rgba(153,69,255,1);
+    }
+
+    .hero{
+      border:1px solid var(--stroke);
+      background:
+        radial-gradient(900px 400px at 18% 10%, rgba(153,69,255,.18), transparent 55%),
+        radial-gradient(700px 300px at 85% 30%, rgba(10,132,255,.12), transparent 60%),
+        rgba(255,255,255,.72);
+      box-shadow: var(--shadow);
+      border-radius: 22px;
+      padding: 22px;
+      overflow:hidden;
+      position: relative;
+    }
+    .badgeRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom: 10px; }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 12px; border-radius:999px;
+      border:1px solid rgba(153,69,255,.28);
+      background: rgba(153,69,255,.10);
+      color: rgba(153,69,255,1); font-weight:900; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    }
+    .priceTag{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+    .priceTag .big{ font-size:40px; font-weight:900; letter-spacing:-0.03em; }
+    .priceTag .small{ color:var(--muted); font-weight:800; }
+    .hTitle{ margin:6px 0 8px; font-size:44px; letter-spacing:-0.03em; }
+    .hSub{ margin:0 0 14px; color:var(--muted); font-size:16px; line-height:1.45; max-width: 74ch; }
+
+    .ctaRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 14px; }
+    .note{ margin-top:10px; color:var(--muted); font-size:12px; }
+
+    .grid2{ display:grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-top: 14px; }
+    .panel{
+      background: var(--card); border:1px solid var(--stroke);
+      border-radius: 18px; box-shadow: var(--shadow); padding: 16px;
+    }
+    .panelTitle{ font-weight: 900; margin:0 0 8px; }
+    .bullets{ margin:0; padding-left: 18px; color: rgba(17,17,20,.82); }
+    .bullets li{ margin: 8px 0; }
+
+    .check{ display:grid; gap:10px; }
+    .check .row{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:10px 12px;
+      border:1px solid rgba(17,17,20,.08);
+      border-radius: 14px;
+      background: rgba(246,246,247,.55);
+    }
+    .ic{
+      width:26px; height:26px; border-radius: 10px;
+      display:flex; align-items:center; justify-content:center;
+      border: 1px solid rgba(153,69,255,.25);
+      background: rgba(153,69,255,.10);
+      color: rgba(153,69,255,1); font-weight: 900;
+      flex: 0 0 auto;
+    }
+    .row b{ display:block; margin-bottom:2px; }
+    .row span{ color: var(--muted); font-size: 13px; line-height:1.35; }
+
+    .section{ margin-top: 16px; }
+    .secHead{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin: 0 0 10px; }
+    .secHead h2{ margin:0; font-size: 18px; letter-spacing:-0.01em; }
+    .secHead .meta{ color: var(--muted); font-size: 12px; font-family: var(--mono); }
+
+    .cards3{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .mini{
+      border:1px solid rgba(17,17,20,.10);
+      border-radius: 18px;
+      background: rgba(255,255,255,.75);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      min-height: 130px;
+    }
+    .mini .t{ font-weight: 900; margin: 0 0 6px; }
+    .mini .d{ margin:0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+    .compare{
+      overflow:auto; border:1px solid var(--stroke); border-radius: 18px;
+      background: rgba(255,255,255,.75);
+      box-shadow: var(--shadow);
+    }
+    .compare table{ width:100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
+    .compare th, .compare td{ padding: 12px 12px; border-bottom: 1px solid rgba(17,17,20,.08); text-align:left; }
+    .compare th{ background: rgba(246,246,247,.7); font-weight: 900; }
+    .yes{ font-weight: 900; color:#0a7a3d; }
+    .no{ color: rgba(17,17,20,.55); }
+
+    .faq{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .faq details{
+      border:1px solid rgba(17,17,20,.10);
+      border-radius: 18px;
+      background: rgba(255,255,255,.75);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+    }
+    .faq summary{ cursor:pointer; font-weight: 900; }
+    .faq p{ margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height:1.5; }
+
+    .finalCta{
+      margin-top: 16px;
+      border:1px solid rgba(153,69,255,.25);
+      background: radial-gradient(800px 300px at 20% 20%, rgba(153,69,255,.18), transparent 55%),
+                  rgba(255,255,255,.75);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap:wrap;
+    }
+    .finalCta .left b{ display:block; font-size: 16px; }
+    .finalCta .left span{ color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 980px){
+      .grid2{ grid-template-columns: 1fr; }
+      .cards3{ grid-template-columns: 1fr; }
+      .faq{ grid-template-columns: 1fr; }
+      .hTitle{ font-size: 34px; }
+      .priceTag .big{ font-size: 34px; }
+    }
+  </style>
 </head>
+
 <body>
-  <main class="page page-narrow">
-    <header class="topbar">
-      <a class="brand" href="/">GSR</a>
-      <nav class="nav">
-        <a href="/#pricing">Pricing</a>
-        <a href="/#dashboard">Dashboard</a>
-      </nav>
-    </header>
+  <div class="pWrap">
+    <div class="pTop">
+      <a class="brand" href="/" aria-label="Back to GSR Dashboard">
+        <span class="brandDot" aria-hidden="true"></span>
+        <span>GSR</span>
+      </a>
+
+      <div class="pNav">
+        <a class="btn2" href="/">Pricing Dashboard</a>
+        <a class="btn2" href="/pro">View Pro</a>
+        <a class="btn2 primary" href="#get">Get Elite</a>
+      </div>
+    </div>
 
     <section class="hero">
-      <h1>Elite</h1>
-      <p class="sub">
-        Advanced signals, more alerts, and premium research tools.
+      <div class="badgeRow">
+        <span class="badge">ELITE • Power Users</span>
+        <div class="priceTag" aria-label="Pricing">
+          <span class="big">$19</span>
+          <span class="small">/ month • cancel anytime</span>
+        </div>
+      </div>
+
+      <h1 class="hTitle">Advanced signals, more alerts, and premium research tools.</h1>
+      <p class="hSub">
+        Elite adds percentile triggers, volatility-adjusted confidence, scenario tools, and higher alert capacity.
+        This is for users who want a more systematic, rules-based approach to timing.
       </p>
 
-      <div class="pricingCard">
-        <div class="priceRow">
-          <div>
-            <div class="tierName">Elite</div>
-            <div class="tierTag">For power users</div>
-          </div>
-          <div class="price">$19<span class="mo">/mo</span></div>
+      <div class="ctaRow" id="get">
+        <a class="btn2 primary" href="#checkout" aria-label="Subscribe to Elite (coming next)">Subscribe to Elite (next)</a>
+        <a class="btn2" href="/pro" aria-label="Compare to Pro">Compare to Pro</a>
+        <a class="btn2" href="#faq" aria-label="Read FAQs">FAQs</a>
+      </div>
+
+      <div class="note" id="checkout">
+        Payments come next. This page is now “subscription-quality” before wiring Stripe + Apple Pay.
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h3 class="panelTitle">Everything in Pro, plus</h3>
+          <ul class="bullets">
+            <li><b>50 alerts</b> + percentile alerts (top/bottom X%)</li>
+            <li><b>Hold-time alerts</b> (must remain above/below for N minutes)</li>
+            <li><b>Weekly premium digest</b> email (Mailersend next)</li>
+            <li><b>Confidence score</b> (volatility-adjusted)</li>
+            <li><b>Signal ladder recommendations</b> (configurable tranches)</li>
+            <li><b>Scenario tool</b>: implied silver price at target GSR</li>
+            <li><b>CSV export</b> for research and portfolio logs</li>
+          </ul>
         </div>
 
-        <ul class="featureList">
-          <li><strong>Everything in Pro</strong></li>
-          <li><strong>50 alerts</strong> + percentile alerts (top/bottom X%)</li>
-          <li>Hold-time alerts (must remain above/below for N minutes)</li>
-          <li>Weekly premium digest email</li>
-          <li>Confidence score (volatility-adjusted)</li>
-          <li>Signal ladder recommendations (configurable tranches)</li>
-          <li>Scenario tool: implied silver price at target GSR</li>
-          <li>CSV export</li>
-        </ul>
-
-        <button id="btnElite" class="btnPrimary">Subscribe to Elite</button>
-        <div class="fineprint">Apple Pay available when supported by your device/browser and enabled in Stripe.</div>
+        <div class="panel">
+          <h3 class="panelTitle">Why Elite is different</h3>
+          <div class="check">
+            <div class="row">
+              <div class="ic">A</div>
+              <div>
+                <b>Percentile awareness</b>
+                <span>Know when GSR is historically “extreme,” not just high/low.</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="ic">B</div>
+              <div>
+                <b>Volatility-adjusted confidence</b>
+                <span>Signals change weight when markets get noisy.</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="ic">C</div>
+              <div>
+                <b>Scenario planning</b>
+                <span>Instantly model “If GSR hits X, what does silver need to be?”</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <footer class="footer">
-      <a href="/">Back to Dashboard</a>
-    </footer>
-  </main>
+    <section class="section">
+      <div class="secHead">
+        <h2>Elite toolkit</h2>
+        <div class="meta">More systematic, more scalable</div>
+      </div>
 
-  <script src="https://js.stripe.com/v3/"></script>
-  <script>
-    async function startCheckout(plan) {
-      const res = await fetch("/api/create_checkout_session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        body: JSON.stringify({ plan })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "Checkout failed");
-      window.location.href = data.url;
-    }
+      <div class="cards3">
+        <div class="mini">
+          <p class="t">Percentile Triggers</p>
+          <p class="d">Alert when GSR enters historically rare zones (top/bottom X%), not just arbitrary thresholds.</p>
+        </div>
+        <div class="mini">
+          <p class="t">Confidence Score</p>
+          <p class="d">Volatility-adjusted scoring so you can distinguish strong vs weak signals.</p>
+        </div>
+        <div class="mini">
+          <p class="t">Scenario + Ladder</p>
+          <p class="d">Plan entries/exits in tranches with scenario projections and ladder recommendations.</p>
+        </div>
+      </div>
+    </section>
 
-    document.getElementById("btnElite").addEventListener("click", async () => {
-      try { await startCheckout("elite"); }
-      catch (e) { alert(e.message || e); }
-    });
-  </script>
+    <section class="section">
+      <div class="secHead">
+        <h2>Elite vs Pro vs Free</h2>
+        <div class="meta">Full comparison</div>
+      </div>
+
+      <div class="compare" role="region" aria-label="Comparison table">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Free</th>
+              <th>Pro</th>
+              <th>Elite</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Live refresh + historical charts</td>
+              <td class="yes">Yes</td>
+              <td class="yes">Yes</td>
+              <td class="yes">Yes</td>
+            </tr>
+            <tr>
+              <td>Buy/Sell Score + regime label</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Alerts</td>
+              <td class="no">—</td>
+              <td class="yes">10</td>
+              <td class="yes">50 + percentile</td>
+            </tr>
+            <tr>
+              <td>Hold-time alerts</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Confidence score (volatility-adjusted)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Signal ladder (configurable tranches)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Scenario tool (implied silver at target GSR)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>CSV export</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="secHead">
+        <h2>FAQs</h2>
+        <div class="meta">Common questions</div>
+      </div>
+
+      <div class="faq">
+        <details>
+          <summary>Who is Elite for?</summary>
+          <p>Users who want more systematic triggers: percentiles, confidence scoring, and scenario planning.</p>
+        </details>
+        <details>
+          <summary>Is Elite “trade advice”?</summary>
+          <p>No. It’s analytics + alerts. You decide what to do with the information.</p>
+        </details>
+        <details>
+          <summary>Will Elite require a separate app?</summary>
+          <p>No. Elite features can live inside your existing dashboard with gated UI/entitlements.</p>
+        </details>
+        <details>
+          <summary>When do payments go live?</summary>
+          <p>Next step after landing polish: Stripe Checkout + Apple Pay, then webhook gating and subscription state in Neon.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="finalCta">
+      <div class="left">
+        <b>Ready for the full toolkit?</b>
+        <span>Elite is built for power users and systematic execution.</span>
+      </div>
+      <div class="right">
+        <a class="btn2 primary" href="#checkout">Subscribe to Elite (next)</a>
+        <a class="btn2" href="/">Back to Dashboard</a>
+      </div>
+    </section>
+
+    <div class="note" style="margin-top:14px;">
+      When you wire payments, these CTAs become your Stripe checkout links and everything else stays the same.
+    </div>
+  </div>
 </body>
 </html>
