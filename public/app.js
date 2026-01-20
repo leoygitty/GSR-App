@@ -114,7 +114,6 @@ function buildSeries(points, key) {
 }
 
 function pickTimeUnit(range) {
-  // Makes x-axis readable at different ranges
   if (range === "1M") return "day";
   if (range === "3M") return "week";
   if (range === "6M") return "month";
@@ -247,7 +246,6 @@ function renderCharts(history) {
     );
   }
 
-  // Table: last 200 rows, newest first
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
     `<tr>
@@ -274,6 +272,17 @@ function setNoData(errMsg) {
   renderCharts([]);
 }
 
+/* ===========================
+   UPGRADE: live spot endpoint
+   =========================== */
+async function fetchSpot() {
+  const res = await fetch(`/api/spot`, { cache: "no-store" });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "Spot unavailable");
+  return data;
+}
+
+/* existing history fetch (unchanged behavior) */
 async function fetchHistory(limit) {
   const res = await fetch(`/api/latest?limit=${encodeURIComponent(limit)}`, { cache: "no-store" });
   const data = await res.json();
@@ -286,21 +295,26 @@ async function load(forRange = CURRENT_RANGE) {
   $("refreshBtn").textContent = "Refreshing…";
 
   try {
+    /* ===========================
+       UPGRADE: refresh KPIs live
+       =========================== */
+    const spot = await fetchSpot();
+
+    $("gsr").textContent = fmtNum(spot.gsr, 4);
+    $("gold").textContent = fmtUSD(spot.gold_usd, 2);
+    $("silver").textContent = fmtUSD(spot.silver_usd, 2);
+    $("fetchedAt").textContent = spot.fetched_at_utc || "—";
+    $("source").textContent = spot.source || "—";
+    $("utcDate").textContent = spot.date || "—";
+    $("lastUpdatedHuman").textContent = spot.fetched_at_utc ? timeAgo(spot.fetched_at_utc) : "—";
+
+    /* history stays DB-backed for charts */
     const want = desiredLimitForRange(forRange);
     const data = await fetchHistory(want);
 
-    const latest = data.latest;
-    $("gsr").textContent = fmtNum(latest.gsr, 4);
-    $("gold").textContent = fmtUSD(latest.gold_usd, 2);
-    $("silver").textContent = fmtUSD(latest.silver_usd, 2);
-    $("fetchedAt").textContent = latest.fetched_at_utc || "—";
-    $("source").textContent = latest.source || "—";
-    $("utcDate").textContent = latest.date || "—";
-    $("lastUpdatedHuman").textContent = latest.fetched_at_utc ? timeAgo(latest.fetched_at_utc) : "—";
-
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
-    // Delta vs previous
+    // Delta vs previous (from history if available)
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
