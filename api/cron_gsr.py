@@ -55,6 +55,7 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             qs = parse_qs(urlparse(self.path).query)
+
             if not _is_authorized(self, qs):
                 return send_json(self, 401, {
                     "ok": False,
@@ -73,11 +74,16 @@ class handler(BaseHTTPRequestHandler):
                 return send_json(self, 502, {
                     "ok": False,
                     "error": "Price source unavailable (missing regularMarketPrice).",
-                    "debug": {"has_gold": bool(gold), "has_silver": bool(silver)}
+                    "debug": {
+                        "has_gold": bool(gold),
+                        "has_silver": bool(silver),
+                        "symbols": list(by_symbol.keys()),
+                    }
                 })
 
             gold_px = float(gold_px)
             silver_px = float(silver_px)
+
             if silver_px == 0:
                 return send_json(self, 502, {"ok": False, "error": "Invalid silver price (0)."})
 
@@ -91,14 +97,14 @@ class handler(BaseHTTPRequestHandler):
                 cur = conn.cursor()
                 cur.execute(
                     """
-                    insert into gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
-                    values (%s, %s, %s, %s, %s, %s)
-                    on conflict (d) do update
-                      set gold_usd = excluded.gold_usd,
-                          silver_usd = excluded.silver_usd,
-                          gsr = excluded.gsr,
-                          fetched_at_utc = excluded.fetched_at_utc,
-                          source = excluded.source;
+                    INSERT INTO gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (d) DO UPDATE
+                      SET gold_usd = EXCLUDED.gold_usd,
+                          silver_usd = EXCLUDED.silver_usd,
+                          gsr = EXCLUDED.gsr,
+                          fetched_at_utc = EXCLUDED.fetched_at_utc,
+                          source = EXCLUDED.source;
                     """,
                     (today_utc, gold_px, silver_px, gsr, now_utc, "cron_hourly_yahoo")
                 )
