@@ -3,13 +3,16 @@ const $ = (id) => document.getElementById(id);
 function fmtNum(x, digits = 2) {
   const n = Number(x);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+  return n.toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits
+  });
 }
 
 function parseISODate(d) {
   // d = "YYYY-MM-DD"
-  const [y, m, day] = d.split("-").map((v) => parseInt(v, 10));
-  return new Date(Date.UTC(y, (m || 1) - 1, day || 1, 0, 0, 0));
+  const [y, m, day] = String(d || "").split("-").map((v) => parseInt(v, 10));
+  return new Date(Date.UTC(y || 1970, (m || 1) - 1, day || 1, 0, 0, 0));
 }
 
 function timeAgo(iso) {
@@ -26,19 +29,38 @@ function timeAgo(iso) {
   return `${day} day${day === 1 ? "" : "s"} ago`;
 }
 
+/**
+ * Downsample points to keep SVG rendering fast.
+ * - If points <= maxPts, returns as-is.
+ * - Otherwise, picks evenly-spaced samples (simple + effective).
+ */
+function downsample(points, maxPts = 1500) {
+  if (!Array.isArray(points) || points.length <= maxPts) return points || [];
+  const out = [];
+  const step = (points.length - 1) / (maxPts - 1);
+  for (let i = 0; i < maxPts; i++) {
+    const idx = Math.round(i * step);
+    out.push(points[idx]);
+  }
+  return out;
+}
+
 function drawSpark(svg, points, key, colorCss = "currentColor") {
   svg.innerHTML = "";
   if (!points || points.length < 2) return;
 
+  // Keep rendering fast for large datasets
+  const pts = downsample(points, 1500);
+
   const W = 1000, H = 260, pad = 18;
-  const ys = points.map(p => Number(p[key])).filter(Number.isFinite);
+  const ys = pts.map(p => Number(p[key])).filter(Number.isFinite);
   if (ys.length < 2) return;
 
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
   const spanY = (maxY - minY) || 1;
 
-  const toX = (i) => pad + (i * (W - 2 * pad)) / (points.length - 1);
+  const toX = (i) => pad + (i * (W - 2 * pad)) / (pts.length - 1);
   const toY = (v) => (H - pad) - ((v - minY) * (H - 2 * pad)) / spanY;
 
   // Grid
@@ -57,8 +79,8 @@ function drawSpark(svg, points, key, colorCss = "currentColor") {
   // Line
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   let d = "";
-  for (let i = 0; i < points.length; i++) {
-    const v = Number(points[i][key]);
+  for (let i = 0; i < pts.length; i++) {
+    const v = Number(pts[i][key]);
     const x = toX(i);
     const y = toY(v);
     d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
@@ -70,7 +92,7 @@ function drawSpark(svg, points, key, colorCss = "currentColor") {
   path.setAttribute("opacity", "0.95");
   svg.appendChild(path);
 
-  // Min/Max
+  // Min/Max labels
   const mkText = (txt, x, y, anchor = "start") => {
     const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
     t.textContent = txt;
@@ -98,6 +120,7 @@ function filterByRange(history, range) {
 
   const end = parseISODate(history[history.length - 1].date);
   const start = new Date(end.getTime());
+
   if (range === "1M") start.setUTCMonth(start.getUTCMonth() - 1);
   if (range === "3M") start.setUTCMonth(start.getUTCMonth() - 3);
   if (range === "6M") start.setUTCMonth(start.getUTCMonth() - 6);
@@ -109,15 +132,28 @@ function filterByRange(history, range) {
 let FULL_HISTORY = [];
 let CURRENT_RANGE = "1M";
 
+// How much history we fetch per range.
+// MAX uses 50k to cover long history (and charts are downsampled).
+function desiredLimitForRange(range) {
+  if (range === "1M") return 2000;
+  if (range === "3M") return 4000;
+  if (range === "6M") return 8000;
+  if (range === "1Y") return 15000;
+  if (range === "MAX") return 50000;
+  return 5000;
+}
+
 function render(history) {
-  // Empty state logic
   const empty = $("emptyState");
   const chartsWrap = $("chartsWrap");
 
   if (!history || history.length < 2) {
     empty.classList.remove("hidden");
     chartsWrap.classList.add("hidden");
-    $("rangeLabel").textContent = history?.length ? `${history[0].date} → ${history[0].date} (1 pt)` : "—";
+    $("rangeLabel").textContent = history?.length
+      ? `${history[0].date} → ${history[0].date} (1 pt)`
+      : "—";
+
     $("historyTable").innerHTML = "";
     $("sparkGsr").innerHTML = "";
     $("sparkGold").innerHTML = "";
@@ -132,7 +168,6 @@ function render(history) {
   const last = history[history.length - 1].date;
   $("rangeLabel").textContent = `${first} → ${last} (${history.length} pts)`;
 
-  // Series toggles
   const showGsr = $("showGsr").checked;
   const showGold = $("showGold").checked;
   const showSilver = $("showSilver").checked;
@@ -145,7 +180,6 @@ function render(history) {
   if (showGold) drawSpark($("sparkGold"), history, "gold_usd");
   if (showSilver) drawSpark($("sparkSilver"), history, "silver_usd");
 
-  // Table (cap to last 200 rows for sanity)
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
     `<tr>
@@ -172,19 +206,30 @@ function setNoData(errMsg) {
   render([]);
 }
 
-async function load() {
+function sortHistoryAsc(hist) {
+  return (hist || []).slice().sort((a, b) => {
+    const da = String(a?.date || "");
+    const db = String(b?.date || "");
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return 0;
+  });
+}
+
+async function fetchHistory(limit) {
+  const res = await fetch(`/api/latest?limit=${encodeURIComponent(limit)}`, { cache: "no-store" });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "No data");
+  return data;
+}
+
+async function load(forRange = CURRENT_RANGE) {
   $("refreshBtn").disabled = true;
   $("refreshBtn").textContent = "Refreshing…";
 
   try {
-    // Limit protects the UI + payload sizes
-    const res = await fetch("/api/latest?limit=5000", { cache: "no-store" });
-    const data = await res.json();
-
-    if (!data.ok) {
-      setNoData(data.error ? `Error: ${data.error}` : "No data");
-      return;
-    }
+    const want = desiredLimitForRange(forRange);
+    const data = await fetchHistory(want);
 
     const latest = data.latest;
     $("gsr").textContent = fmtNum(latest.gsr, 4);
@@ -195,9 +240,9 @@ async function load() {
     $("utcDate").textContent = latest.date || "—";
     $("lastUpdatedHuman").textContent = latest.fetched_at_utc ? timeAgo(latest.fetched_at_utc) : "—";
 
-    FULL_HISTORY = Array.isArray(data.history) ? data.history : [];
+    FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
-    // Delta vs previous point
+    // Delta vs previous point (use full history tail)
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
@@ -214,8 +259,7 @@ async function load() {
       $("deltaPct").textContent = "—";
     }
 
-    const sliced = filterByRange(FULL_HISTORY, CURRENT_RANGE);
-    render(sliced);
+    render(filterByRange(FULL_HISTORY, CURRENT_RANGE));
 
   } catch (e) {
     setNoData(`Error: ${e?.message || e}`);
@@ -225,13 +269,20 @@ async function load() {
   }
 }
 
-$("refreshBtn").addEventListener("click", load);
+$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE));
 
 document.querySelectorAll(".segBtn").forEach((b) => {
-  b.addEventListener("click", () => {
+  b.addEventListener("click", async () => {
     CURRENT_RANGE = b.dataset.range;
     setActiveRange(CURRENT_RANGE);
-    render(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+
+    // If they click MAX, refetch more history automatically.
+    // For smaller ranges we can just reuse the already-loaded history.
+    if (CURRENT_RANGE === "MAX") {
+      await load("MAX");
+    } else {
+      render(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+    }
   });
 });
 
@@ -242,7 +293,7 @@ document.querySelectorAll(".segBtn").forEach((b) => {
 });
 
 setActiveRange(CURRENT_RANGE);
-load();
+load(CURRENT_RANGE);
 
 // Update the "Last updated" label every 10s
 setInterval(() => {
