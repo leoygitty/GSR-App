@@ -4,7 +4,10 @@ const $ = (id) => document.getElementById(id);
 function fmtNum(x, digits = 2) {
   const n = Number(x);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+  return n.toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits
+  });
 }
 
 function fmtUSD(x, digits = 2) {
@@ -19,6 +22,7 @@ function fmtUSD(x, digits = 2) {
 }
 
 function parseISODate(d) {
+  // "YYYY-MM-DD" -> Date (UTC midnight)
   const [y, m, day] = String(d || "").split("-").map((v) => parseInt(v, 10));
   return new Date(Date.UTC(y || 1970, (m || 1) - 1, day || 1, 0, 0, 0));
 }
@@ -42,6 +46,7 @@ function timeAgo(iso) {
   return `${day} day${day === 1 ? "" : "s"} ago`;
 }
 
+// Keep MAX fast
 function downsample(points, maxPts = 3000) {
   if (!Array.isArray(points) || points.length <= maxPts) return points || [];
   const out = [];
@@ -99,8 +104,12 @@ function destroyCharts() {
 }
 
 function buildSeries(points, key) {
-  return (points || [])
-    .map(p => ({ x: parseISODate(p.date), y: Number(p[key]) }))
+  return points
+    .map(p => {
+      const x = parseISODate(p.date);
+      const y = Number(p[key]);
+      return { x, y };
+    })
     .filter(pt => pt.x instanceof Date && !isNaN(pt.x.getTime()) && Number.isFinite(pt.y));
 }
 
@@ -109,7 +118,7 @@ function pickTimeUnit(range) {
   if (range === "3M") return "week";
   if (range === "6M") return "month";
   if (range === "1Y") return "month";
-  return "year";
+  return "year"; // MAX
 }
 
 function makeLineChart(canvasId, label, series, yFmtFn, unit) {
@@ -150,7 +159,12 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit) {
           time: {
             unit,
             tooltipFormat: "yyyy-MM-dd",
-            displayFormats: { day: "MMM d", week: "MMM d", month: "MMM yyyy", year: "yyyy" }
+            displayFormats: {
+              day: "MMM d",
+              week: "MMM d",
+              month: "MMM yyyy",
+              year: "yyyy"
+            }
           },
           ticks: { maxTicksLimit: 8, autoSkip: true },
           grid: { color: "rgba(0,0,0,0.06)" }
@@ -197,9 +211,15 @@ function renderCharts(history) {
   const unit = pickTimeUnit(CURRENT_RANGE);
   const pts = (CURRENT_RANGE === "MAX") ? downsample(history, 3000) : history;
 
-  if (showGsr) CHART_GSR = makeLineChart("chartGsrCanvas", "GSR", buildSeries(pts, "gsr"), (v) => fmtNum(v, 2), unit);
-  if (showGold) CHART_GOLD = makeLineChart("chartGoldCanvas", "Gold Spot (USD)", buildSeries(pts, "gold_usd"), (v) => fmtUSD(v, 2), unit);
-  if (showSilver) CHART_SILVER = makeLineChart("chartSilverCanvas", "Silver Spot (USD)", buildSeries(pts, "silver_usd"), (v) => fmtUSD(v, 2), unit);
+  if (showGsr) {
+    CHART_GSR = makeLineChart("chartGsrCanvas", "GSR", buildSeries(pts, "gsr"), (v) => fmtNum(v, 2), unit);
+  }
+  if (showGold) {
+    CHART_GOLD = makeLineChart("chartGoldCanvas", "Gold Spot (USD)", buildSeries(pts, "gold_usd"), (v) => fmtUSD(v, 2), unit);
+  }
+  if (showSilver) {
+    CHART_SILVER = makeLineChart("chartSilverCanvas", "Silver Spot (USD)", buildSeries(pts, "silver_usd"), (v) => fmtUSD(v, 2), unit);
+  }
 
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
@@ -227,41 +247,59 @@ function setNoData(errMsg) {
   renderCharts([]);
 }
 
-/* UPGRADE: Live KPIs via /api/spot */
-async function fetchSpot() {
-  const res = await fetch(`/api/spot`, { cache: "no-store" });
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "Spot unavailable");
-  return data;
+/**
+ * UPGRADE: Force a fresh spot pull + DB upsert before reading /api/latest.
+ * This makes the Refresh button actually refresh, and enables hourly auto-updates.
+ */
+async function triggerSpotUpdate() {
+  try {
+    const ts = Date.now();
+    const res = await fetch(`/api/spot?write=1&ts=${ts}`, { cache: "no-store" });
+    const data = await res.json();
+    // If it fails, we still fall back to whatever DB has.
+    if (!data?.ok) {
+      // optional: console.warn("spot update failed", data?.error || data);
+    }
+  } catch {
+    // optional: console.warn("spot update failed");
+  }
 }
 
-/* Existing: DB history */
 async function fetchHistory(limit) {
-  const res = await fetch(`/api/latest?limit=${encodeURIComponent(limit)}`, { cache: "no-store" });
+  const ts = Date.now(); // UPGRADE: cache-buster
+  const res = await fetch(`/api/latest?limit=${encodeURIComponent(limit)}&ts=${ts}`, { cache: "no-store" });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "No data");
   return data;
 }
 
-async function load(forRange = CURRENT_RANGE) {
-  $("refreshBtn").disabled = true;
-  $("refreshBtn").textContent = "Refreshing…";
+/**
+ * UPGRADE: optional silent mode (used by hourly auto-refresh) so UI doesn’t feel “busy”.
+ */
+async function load(forRange = CURRENT_RANGE, opts = {}) {
+  const { spotUpdate = true, silent = false } = opts;
+
+  if (!silent) {
+    $("refreshBtn").disabled = true;
+    $("refreshBtn").textContent = "Refreshing…";
+  }
 
   try {
-    // 1) Live spot snapshot for the KPIs (updates immediately on refresh)
-    const spot = await fetchSpot();
+    if (spotUpdate) {
+      await triggerSpotUpdate();
+    }
 
-    $("gsr").textContent = fmtNum(spot.gsr, 4);
-    $("gold").textContent = fmtUSD(spot.gold_usd, 2);
-    $("silver").textContent = fmtUSD(spot.silver_usd, 2);
-    $("fetchedAt").textContent = spot.fetched_at_utc || "—";
-    $("source").textContent = spot.source || "—";
-    $("utcDate").textContent = spot.date || "—";
-    $("lastUpdatedHuman").textContent = spot.fetched_at_utc ? timeAgo(spot.fetched_at_utc) : "—";
-
-    // 2) DB history for charts
     const want = desiredLimitForRange(forRange);
     const data = await fetchHistory(want);
+
+    const latest = data.latest;
+    $("gsr").textContent = fmtNum(latest.gsr, 4);
+    $("gold").textContent = fmtUSD(latest.gold_usd, 2);
+    $("silver").textContent = fmtUSD(latest.silver_usd, 2);
+    $("fetchedAt").textContent = latest.fetched_at_utc || "—";
+    $("source").textContent = latest.source || "—";
+    $("utcDate").textContent = latest.date || "—";
+    $("lastUpdatedHuman").textContent = latest.fetched_at_utc ? timeAgo(latest.fetched_at_utc) : "—";
 
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
@@ -288,12 +326,14 @@ async function load(forRange = CURRENT_RANGE) {
   } catch (e) {
     setNoData(`Error: ${e?.message || e}`);
   } finally {
-    $("refreshBtn").disabled = false;
-    $("refreshBtn").textContent = "Refresh";
+    if (!silent) {
+      $("refreshBtn").disabled = false;
+      $("refreshBtn").textContent = "Refresh";
+    }
   }
 }
 
-$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE));
+$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE, { spotUpdate: true, silent: false }));
 
 document.querySelectorAll(".segBtn").forEach((b) => {
   b.addEventListener("click", async () => {
@@ -301,7 +341,8 @@ document.querySelectorAll(".segBtn").forEach((b) => {
     setActiveRange(CURRENT_RANGE);
 
     if (CURRENT_RANGE === "MAX") {
-      await load("MAX");
+      // For MAX fetch bigger history; no need to force spot update here.
+      await load("MAX", { spotUpdate: false, silent: true });
     } else {
       renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
     }
@@ -315,9 +356,15 @@ document.querySelectorAll(".segBtn").forEach((b) => {
 });
 
 setActiveRange(CURRENT_RANGE);
-load(CURRENT_RANGE);
+load(CURRENT_RANGE, { spotUpdate: true, silent: true });
 
+// Update the "Last updated" label every 10s
 setInterval(() => {
   const txt = $("fetchedAt").textContent;
   if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
 }, 10000);
+
+// UPGRADE: auto-refresh hourly (also forces a spot update + DB write)
+setInterval(() => {
+  load(CURRENT_RANGE, { spotUpdate: true, silent: true });
+}, 60 * 60 * 1000);
