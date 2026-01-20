@@ -1,5 +1,9 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+import datetime
+import json
+import urllib.request
+import urllib.error
 
 # Import fallback to avoid Vercel module-path edge cases
 try:
@@ -8,33 +12,193 @@ except Exception:
     from api._utils import db_connect, send_json
 
 
+YAHOO_URL = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=GC=F,SI=F"
+
+# Update policy:
+# - If today's UTC row missing -> update
+# - If fetched_at_utc older than STALE_MINUTES -> update
+STALE_MINUTES_DEFAULT = 55
+
+# If force=1, we still avoid hammering Yahoo on rapid clicks:
+FORCE_COOLDOWN_SECONDS = 60
+
+# Advisory lock key (any consistent 64-bit int is fine)
+ADVISORY_LOCK_KEY = 731234567890  # arbitrary constant
+
+
+def _utc_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def _fetch_yahoo_prices():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; GSR-App/1.0; +https://vercel.com/)",
+        "Accept": "application/json",
+    }
+    req = urllib.request.Request(YAHOO_URL, headers=headers, method="GET")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        raw = resp.read().decode("utf-8")
+    data = json.loads(raw)
+
+    result = data.get("quoteResponse", {}).get("result", [])
+    by_symbol = {r.get("symbol"): r for r in result}
+
+    gc = by_symbol.get("GC=F") or {}
+    si = by_symbol.get("SI=F") or {}
+
+    gold = gc.get("regularMarketPrice")
+    silver = si.get("regularMarketPrice")
+
+    if gold is None or silver is None:
+        raise ValueError(f"Missing regularMarketPrice: gold={gold}, silver={silver}")
+
+    gold = float(gold)
+    silver = float(silver)
+    if gold <= 0 or silver <= 0:
+        raise ValueError(f"Non-positive prices: gold={gold}, silver={silver}")
+
+    gsr = gold / silver
+    return gold, silver, gsr
+
+
+def _row_to_latest(row):
+    # row: (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
+    d, g, s, r, fetched_at, source = row
+    return {
+        "date": str(d),
+        "gold_usd": str(g),
+        "silver_usd": str(s),
+        "gsr": str(r),
+        "fetched_at_utc": str(fetched_at),
+        "source": str(source),
+    }
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             qs = parse_qs(urlparse(self.path).query)
-            limit_raw = (qs.get("limit", ["5000"])[0] or "5000").strip()
 
+            # limit parsing (unchanged)
+            limit_raw = (qs.get("limit", ["5000"])[0] or "5000").strip()
             try:
                 limit = int(limit_raw)
             except Exception:
                 limit = 5000
-
             if limit < 1:
                 limit = 1
             if limit > 50000:
                 limit = 50000
 
+            # self-heal controls
+            force = (qs.get("force", ["0"])[0] or "0").strip() in ("1", "true", "yes", "on")
+            stale_minutes_raw = (qs.get("stale_minutes", [str(STALE_MINUTES_DEFAULT)])[0] or str(STALE_MINUTES_DEFAULT)).strip()
+            try:
+                stale_minutes = int(stale_minutes_raw)
+            except Exception:
+                stale_minutes = STALE_MINUTES_DEFAULT
+            if stale_minutes < 1:
+                stale_minutes = 1
+            if stale_minutes > 24 * 60:
+                stale_minutes = 24 * 60
+
+            now_utc = _utc_now()
+            today_utc = now_utc.date()
+            stale_cutoff = now_utc - datetime.timedelta(minutes=stale_minutes)
+            force_cutoff = now_utc - datetime.timedelta(seconds=FORCE_COOLDOWN_SECONDS)
+
             conn = db_connect()
             try:
                 cur = conn.cursor()
 
-                # latest
+                # 1) Read today's row (UTC) if present
                 cur.execute(
                     """
-                    select d, gold_usd, silver_usd, gsr, fetched_at_utc, source
-                    from gsr_daily
-                    order by d desc
-                    limit 1;
+                    SELECT d, gold_usd, silver_usd, gsr, fetched_at_utc, source
+                    FROM gsr_daily
+                    WHERE d = %s
+                    LIMIT 1;
+                    """,
+                    (today_utc,),
+                )
+                today_row = cur.fetchone()
+
+                # Determine whether we should update
+                should_update = False
+                if not today_row:
+                    should_update = True
+                else:
+                    fetched_at = today_row[4]
+                    # fetched_at should be a datetime from pg8000; but guard anyway
+                    try:
+                        if force:
+                            # Only force-update if not updated very recently
+                            should_update = fetched_at < force_cutoff
+                        else:
+                            should_update = fetched_at < stale_cutoff
+                    except Exception:
+                        # If fetched_at parsing is weird, treat as stale
+                        should_update = True
+
+                # 2) If missing/stale, try to acquire advisory lock and update
+                updated = False
+                update_error = None
+
+                if should_update:
+                    try:
+                        cur.execute("SELECT pg_try_advisory_lock(%s);", (ADVISORY_LOCK_KEY,))
+                        got_lock = bool(cur.fetchone()[0])
+                    except Exception:
+                        got_lock = False
+
+                    if got_lock:
+                        try:
+                            gold, silver, gsr = _fetch_yahoo_prices()
+
+                            cur.execute(
+                                """
+                                INSERT INTO gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (d) DO UPDATE SET
+                                  gold_usd       = EXCLUDED.gold_usd,
+                                  silver_usd     = EXCLUDED.silver_usd,
+                                  gsr            = EXCLUDED.gsr,
+                                  fetched_at_utc = EXCLUDED.fetched_at_utc,
+                                  source         = EXCLUDED.source;
+                                """,
+                                (today_utc, gold, silver, gsr, now_utc, "latest"),
+                            )
+                            conn.commit()
+                            updated = True
+                        except (urllib.error.HTTPError, urllib.error.URLError, ValueError) as e:
+                            # Yahoo fetch issues: do not fail the entire request if we still have data
+                            update_error = str(e)
+                            try:
+                                conn.rollback()
+                            except Exception:
+                                pass
+                        except Exception as e:
+                            update_error = str(e)
+                            try:
+                                conn.rollback()
+                            except Exception:
+                                pass
+                        finally:
+                            try:
+                                cur.execute("SELECT pg_advisory_unlock(%s);", (ADVISORY_LOCK_KEY,))
+                            except Exception:
+                                pass
+                    else:
+                        # Another request is updating right now; we’ll just continue and read latest
+                        pass
+
+                # 3) Read latest row (DESC) (unchanged semantics)
+                cur.execute(
+                    """
+                    SELECT d, gold_usd, silver_usd, gsr, fetched_at_utc, source
+                    FROM gsr_daily
+                    ORDER BY d DESC
+                    LIMIT 1;
                     """
                 )
                 row = cur.fetchone()
@@ -45,26 +209,24 @@ class handler(BaseHTTPRequestHandler):
                         "hint": "Run /api/cron_gsr once, then /api/backfill_gsr until next_cursor is null."
                     })
 
-                latest = {
-                    "date": str(row[0]),
-                    "gold_usd": str(row[1]),
-                    "silver_usd": str(row[2]),
-                    "gsr": str(row[3]),
-                    "fetched_at_utc": str(row[4]),
-                    "source": str(row[5]),
-                }
+                latest = _row_to_latest(row)
 
-                # history (DESC then reverse to ASC)
+                # 4) History (DESC then reverse to ASC) (unchanged)
                 cur.execute(
                     """
-                    select d, gold_usd, silver_usd, gsr
-                    from gsr_daily
-                    order by d desc
-                    limit %s;
+                    SELECT d, gold_usd, silver_usd, gsr
+                    FROM gsr_daily
+                    ORDER BY d DESC
+                    LIMIT %s;
                     """,
                     (limit,)
                 )
-                rows = list(cur.fetchall() or [])  # <-- force list so we can reverse safely
+                rows = list(cur.fetchall() or [])
+                rows.reverse()
+                history = [
+                    {"date": str(d), "gold_usd": str(g), "silver_usd": str(s), "gsr": str(r)}
+                    for (d, g, s, r) in rows
+                ]
 
             finally:
                 try:
@@ -72,18 +234,20 @@ class handler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
 
-            rows.reverse()
-            history = [
-                {
-                    "date": str(d),
-                    "gold_usd": str(g),
-                    "silver_usd": str(s),
-                    "gsr": str(r),
+            # Include debug fields so you can see if the self-heal ran
+            return send_json(self, 200, {
+                "ok": True,
+                "latest": latest,
+                "history": history,
+                "self_heal": {
+                    "today_utc": str(today_utc),
+                    "force": force,
+                    "stale_minutes": stale_minutes,
+                    "attempted": bool(should_update),
+                    "updated": bool(updated),
+                    "error": update_error
                 }
-                for (d, g, s, r) in rows
-            ]
-
-            return send_json(self, 200, {"ok": True, "latest": latest, "history": history})
+            })
 
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
