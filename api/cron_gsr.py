@@ -1,55 +1,106 @@
 from http.server import BaseHTTPRequestHandler
-import os
+from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone
-from decimal import Decimal
-from urllib.parse import parse_qs, urlparse
+import json
+import urllib.request
+import os
 
-from ._utils import db_connect, send_json, read_bearer_token, utc_now_iso, safe_decimal
-from ._pricing import fetch_spot_prices_usd
+try:
+    from ._utils import db_connect, send_json
+except Exception:
+    from api._utils import db_connect, send_json
+
+
+YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=GC=F,SI=F"
+
+
+def _fetch_yahoo_quotes():
+    req = urllib.request.Request(
+        YAHOO_QUOTE_URL,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json",
+        },
+        method="GET",
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        raw = resp.read().decode("utf-8")
+        data = json.loads(raw)
+
+    results = (data.get("quoteResponse") or {}).get("result") or []
+    by_symbol = {r.get("symbol"): r for r in results if r.get("symbol")}
+    return by_symbol
+
+
+def _is_authorized(handler_obj, qs):
+    # Allow Vercel Cron header
+    if (handler_obj.headers.get("x-vercel-cron") or "").strip() == "1":
+        return True
+
+    cron_secret = (os.getenv("CRON_SECRET") or "").strip()
+    if not cron_secret:
+        return False
+
+    provided = (qs.get("secret", [""])[0] or "").strip()
+
+    auth_header = (handler_obj.headers.get("Authorization") or "").strip()
+    bearer = ""
+    if auth_header.lower().startswith("bearer "):
+        bearer = auth_header.split(" ", 1)[1].strip()
+
+    return (provided == cron_secret) or (bearer == cron_secret)
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            # Auth: Authorization: Bearer <CRON_SECRET>
-            cron_secret = os.environ.get("CRON_SECRET", "").strip()
-            auth = self.headers.get("Authorization", "")
-            token = read_bearer_token(auth)
-
-            # Also allow manual testing with ?secret=...
             qs = parse_qs(urlparse(self.path).query)
-            token_qs = (qs.get("secret", [""])[0] or "").strip()
+            if not _is_authorized(self, qs):
+                return send_json(self, 401, {
+                    "ok": False,
+                    "error": "Unauthorized",
+                    "hint": "Vercel cron should pass x-vercel-cron: 1. For manual calls, use Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>."
+                })
 
-            if cron_secret:
-                if token != cron_secret and token_qs != cron_secret:
-                    return send_json(self, 401, {
-                        "ok": False,
-                        "error": "Unauthorized",
-                        "hint": "Provide Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>"
-                    })
+            by_symbol = _fetch_yahoo_quotes()
+            gold = by_symbol.get("GC=F") or {}
+            silver = by_symbol.get("SI=F") or {}
 
-            gold_usd, silver_usd, gold_raw, silver_raw = fetch_spot_prices_usd()
-            if silver_usd == 0:
-                return send_json(self, 500, {"ok": False, "error": "Silver price returned 0"})
+            gold_px = gold.get("regularMarketPrice")
+            silver_px = silver.get("regularMarketPrice")
 
-            gsr = (gold_usd / silver_usd)
+            if gold_px is None or silver_px is None:
+                return send_json(self, 502, {
+                    "ok": False,
+                    "error": "Price source unavailable (missing regularMarketPrice).",
+                    "debug": {"has_gold": bool(gold), "has_silver": bool(silver)}
+                })
 
-            d = datetime.now(timezone.utc).date()
+            gold_px = float(gold_px)
+            silver_px = float(silver_px)
+            if silver_px == 0:
+                return send_json(self, 502, {"ok": False, "error": "Invalid silver price (0)."})
+
+            gsr = gold_px / silver_px
+
+            now_utc = datetime.now(timezone.utc).isoformat()
+            today_utc = datetime.now(timezone.utc).date().isoformat()
 
             conn = db_connect()
             try:
                 cur = conn.cursor()
                 cur.execute(
                     """
-                    insert into gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc)
-                    values (%s, %s, %s, %s, now())
-                    on conflict (d) do update set
-                      gold_usd = excluded.gold_usd,
-                      silver_usd = excluded.silver_usd,
-                      gsr = excluded.gsr,
-                      fetched_at_utc = now();
+                    insert into gsr_daily (d, gold_usd, silver_usd, gsr, fetched_at_utc, source)
+                    values (%s, %s, %s, %s, %s, %s)
+                    on conflict (d) do update
+                      set gold_usd = excluded.gold_usd,
+                          silver_usd = excluded.silver_usd,
+                          gsr = excluded.gsr,
+                          fetched_at_utc = excluded.fetched_at_utc,
+                          source = excluded.source;
                     """,
-                    (d, str(gold_usd), str(silver_usd), str(gsr)),
+                    (today_utc, gold_px, silver_px, gsr, now_utc, "cron_hourly_yahoo")
                 )
                 conn.commit()
             finally:
@@ -60,19 +111,16 @@ class handler(BaseHTTPRequestHandler):
 
             return send_json(self, 200, {
                 "ok": True,
-                "date_utc": str(d),
-                "gold_usd": str(gold_usd),
-                "silver_usd": str(silver_usd),
-                "gsr": str(gsr),
-                "fetched_at_utc": utc_now_iso(),
-                "source": {
-                    "gold": gold_raw,
-                    "silver": silver_raw
-                }
+                "date": today_utc,
+                "gold_usd": gold_px,
+                "silver_usd": silver_px,
+                "gsr": gsr,
+                "fetched_at_utc": now_utc,
+                "source": "cron_hourly_yahoo"
             })
+
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
 
-    # Quiet default logging noise (optional)
     def log_message(self, format, *args):
         return
