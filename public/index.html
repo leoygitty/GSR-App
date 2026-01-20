@@ -23,6 +23,7 @@
     }
   </style>
 </head>
+
 <body>
   <main class="shell">
     <header class="topbar">
@@ -150,7 +151,10 @@
   <!-- Chart.js (interactive charts) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Your app logic (must run after Chart.js is available) -->
+  <!-- REQUIRED for time scale support (x-axis dates) -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+
+  <!-- Your app logic (runs after Chart.js + adapter are available) -->
   <script defer src="/app.js"></script>
 
   <script>
