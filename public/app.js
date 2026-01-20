@@ -274,22 +274,40 @@ function setNoData(errMsg) {
   renderCharts([]);
 }
 
-async function fetchHistory(limit) {
-  // UPGRADE: cache-buster to defeat any SW/CDN caching by URL
-  const url = `/api/latest?limit=${encodeURIComponent(limit)}&_t=${Date.now()}`;
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "No data");
+/**
+ * Fetch from /api/latest, with:
+ * - cache-buster
+ * - explicit no-store
+ * - optional force=1 to trigger self-heal immediately
+ */
+async function fetchLatest(limit, { force = false } = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (force) params.set("force", "1");
+  params.set("_t", String(Date.now()));
+
+  const url = `/api/latest?${params.toString()}`;
+
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache"
+    }
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
 
-async function load(forRange = CURRENT_RANGE) {
+async function load(forRange = CURRENT_RANGE, { force = false } = {}) {
   $("refreshBtn").disabled = true;
-  $("refreshBtn").textContent = "Refreshing…";
+  $("refreshBtn").textContent = force ? "Refreshing (live)…" : "Refreshing…";
 
   try {
     const want = desiredLimitForRange(forRange);
-    const data = await fetchHistory(want);
+    const data = await fetchLatest(want, { force });
 
     const latest = data.latest;
     $("gsr").textContent = fmtNum(latest.gsr, 4);
@@ -331,7 +349,13 @@ async function load(forRange = CURRENT_RANGE) {
   }
 }
 
-$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE));
+/**
+ * UX policy:
+ * - Manual Refresh: force=1 (try to get live intraday now)
+ * - Hourly auto-refresh: force=false (only updates if stale)
+ * - When tab becomes visible: force=1 (user returning expects fresh)
+ */
+$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE, { force: true }));
 
 document.querySelectorAll(".segBtn").forEach((b) => {
   b.addEventListener("click", async () => {
@@ -340,7 +364,7 @@ document.querySelectorAll(".segBtn").forEach((b) => {
 
     // For MAX we fetch bigger history; for others, reuse the already-fetched history
     if (CURRENT_RANGE === "MAX") {
-      await load("MAX");
+      await load("MAX", { force: false });
     } else {
       renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
     }
@@ -354,7 +378,9 @@ document.querySelectorAll(".segBtn").forEach((b) => {
 });
 
 setActiveRange(CURRENT_RANGE);
-load(CURRENT_RANGE);
+
+// Initial load: no force (fast path)
+load(CURRENT_RANGE, { force: false });
 
 // Existing: update "time ago"
 setInterval(() => {
@@ -362,12 +388,12 @@ setInterval(() => {
   if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
 }, 10000);
 
-// UPGRADE: auto-refresh hourly while the page is open
+// Auto-refresh hourly while the page is open (non-forced)
 setInterval(() => {
-  load(CURRENT_RANGE);
+  load(CURRENT_RANGE, { force: false });
 }, 60 * 60 * 1000);
 
-// UPGRADE: when user returns to the tab, refresh once (helps after long background)
+// When user returns to the tab, refresh once (forced)
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) load(CURRENT_RANGE);
+  if (!document.hidden) load(CURRENT_RANGE, { force: true });
 });
