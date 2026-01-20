@@ -114,6 +114,7 @@ function buildSeries(points, key) {
 }
 
 function pickTimeUnit(range) {
+  // Makes x-axis readable at different ranges
   if (range === "1M") return "day";
   if (range === "3M") return "week";
   if (range === "6M") return "month";
@@ -166,11 +167,16 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit) {
               year: "yyyy"
             }
           },
-          ticks: { maxTicksLimit: 8, autoSkip: true },
+          ticks: {
+            maxTicksLimit: 8,
+            autoSkip: true
+          },
           grid: { color: "rgba(0,0,0,0.06)" }
         },
         y: {
-          ticks: { callback: (v) => yFmtFn(v) },
+          ticks: {
+            callback: (v) => yFmtFn(v)
+          },
           grid: { color: "rgba(0,0,0,0.06)" }
         }
       }
@@ -212,15 +218,36 @@ function renderCharts(history) {
   const pts = (CURRENT_RANGE === "MAX") ? downsample(history, 3000) : history;
 
   if (showGsr) {
-    CHART_GSR = makeLineChart("chartGsrCanvas", "GSR", buildSeries(pts, "gsr"), (v) => fmtNum(v, 2), unit);
-  }
-  if (showGold) {
-    CHART_GOLD = makeLineChart("chartGoldCanvas", "Gold Spot (USD)", buildSeries(pts, "gold_usd"), (v) => fmtUSD(v, 2), unit);
-  }
-  if (showSilver) {
-    CHART_SILVER = makeLineChart("chartSilverCanvas", "Silver Spot (USD)", buildSeries(pts, "silver_usd"), (v) => fmtUSD(v, 2), unit);
+    CHART_GSR = makeLineChart(
+      "chartGsrCanvas",
+      "GSR",
+      buildSeries(pts, "gsr"),
+      (v) => fmtNum(v, 2),
+      unit
+    );
   }
 
+  if (showGold) {
+    CHART_GOLD = makeLineChart(
+      "chartGoldCanvas",
+      "Gold Spot (USD)",
+      buildSeries(pts, "gold_usd"),
+      (v) => fmtUSD(v, 2),
+      unit
+    );
+  }
+
+  if (showSilver) {
+    CHART_SILVER = makeLineChart(
+      "chartSilverCanvas",
+      "Silver Spot (USD)",
+      buildSeries(pts, "silver_usd"),
+      (v) => fmtUSD(v, 2),
+      unit
+    );
+  }
+
+  // Table: last 200 rows, newest first
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
     `<tr>
@@ -247,48 +274,20 @@ function setNoData(errMsg) {
   renderCharts([]);
 }
 
-/**
- * UPGRADE: Force a fresh spot pull + DB upsert before reading /api/latest.
- * This makes the Refresh button actually refresh, and enables hourly auto-updates.
- */
-async function triggerSpotUpdate() {
-  try {
-    const ts = Date.now();
-    const res = await fetch(`/api/spot?write=1&ts=${ts}`, { cache: "no-store" });
-    const data = await res.json();
-    // If it fails, we still fall back to whatever DB has.
-    if (!data?.ok) {
-      // optional: console.warn("spot update failed", data?.error || data);
-    }
-  } catch {
-    // optional: console.warn("spot update failed");
-  }
-}
-
 async function fetchHistory(limit) {
-  const ts = Date.now(); // UPGRADE: cache-buster
-  const res = await fetch(`/api/latest?limit=${encodeURIComponent(limit)}&ts=${ts}`, { cache: "no-store" });
+  // UPGRADE: cache-buster to defeat any SW/CDN caching by URL
+  const url = `/api/latest?limit=${encodeURIComponent(limit)}&_t=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "No data");
   return data;
 }
 
-/**
- * UPGRADE: optional silent mode (used by hourly auto-refresh) so UI doesn’t feel “busy”.
- */
-async function load(forRange = CURRENT_RANGE, opts = {}) {
-  const { spotUpdate = true, silent = false } = opts;
-
-  if (!silent) {
-    $("refreshBtn").disabled = true;
-    $("refreshBtn").textContent = "Refreshing…";
-  }
+async function load(forRange = CURRENT_RANGE) {
+  $("refreshBtn").disabled = true;
+  $("refreshBtn").textContent = "Refreshing…";
 
   try {
-    if (spotUpdate) {
-      await triggerSpotUpdate();
-    }
-
     const want = desiredLimitForRange(forRange);
     const data = await fetchHistory(want);
 
@@ -303,6 +302,7 @@ async function load(forRange = CURRENT_RANGE, opts = {}) {
 
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
+    // Delta vs previous
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
@@ -326,23 +326,21 @@ async function load(forRange = CURRENT_RANGE, opts = {}) {
   } catch (e) {
     setNoData(`Error: ${e?.message || e}`);
   } finally {
-    if (!silent) {
-      $("refreshBtn").disabled = false;
-      $("refreshBtn").textContent = "Refresh";
-    }
+    $("refreshBtn").disabled = false;
+    $("refreshBtn").textContent = "Refresh";
   }
 }
 
-$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE, { spotUpdate: true, silent: false }));
+$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE));
 
 document.querySelectorAll(".segBtn").forEach((b) => {
   b.addEventListener("click", async () => {
     CURRENT_RANGE = b.dataset.range;
     setActiveRange(CURRENT_RANGE);
 
+    // For MAX we fetch bigger history; for others, reuse the already-fetched history
     if (CURRENT_RANGE === "MAX") {
-      // For MAX fetch bigger history; no need to force spot update here.
-      await load("MAX", { spotUpdate: false, silent: true });
+      await load("MAX");
     } else {
       renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
     }
@@ -356,15 +354,20 @@ document.querySelectorAll(".segBtn").forEach((b) => {
 });
 
 setActiveRange(CURRENT_RANGE);
-load(CURRENT_RANGE, { spotUpdate: true, silent: true });
+load(CURRENT_RANGE);
 
-// Update the "Last updated" label every 10s
+// Existing: update "time ago"
 setInterval(() => {
   const txt = $("fetchedAt").textContent;
   if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
 }, 10000);
 
-// UPGRADE: auto-refresh hourly (also forces a spot update + DB write)
+// UPGRADE: auto-refresh hourly while the page is open
 setInterval(() => {
-  load(CURRENT_RANGE, { spotUpdate: true, silent: true });
+  load(CURRENT_RANGE);
 }, 60 * 60 * 1000);
+
+// UPGRADE: when user returns to the tab, refresh once (helps after long background)
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) load(CURRENT_RANGE);
+});
