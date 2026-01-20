@@ -1,96 +1,138 @@
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+const $ = (id) => document.getElementById(id);
 
-from ._utils import db_connect, send_json
+function fmtNum(x, digits = 2) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return String(x);
+  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+}
 
+function drawSpark(svg, points, valueKey = "gsr") {
+  svg.innerHTML = "";
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        try:
-            qs = parse_qs(urlparse(self.path).query)
+  if (!points || points.length < 2) return;
 
-            # Default: last 2000 points (keeps UI fast + avoids huge JSON)
-            limit_raw = (qs.get("limit", ["2000"])[0] or "2000").strip()
-            try:
-                limit = int(limit_raw)
-            except Exception:
-                limit = 2000
+  const W = 1000, H = 260, pad = 18;
 
-            if limit < 50:
-                limit = 50
-            if limit > 10000:
-                limit = 10000
+  const ys = points
+    .map((p) => Number(p[valueKey]))
+    .filter(Number.isFinite);
 
-            conn = db_connect()
-            try:
-                cur = conn.cursor()
+  if (ys.length < 2) return;
 
-                # Latest row
-                cur.execute(
-                    """
-                    select d, gold_usd, silver_usd, gsr, fetched_at_utc, source
-                    from gsr_daily
-                    order by d desc
-                    limit 1;
-                    """
-                )
-                row = cur.fetchone()
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const spanY = (maxY - minY) || 1;
 
-                # History window (last N rows), then sort ascending for charting
-                cur.execute(
-                    """
-                    select d, gold_usd, silver_usd, gsr
-                    from gsr_daily
-                    order by d desc
-                    limit %s;
-                    """,
-                    (limit,)
-                )
-                hist_rows = cur.fetchall() or []
+  const toX = (i) => pad + (i * (W - 2 * pad)) / (points.length - 1);
+  const toY = (v) => (H - pad) - ((v - minY) * (H - 2 * pad)) / spanY;
 
-            finally:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
+  // Grid
+  const grid = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  let gridD = "";
+  for (let i = 0; i < 5; i++) {
+    const y = pad + (i * (H - 2 * pad)) / 4;
+    gridD += `M ${pad} ${y} L ${W - pad} ${y} `;
+  }
+  grid.setAttribute("d", gridD);
+  grid.setAttribute("stroke", "rgba(128,128,128,0.25)");
+  grid.setAttribute("stroke-width", "1");
+  grid.setAttribute("fill", "none");
+  svg.appendChild(grid);
 
-            if not row:
-                return send_json(self, 404, {
-                    "ok": False,
-                    "error": "No data yet",
-                    "hint": "Run /api/cron_gsr once (with secret) after creating the table."
-                })
+  // Line path
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  let d = "";
+  for (let i = 0; i < points.length; i++) {
+    const v = Number(points[i][valueKey]);
+    if (!Number.isFinite(v)) continue;
+    const x = toX(i);
+    const y = toY(v);
+    d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+  }
+  path.setAttribute("d", d);
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "2.5");
+  path.setAttribute("fill", "none");
+  path.setAttribute("opacity", "0.95");
+  svg.appendChild(path);
 
-            latest = {
-                "date": str(row[0]),
-                "gold_usd": str(row[1]),
-                "silver_usd": str(row[2]),
-                "gsr": str(row[3]),
-                "fetched_at_utc": str(row[4]),
-                "source": str(row[5]),
-            }
+  // Labels
+  const mkText = (txt, x, y, anchor = "start") => {
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.textContent = txt;
+    t.setAttribute("x", String(x));
+    t.setAttribute("y", String(y));
+    t.setAttribute("fill", "rgba(128,128,128,0.85)");
+    t.setAttribute("font-size", "16");
+    t.setAttribute("font-family", "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace");
+    t.setAttribute("text-anchor", anchor);
+    return t;
+  };
+  svg.appendChild(mkText(`max ${fmtNum(maxY, 2)}`, W - pad, pad, "end"));
+  svg.appendChild(mkText(`min ${fmtNum(minY, 2)}`, W - pad, H - pad, "end"));
+}
 
-            # convert to ascending by date
-            hist_rows.reverse()
+function setNoDataUI(msg) {
+  $("gsr").textContent = "—";
+  $("gold").textContent = "—";
+  $("silver").textContent = "—";
+  $("date").textContent = "—";
+  $("fetchedAt").textContent = "—";
+  $("historyTable").innerHTML = "";
+  $("range").textContent = msg || "No data";
+  drawSpark($("spark"), []);
+}
 
-            history = []
-            for (d, gold_usd, silver_usd, gsr) in hist_rows:
-                history.append({
-                    "date": str(d),
-                    "gold_usd": str(gold_usd),
-                    "silver_usd": str(silver_usd),
-                    "gsr": str(gsr),
-                })
+async function load() {
+  $("refreshBtn").disabled = true;
+  $("refreshBtn").textContent = "Refreshing…";
 
-            return send_json(self, 200, {
-                "ok": True,
-                "latest": latest,
-                "history": history,
-                "limit": limit,
-            })
+  try {
+    // IMPORTANT: cap the payload
+    const res = await fetch("/api/latest?limit=2000", { cache: "no-store" });
+    const data = await res.json();
 
-        except Exception as e:
-            return send_json(self, 500, {"ok": False, "error": str(e)})
+    if (!data.ok) {
+      setNoDataUI(data.error ? `Error: ${data.error}` : "No data");
+      return;
+    }
 
-    def log_message(self, format, *args):
-        return
+    const latest = data.latest;
+    $("gsr").textContent = fmtNum(latest.gsr, 4);
+    $("gold").textContent = fmtNum(latest.gold_usd, 2);
+    $("silver").textContent = fmtNum(latest.silver_usd, 2);
+    $("date").textContent = latest.date;
+    $("fetchedAt").textContent = latest.fetched_at_utc;
+
+    const hist = Array.isArray(data.history) ? data.history : [];
+    if (hist.length < 2) {
+      $("historyTable").innerHTML = "";
+      $("range").textContent = `${hist.length} day${hist.length === 1 ? "" : "s"}`;
+      drawSpark($("spark"), []);
+      return;
+    }
+
+    // Table
+    const tbody = hist.slice().reverse().map(r =>
+      `<tr><td>${r.date}</td><td>${fmtNum(r.gsr, 4)}</td></tr>`
+    ).join("");
+    $("historyTable").innerHTML = tbody;
+
+    // Range label
+    const first = hist[0]?.date;
+    const last = hist[hist.length - 1]?.date;
+    $("range").textContent = (first && last) ? `${first} → ${last} (${hist.length} days)` : `${hist.length} days`;
+
+    // Chart: draw GSR (you can add additional charts later for gold/silver)
+    drawSpark($("spark"), hist, "gsr");
+
+  } catch (e) {
+    setNoDataUI(`Error: ${e?.message || e}`);
+  } finally {
+    $("refreshBtn").disabled = false;
+    $("refreshBtn").textContent = "Refresh";
+  }
+}
+
+$("refreshBtn").addEventListener("click", load);
+load();
