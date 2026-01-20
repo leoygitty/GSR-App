@@ -1,21 +1,24 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-from api._utils import db_connect, send_json
+# Import fallback to avoid Vercel module-path edge cases
+try:
+    from ._utils import db_connect, send_json
+except Exception:
+    from api._utils import db_connect, send_json
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             qs = parse_qs(urlparse(self.path).query)
-            limit_str = (qs.get("limit", ["5000"])[0] or "5000").strip()
+            limit_raw = (qs.get("limit", ["5000"])[0] or "5000").strip()
 
             try:
-                limit = int(limit_str)
+                limit = int(limit_raw)
             except Exception:
                 limit = 5000
 
-            # Reasonable caps so you don't blow up payload size
             if limit < 1:
                 limit = 1
             if limit > 50000:
@@ -25,7 +28,7 @@ class handler(BaseHTTPRequestHandler):
             try:
                 cur = conn.cursor()
 
-                # Latest row
+                # latest
                 cur.execute(
                     """
                     select d, gold_usd, silver_usd, gsr, fetched_at_utc, source
@@ -35,12 +38,11 @@ class handler(BaseHTTPRequestHandler):
                     """
                 )
                 row = cur.fetchone()
-
                 if not row:
                     return send_json(self, 404, {
                         "ok": False,
                         "error": "No data yet",
-                        "hint": "Run /api/cron_gsr once (with secret) and/or run /api/backfill_gsr (with secret)."
+                        "hint": "Run /api/cron_gsr once, then /api/backfill_gsr until next_cursor is null."
                     })
 
                 latest = {
@@ -52,7 +54,7 @@ class handler(BaseHTTPRequestHandler):
                     "source": str(row[5]),
                 }
 
-                # Most recent N history points, returned ASC for charting
+                # history (DESC then reverse to ASC)
                 cur.execute(
                     """
                     select d, gold_usd, silver_usd, gsr
@@ -63,15 +65,14 @@ class handler(BaseHTTPRequestHandler):
                     (limit,)
                 )
                 rows = cur.fetchall() or []
+
             finally:
                 try:
                     conn.close()
                 except Exception:
                     pass
 
-            # Reverse to ASC
             rows.reverse()
-
             history = [
                 {
                     "date": str(d),
@@ -82,13 +83,10 @@ class handler(BaseHTTPRequestHandler):
                 for (d, g, s, r) in rows
             ]
 
-            return send_json(self, 200, {
-                "ok": True,
-                "latest": latest,
-                "history": history,
-            })
+            return send_json(self, 200, {"ok": True, "latest": latest, "history": history})
 
         except Exception as e:
+            # IMPORTANT: return JSON so you see the real error message instead of Vercel's generic crash page
             return send_json(self, 500, {"ok": False, "error": str(e)})
 
     def log_message(self, format, *args):
