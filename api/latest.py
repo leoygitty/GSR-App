@@ -1,10 +1,23 @@
 from http.server import BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+
 from ._utils import db_connect, send_json
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
+            qs = parse_qs(urlparse(self.path).query)
+            # Optional limit for history points (ordered ASC)
+            # Default returns all rows (ok for ~15k).
+            limit_str = (qs.get("limit", [""])[0] or "").strip()
+            limit = None
+            if limit_str:
+                try:
+                    limit = int(limit_str)
+                except Exception:
+                    limit = None
+
             conn = db_connect()
             try:
                 cur = conn.cursor()
@@ -19,14 +32,28 @@ class handler(BaseHTTPRequestHandler):
                 )
                 row = cur.fetchone()
 
-                cur.execute(
-                    """
-                    select d, gold_usd, silver_usd, gsr
-                    from gsr_daily
-                    order by d asc;
-                    """
-                )
-                history_rows = cur.fetchall() or []
+                if limit and limit > 0:
+                    cur.execute(
+                        """
+                        select d, gold_usd, silver_usd, gsr
+                        from gsr_daily
+                        order by d desc
+                        limit %s;
+                        """,
+                        (limit,)
+                    )
+                    history_rows = cur.fetchall() or []
+                    # reverse to ASC for charting
+                    history_rows = list(reversed(history_rows))
+                else:
+                    cur.execute(
+                        """
+                        select d, gold_usd, silver_usd, gsr
+                        from gsr_daily
+                        order by d asc;
+                        """
+                    )
+                    history_rows = cur.fetchall() or []
 
             finally:
                 try:
@@ -38,7 +65,7 @@ class handler(BaseHTTPRequestHandler):
                 return send_json(self, 404, {
                     "ok": False,
                     "error": "No data yet",
-                    "hint": "Run /api/cron_gsr once (with secret) or run /api/backfill_gsr to backfill history."
+                    "hint": "Run /api/cron_gsr once (with secret) after creating the table, then run /api/backfill_gsr (with secret) to load history."
                 })
 
             latest = {
@@ -50,17 +77,20 @@ class handler(BaseHTTPRequestHandler):
                 "source": str(row[5]),
             }
 
-            history = [{
-                "date": str(r[0]),
-                "gold_usd": str(r[1]),
-                "silver_usd": str(r[2]),
-                "gsr": str(r[3]),
-            } for r in history_rows]
+            hist = [
+                {
+                    "date": str(d),
+                    "gold_usd": str(gold),
+                    "silver_usd": str(silver),
+                    "gsr": str(gsr),
+                }
+                for (d, gold, silver, gsr) in history_rows
+            ]
 
             return send_json(self, 200, {
                 "ok": True,
                 "latest": latest,
-                "history": history,
+                "history": hist,
             })
 
         except Exception as e:
