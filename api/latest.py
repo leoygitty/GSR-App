@@ -64,7 +64,7 @@ class handler(BaseHTTPRequestHandler):
                     """,
                     (limit,)
                 )
-                rows = cur.fetchall() or []
+                rows = list(cur.fetchall() or [])  # <-- force list so we can reverse safely
 
             finally:
                 try:
@@ -86,7 +86,6 @@ class handler(BaseHTTPRequestHandler):
             return send_json(self, 200, {"ok": True, "latest": latest, "history": history})
 
         except Exception as e:
-            # IMPORTANT: return JSON so you see the real error message instead of Vercel's generic crash page
             return send_json(self, 500, {"ok": False, "error": str(e)})
 
     def log_message(self, format, *args):
