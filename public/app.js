@@ -3,14 +3,11 @@ const $ = (id) => document.getElementById(id);
 function fmtNum(x, digits = 2) {
   const n = Number(x);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(undefined, {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits
-  });
+  return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 
 function parseISODate(d) {
-  // d = "YYYY-MM-DD"
+  // "YYYY-MM-DD" -> Date
   const [y, m, day] = String(d || "").split("-").map((v) => parseInt(v, 10));
   return new Date(Date.UTC(y || 1970, (m || 1) - 1, day || 1, 0, 0, 0));
 }
@@ -29,83 +26,15 @@ function timeAgo(iso) {
   return `${day} day${day === 1 ? "" : "s"} ago`;
 }
 
-/**
- * Downsample points to keep SVG rendering fast.
- * - If points <= maxPts, returns as-is.
- * - Otherwise, picks evenly-spaced samples (simple + effective).
- */
-function downsample(points, maxPts = 1500) {
+// Downsample for MAX so charts stay responsive.
+function downsample(points, maxPts = 2500) {
   if (!Array.isArray(points) || points.length <= maxPts) return points || [];
   const out = [];
   const step = (points.length - 1) / (maxPts - 1);
   for (let i = 0; i < maxPts; i++) {
-    const idx = Math.round(i * step);
-    out.push(points[idx]);
+    out.push(points[Math.round(i * step)]);
   }
   return out;
-}
-
-function drawSpark(svg, points, key, colorCss = "currentColor") {
-  svg.innerHTML = "";
-  if (!points || points.length < 2) return;
-
-  // Keep rendering fast for large datasets
-  const pts = downsample(points, 1500);
-
-  const W = 1000, H = 260, pad = 18;
-  const ys = pts.map(p => Number(p[key])).filter(Number.isFinite);
-  if (ys.length < 2) return;
-
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const spanY = (maxY - minY) || 1;
-
-  const toX = (i) => pad + (i * (W - 2 * pad)) / (pts.length - 1);
-  const toY = (v) => (H - pad) - ((v - minY) * (H - 2 * pad)) / spanY;
-
-  // Grid
-  const grid = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  let gridD = "";
-  for (let i = 0; i < 5; i++) {
-    const y = pad + (i * (H - 2 * pad)) / 4;
-    gridD += `M ${pad} ${y} L ${W - pad} ${y} `;
-  }
-  grid.setAttribute("d", gridD);
-  grid.setAttribute("stroke", "rgba(128,128,128,0.20)");
-  grid.setAttribute("stroke-width", "1");
-  grid.setAttribute("fill", "none");
-  svg.appendChild(grid);
-
-  // Line
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  let d = "";
-  for (let i = 0; i < pts.length; i++) {
-    const v = Number(pts[i][key]);
-    const x = toX(i);
-    const y = toY(v);
-    d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-  }
-  path.setAttribute("d", d);
-  path.setAttribute("stroke", colorCss);
-  path.setAttribute("stroke-width", "2.5");
-  path.setAttribute("fill", "none");
-  path.setAttribute("opacity", "0.95");
-  svg.appendChild(path);
-
-  // Min/Max labels
-  const mkText = (txt, x, y, anchor = "start") => {
-    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    t.textContent = txt;
-    t.setAttribute("x", String(x));
-    t.setAttribute("y", String(y));
-    t.setAttribute("fill", "rgba(128,128,128,0.85)");
-    t.setAttribute("font-size", "14");
-    t.setAttribute("font-family", "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace");
-    t.setAttribute("text-anchor", anchor);
-    return t;
-  };
-  svg.appendChild(mkText(`max ${fmtNum(maxY, 2)}`, W - pad, pad, "end"));
-  svg.appendChild(mkText(`min ${fmtNum(minY, 2)}`, W - pad, H - pad, "end"));
 }
 
 function setActiveRange(range) {
@@ -129,35 +58,111 @@ function filterByRange(history, range) {
   return history.filter((r) => parseISODate(r.date) >= start);
 }
 
-let FULL_HISTORY = [];
-let CURRENT_RANGE = "1M";
-
-// How much history we fetch per range.
-// MAX uses 50k to cover long history (and charts are downsampled).
 function desiredLimitForRange(range) {
   if (range === "1M") return 2000;
-  if (range === "3M") return 4000;
-  if (range === "6M") return 8000;
-  if (range === "1Y") return 15000;
+  if (range === "3M") return 6000;
+  if (range === "6M") return 12000;
+  if (range === "1Y") return 20000;
   if (range === "MAX") return 50000;
   return 5000;
 }
 
-function render(history) {
+function sortHistoryAsc(hist) {
+  return (hist || []).slice().sort((a, b) => (String(a?.date || "") < String(b?.date || "") ? -1 : 1));
+}
+
+let FULL_HISTORY = [];
+let CURRENT_RANGE = "1M";
+
+// Chart.js instances
+let CHART_GSR = null;
+let CHART_GOLD = null;
+let CHART_SILVER = null;
+
+function destroyCharts() {
+  try { CHART_GSR?.destroy(); } catch {}
+  try { CHART_GOLD?.destroy(); } catch {}
+  try { CHART_SILVER?.destroy(); } catch {}
+  CHART_GSR = CHART_GOLD = CHART_SILVER = null;
+}
+
+function buildSeries(points, valueKey) {
+  // Chart.js time scale requires {x: Date, y: Number}
+  return points
+    .map(p => ({ x: parseISODate(p.date), y: Number(p[valueKey]) }))
+    .filter(pt => Number.isFinite(pt.y) && pt.x instanceof Date && !isNaN(pt.x.getTime()));
+}
+
+function makeChart(canvasId, label, series, yDigits, isRatio = false) {
+  const ctx = $(canvasId).getContext("2d");
+
+  return new Chart(ctx, {
+    type: "line",
+    data: {
+      datasets: [{
+        label,
+        data: series,
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const d = items?.[0]?.raw?.x;
+              if (!(d instanceof Date)) return "";
+              // YYYY-MM-DD
+              return d.toISOString().slice(0, 10);
+            },
+            label: (item) => {
+              const v = item?.raw?.y;
+              return `${label}: ${fmtNum(v, yDigits)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: "time",
+          time: {
+            tooltipFormat: "yyyy-MM-dd"
+          },
+          ticks: {
+            maxTicksLimit: 8
+          },
+          grid: {
+            color: "rgba(0,0,0,0.06)"
+          }
+        },
+        y: {
+          ticks: {
+            callback: (v) => fmtNum(v, isRatio ? 2 : yDigits)
+          },
+          grid: {
+            color: "rgba(0,0,0,0.06)"
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderCharts(history) {
   const empty = $("emptyState");
   const chartsWrap = $("chartsWrap");
 
   if (!history || history.length < 2) {
     empty.classList.remove("hidden");
     chartsWrap.classList.add("hidden");
-    $("rangeLabel").textContent = history?.length
-      ? `${history[0].date} → ${history[0].date} (1 pt)`
-      : "—";
-
-    $("historyTable").innerHTML = "";
-    $("sparkGsr").innerHTML = "";
-    $("sparkGold").innerHTML = "";
-    $("sparkSilver").innerHTML = "";
+    $("rangeLabel").textContent = history?.length ? `${history[0].date} → ${history[0].date} (1 pt)` : "—";
+    destroyCharts();
     return;
   }
 
@@ -176,10 +181,22 @@ function render(history) {
   $("chartGold").classList.toggle("hidden", !showGold);
   $("chartSilver").classList.toggle("hidden", !showSilver);
 
-  if (showGsr) drawSpark($("sparkGsr"), history, "gsr");
-  if (showGold) drawSpark($("sparkGold"), history, "gold_usd");
-  if (showSilver) drawSpark($("sparkSilver"), history, "silver_usd");
+  // Rebuild charts (simple + reliable)
+  destroyCharts();
 
+  const ptsForCharts = (CURRENT_RANGE === "MAX") ? downsample(history, 2500) : history;
+
+  if (showGsr) {
+    CHART_GSR = makeChart("chartGsrCanvas", "GSR", buildSeries(ptsForCharts, "gsr"), 4, true);
+  }
+  if (showGold) {
+    CHART_GOLD = makeChart("chartGoldCanvas", "Gold Spot (USD)", buildSeries(ptsForCharts, "gold_usd"), 2, false);
+  }
+  if (showSilver) {
+    CHART_SILVER = makeChart("chartSilverCanvas", "Silver Spot (USD)", buildSeries(ptsForCharts, "silver_usd"), 2, false);
+  }
+
+  // Table (cap last 200)
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
     `<tr>
@@ -203,17 +220,7 @@ function setNoData(errMsg) {
   $("deltaPct").textContent = "—";
   $("rangeLabel").textContent = errMsg || "No data";
   FULL_HISTORY = [];
-  render([]);
-}
-
-function sortHistoryAsc(hist) {
-  return (hist || []).slice().sort((a, b) => {
-    const da = String(a?.date || "");
-    const db = String(b?.date || "");
-    if (da < db) return -1;
-    if (da > db) return 1;
-    return 0;
-  });
+  renderCharts([]);
 }
 
 async function fetchHistory(limit) {
@@ -242,7 +249,7 @@ async function load(forRange = CURRENT_RANGE) {
 
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
-    // Delta vs previous point (use full history tail)
+    // Delta
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
@@ -259,7 +266,7 @@ async function load(forRange = CURRENT_RANGE) {
       $("deltaPct").textContent = "—";
     }
 
-    render(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+    renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
 
   } catch (e) {
     setNoData(`Error: ${e?.message || e}`);
@@ -276,26 +283,24 @@ document.querySelectorAll(".segBtn").forEach((b) => {
     CURRENT_RANGE = b.dataset.range;
     setActiveRange(CURRENT_RANGE);
 
-    // If they click MAX, refetch more history automatically.
-    // For smaller ranges we can just reuse the already-loaded history.
+    // Fetch more if MAX
     if (CURRENT_RANGE === "MAX") {
       await load("MAX");
     } else {
-      render(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+      renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
     }
   });
 });
 
 ["showGold", "showSilver", "showGsr"].forEach((id) => {
   $(id).addEventListener("change", () => {
-    render(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+    renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
   });
 });
 
 setActiveRange(CURRENT_RANGE);
 load(CURRENT_RANGE);
 
-// Update the "Last updated" label every 10s
 setInterval(() => {
   const txt = $("fetchedAt").textContent;
   if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
