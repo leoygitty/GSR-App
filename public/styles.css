@@ -1179,3 +1179,88 @@ th{
     gap: 10px;
   }
 }
+/* =========================================================
+   Mobile KPI + above-the-fold fix (append-only override)
+   Goal: 2-up KPIs + first chart visible without desktop changes
+   ========================================================= */
+
+@media (max-width: 720px){
+
+  /* tighten top spacing so charts appear sooner */
+  .shell{ padding: 18px 12px 34px; }
+  .topbar{ gap: 10px; margin-bottom: 10px; }
+  .kpiGrid{ margin: 10px 0 10px; gap: 10px; }
+  .controls{ margin: 8px 0 10px; gap: 10px; }
+
+  /* KPI grid: 2 columns on mobile */
+  .kpiGrid{
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+
+  /* Make the 3rd KPI (Silver) full width for readability */
+  .kpiGrid .kpiCard:nth-child(3){
+    grid-column: 1 / -1;
+  }
+
+  /* Compact KPI cards (less vertical bloat) */
+  .kpiCard{
+    padding: 12px 12px 11px;
+    border-radius: 16px;
+  }
+
+  .kpiLabel{
+    font-size: 11px;
+    margin-bottom: 6px;
+    letter-spacing: .14em;
+  }
+
+  .kpiValue{
+    font-size: 30px;
+    line-height: 1.05;
+    margin-bottom: 6px;
+  }
+
+  /* Prevent long timestamps/sources from making cards tall */
+  .kpiSub{
+    font-size: 11px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Hard truncate the dynamic spans too */
+  #fetchedAt, #source{
+    display: inline-block;
+    max-width: 220px;
+    vertical-align: bottom;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Controls: keep segmented compact, reduce height */
+  .segmented{ padding: 4px; }
+  .segBtn{ padding: 9px 8px; font-size: 13px; }
+
+  /* Toggle pills: reduce height so first chart shows */
+  .toggle{
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  /* Charts: slightly shorter on phones to bring first chart into view */
+  .chartCanvasWrap{ height: 190px; }
+
+  .chartHeader{
+    padding: 9px 10px;
+  }
+}
+
+/* Even tighter on small phones (iPhone SE / very short viewports) */
+@media (max-width: 390px){
+  .chartCanvasWrap{ height: 175px; }
+  .kpiValue{ font-size: 28px; }
+  #fetchedAt, #source{ max-width: 180px; }
+}
