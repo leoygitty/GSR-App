@@ -21,6 +21,9 @@
       height: 100% !important;
       display: block;
     }
+
+    /* Pricing section anchor spacing (kept local to avoid global impact) */
+    #pricing { scroll-margin-top: 18px; }
   </style>
 </head>
 
@@ -38,10 +41,13 @@
       </div>
 
       <div class="actions">
-        <!-- NEW: top links -->
-        <a class="btn btnGhost" href="#pricing">Pricing</a>
-        <a class="btn btnGhost" href="/pro">Pro</a>
-        <a class="btn btnGhost" href="/elite">Elite</a>
+        <!-- Premium nav links (matches Pro/Elite pill buttons) -->
+        <div class="navLinks" aria-label="Primary navigation">
+          <a class="navLink" href="#pricing">Pricing</a>
+          <a class="navLink" href="/pro">Pro</a>
+          <a class="navLink navLink--primary" href="/elite">Elite</a>
+        </div>
+
         <button id="refreshBtn" class="btn" type="button">Refresh</button>
       </div>
     </header>
@@ -147,65 +153,153 @@
       </details>
     </section>
 
-    <!-- NEW: Pricing section -->
-    <section class="card" id="pricing" style="margin-top:14px;">
+    <!-- =========================
+         PRICING (cohesive + premium)
+         ========================= -->
+    <section class="card" id="pricing" aria-label="Pricing">
       <div class="cardHead">
         <div class="cardTitle">Pricing</div>
-        <div class="cardMeta">Upgrade when you want alerts and premium tools.</div>
+        <div class="cardMeta">Upgrade for signals, alerts, and premium tools</div>
       </div>
 
+      <!-- Premium hero strip using same system as Pro/Elite -->
+      <div class="heroCard" style="margin-bottom:14px;">
+        <div class="badgeRow">
+          <span class="badge pro">Subscriptions • Coming next</span>
+          <div class="priceTag">
+            <span class="small">Start free, upgrade anytime</span>
+          </div>
+        </div>
+        <h2 class="hTitle" style="font-size:32px; margin-top:0;">Turn a dashboard into a decision system.</h2>
+        <p class="hSub" style="max-width:80ch;">
+          Free shows the live ratio and history. Pro and Elite add scoring, alerts, and research tools designed to reduce noise and speed up decisions.
+        </p>
+        <div class="ctaRow">
+          <a class="btn2 pro" href="/pro">Explore Pro</a>
+          <a class="btn2 elite" href="/elite">Explore Elite</a>
+          <a class="btn2" href="#faqPricing">Pricing FAQs</a>
+        </div>
+        <div class="note">Payments wiring is next (Stripe + Apple Pay). These pages are already subscription-quality.</div>
+      </div>
+
+      <!-- Pricing grid (matches global premium components) -->
       <div class="pricingGrid">
+        <!-- FREE -->
         <div class="tierCard">
           <div class="tierTop">
-            <div class="tierName">Free</div>
-            <div class="tierPrice"><span class="tierDollars">$0</span><span class="tierPer">/mo</span></div>
-            <div class="tierDesc muted">Live dashboard + charts.</div>
+            <div class="tierNameRow">
+              <div class="tierName">Free</div>
+              <span class="badge badgeSoft">Starter</span>
+            </div>
+
+            <div class="tierPrice">
+              <div class="tierDollars">$0</div>
+              <div class="tierPer">/ month</div>
+            </div>
+
+            <div class="tierDesc muted">Clean dashboard for live ratio + history.</div>
           </div>
+
           <ul class="tierList">
-            <li><span class="dotMini" aria-hidden="true"></span>GSR + gold/silver snapshots</li>
-            <li><span class="dotMini" aria-hidden="true"></span>Historical charts (DB)</li>
-            <li><span class="dotMini" aria-hidden="true"></span>Manual refresh</li>
+            <li><span class="dotMini"></span>Live refresh + daily DB history</li>
+            <li><span class="dotMini"></span>Charts + range selection</li>
+            <li><span class="dotMini"></span>Basic historical table</li>
           </ul>
-          <a class="btn btnGhost btnWide" href="#top">You’re on Free</a>
+
+          <div class="ctaRow">
+            <a class="btn2" href="/" aria-label="Stay on free">You’re on Free</a>
+            <a class="btn2 pro" href="/pro">Upgrade</a>
+          </div>
+
+          <div class="note">Best for casual tracking.</div>
         </div>
 
+        <!-- PRO -->
         <div class="tierCard tierCardPro">
           <div class="tierTop">
             <div class="tierNameRow">
               <div class="tierName">Pro</div>
-              <span class="badge badgePro">Most popular</span>
+              <span class="badge pro">Most Popular</span>
             </div>
-            <div class="tierPrice"><span class="tierDollars">$9</span><span class="tierPer">/mo</span></div>
-            <div class="tierDesc muted">Signals + alerts designed for serious users.</div>
+
+            <div class="tierPrice">
+              <div class="tierDollars">$9</div>
+              <div class="tierPer">/ month</div>
+            </div>
+
+            <div class="tierDesc muted">Signals + alerts that cut through noise.</div>
           </div>
+
           <ul class="tierList">
-            <li><span class="check" aria-hidden="true"></span>Buy/Sell score + regime label</li>
-            <li><span class="check" aria-hidden="true"></span>10 alerts + cooldowns</li>
-            <li><span class="check" aria-hidden="true"></span>Premium overlays + markers</li>
+            <li><span class="dotMini"></span>Buy/Sell Score (0–100) + regime</li>
+            <li><span class="dotMini"></span>10 alerts (GSR, gold, silver)</li>
+            <li><span class="dotMini"></span>Overlays + signal markers</li>
           </ul>
-          <a class="btn btnPrimary btnWide" href="/pro">See Pro</a>
+
+          <div class="ctaRow">
+            <a class="btn2 pro" href="/pro">See Pro details</a>
+            <a class="btn2" href="/elite">Compare to Elite</a>
+          </div>
+
+          <div class="note">Ideal for active users who want actionable triggers.</div>
         </div>
 
+        <!-- ELITE -->
         <div class="tierCard tierCardElite">
           <div class="tierTop">
             <div class="tierNameRow">
               <div class="tierName">Elite</div>
-              <span class="badge badgeElite">Power users</span>
+              <span class="badge elite">Power Users</span>
             </div>
-            <div class="tierPrice"><span class="tierDollars">$19</span><span class="tierPer">/mo</span></div>
-            <div class="tierDesc muted">Automation + deeper research tools.</div>
+
+            <div class="tierPrice">
+              <div class="tierDollars">$19</div>
+              <div class="tierPer">/ month</div>
+            </div>
+
+            <div class="tierDesc muted">Percentiles, confidence, scenario tools.</div>
           </div>
+
           <ul class="tierList">
-            <li><span class="check checkElite" aria-hidden="true"></span>50+ alerts + percentile triggers</li>
-            <li><span class="check checkElite" aria-hidden="true"></span>Hold-time confirmation</li>
-            <li><span class="check checkElite" aria-hidden="true"></span>Scenario + ladder + export</li>
+            <li><span class="dotMini"></span>50 alerts + percentile triggers</li>
+            <li><span class="dotMini"></span>Confidence score (volatility-adjusted)</li>
+            <li><span class="dotMini"></span>Scenario + ladder + CSV export</li>
           </ul>
-          <a class="btn btnElite btnWide" href="/elite">See Elite</a>
+
+          <div class="ctaRow">
+            <a class="btn2 elite" href="/elite">See Elite details</a>
+            <a class="btn2" href="/pro">Compare to Pro</a>
+          </div>
+
+          <div class="note">Best for systematic, rules-based execution.</div>
         </div>
       </div>
 
-      <div class="muted finePrint" style="margin-top:10px;">
-        Checkout is coming next. These pages are designed to be Stripe-ready when we wire billing.
+      <!-- Mini FAQ block in-dashboard -->
+      <div class="section" id="faqPricing">
+        <div class="secHead">
+          <h2>Pricing FAQs</h2>
+          <div class="meta">Quick answers</div>
+        </div>
+
+        <div class="faqGrid">
+          <details>
+            <summary>Do I need to subscribe to use the dashboard?</summary>
+            <p>No. Free includes live refresh, stored history, and charts.</p>
+          </details>
+          <details>
+            <summary>What’s the biggest Pro upgrade?</summary>
+            <p>Signals + alerts: score/regime and notifications so you don’t have to watch charts all day.</p>
+          </details>
+          <details>
+            <summary>What makes Elite different?</summary>
+            <p>Percentiles, confidence scoring, and scenario/ladder tools built for systematic users.</p>
+          </details>
+          <details>
+            <summary>When do payments go live?</summary>
+            <p>Next step after landing polish: Stripe Checkout + Apple Pay + subscription gating.</p>
+          </details>
+        </div>
       </div>
     </section>
 
