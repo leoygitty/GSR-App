@@ -1021,3 +1021,42 @@ th{
   #fetchedAt, #source{ max-width: 9ch; }
   .chartCanvasWrap{ height: 175px; }
 }
+/* =========================================================
+   Mobile header tweaks (append-only)
+   - Center title block
+   - Move Refresh to top-right
+   ========================================================= */
+@media (max-width: 720px){
+
+  /* Center the title/sub/meta */
+  .titleBlock{
+    text-align: center;
+  }
+  .titleBlock .metaLine{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap: 6px;
+  }
+  .titleBlock .dot{ display:none; } /* optional: cleaner wrap on small screens */
+
+  /* Put nav links + refresh on one row, refresh pinned right */
+  .actions{
+    display:grid;
+    grid-template-columns: 1fr auto;
+    align-items:center;
+    gap: 10px;
+  }
+
+  .navLinks{
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: nowrap;          /* keep pills on one row */
+    overflow: hidden;           /* no sideways scroll */
+  }
+
+  #refreshBtn{
+    justify-self: end;
+    margin-left: 0;
+  }
+}
