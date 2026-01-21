@@ -21,35 +21,6 @@
       height: 100% !important;
       display: block;
     }
-
-    /* NEW: topbar nav to Pro/Elite */
-    .navLinks {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .navLink {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(0,0,0,0.12);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-      line-height: 1;
-      color: inherit;
-      background: rgba(255,255,255,0.7);
-    }
-    .navLink:hover {
-      border-color: rgba(0,0,0,0.2);
-      background: rgba(255,255,255,0.95);
-    }
-    .navLink--primary {
-      border-color: rgba(0,0,0,0.18);
-      background: rgba(0,0,0,0.04);
-    }
   </style>
 </head>
 
@@ -67,12 +38,10 @@
       </div>
 
       <div class="actions">
-        <!-- NEW: Pro / Elite links -->
-        <nav class="navLinks" aria-label="Plans">
-          <a class="navLink" href="/pro">Pro</a>
-          <a class="navLink navLink--primary" href="/elite">Elite</a>
-        </nav>
-
+        <!-- NEW: top links -->
+        <a class="btn btnGhost" href="#pricing">Pricing</a>
+        <a class="btn btnGhost" href="/pro">Pro</a>
+        <a class="btn btnGhost" href="/elite">Elite</a>
         <button id="refreshBtn" class="btn" type="button">Refresh</button>
       </div>
     </header>
@@ -176,6 +145,68 @@
           </table>
         </div>
       </details>
+    </section>
+
+    <!-- NEW: Pricing section -->
+    <section class="card" id="pricing" style="margin-top:14px;">
+      <div class="cardHead">
+        <div class="cardTitle">Pricing</div>
+        <div class="cardMeta">Upgrade when you want alerts and premium tools.</div>
+      </div>
+
+      <div class="pricingGrid">
+        <div class="tierCard">
+          <div class="tierTop">
+            <div class="tierName">Free</div>
+            <div class="tierPrice"><span class="tierDollars">$0</span><span class="tierPer">/mo</span></div>
+            <div class="tierDesc muted">Live dashboard + charts.</div>
+          </div>
+          <ul class="tierList">
+            <li><span class="dotMini" aria-hidden="true"></span>GSR + gold/silver snapshots</li>
+            <li><span class="dotMini" aria-hidden="true"></span>Historical charts (DB)</li>
+            <li><span class="dotMini" aria-hidden="true"></span>Manual refresh</li>
+          </ul>
+          <a class="btn btnGhost btnWide" href="#top">You’re on Free</a>
+        </div>
+
+        <div class="tierCard tierCardPro">
+          <div class="tierTop">
+            <div class="tierNameRow">
+              <div class="tierName">Pro</div>
+              <span class="badge badgePro">Most popular</span>
+            </div>
+            <div class="tierPrice"><span class="tierDollars">$9</span><span class="tierPer">/mo</span></div>
+            <div class="tierDesc muted">Signals + alerts designed for serious users.</div>
+          </div>
+          <ul class="tierList">
+            <li><span class="check" aria-hidden="true"></span>Buy/Sell score + regime label</li>
+            <li><span class="check" aria-hidden="true"></span>10 alerts + cooldowns</li>
+            <li><span class="check" aria-hidden="true"></span>Premium overlays + markers</li>
+          </ul>
+          <a class="btn btnPrimary btnWide" href="/pro">See Pro</a>
+        </div>
+
+        <div class="tierCard tierCardElite">
+          <div class="tierTop">
+            <div class="tierNameRow">
+              <div class="tierName">Elite</div>
+              <span class="badge badgeElite">Power users</span>
+            </div>
+            <div class="tierPrice"><span class="tierDollars">$19</span><span class="tierPer">/mo</span></div>
+            <div class="tierDesc muted">Automation + deeper research tools.</div>
+          </div>
+          <ul class="tierList">
+            <li><span class="check checkElite" aria-hidden="true"></span>50+ alerts + percentile triggers</li>
+            <li><span class="check checkElite" aria-hidden="true"></span>Hold-time confirmation</li>
+            <li><span class="check checkElite" aria-hidden="true"></span>Scenario + ladder + export</li>
+          </ul>
+          <a class="btn btnElite btnWide" href="/elite">See Elite</a>
+        </div>
+      </div>
+
+      <div class="muted finePrint" style="margin-top:10px;">
+        Checkout is coming next. These pages are designed to be Stripe-ready when we wire billing.
+      </div>
     </section>
 
     <footer class="footer">
