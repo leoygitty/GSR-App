@@ -72,6 +72,7 @@
     .panelTitle{ font-weight: 900; margin:0 0 8px; }
     .bullets{ margin:0; padding-left: 18px; color: rgba(17,17,20,.82); }
     .bullets li{ margin: 8px 0; }
+    .bullets li b{ font-weight: 900; }
 
     .check{ display:grid; gap:10px; }
     .check .row{
@@ -115,7 +116,7 @@
       box-shadow: var(--shadow);
     }
     .compare table{ width:100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
-    .compare th, .compare td{ padding: 12px 12px; border-bottom: 1px solid rgba(17,17,20,.08); text-align:left; }
+    .compare th, .compare td{ padding: 12px 12px; border-bottom: 1px solid rgba(17,17,20,.08); text-align:left; vertical-align: top; }
     .compare th{ background: rgba(246,246,247,.7); font-weight: 900; }
     .yes{ font-weight: 900; color:#0a7a3d; }
     .no{ color: rgba(17,17,20,.55); }
@@ -178,10 +179,10 @@
         </div>
       </div>
 
-      <h1 class="hTitle">Advanced signals, more alerts, and premium research tools.</h1>
+      <h1 class="hTitle">Advanced signals, inflation intelligence, and the full toolkit.</h1>
       <p class="hSub">
-        Elite adds percentile triggers, volatility-adjusted confidence, scenario tools, and higher alert capacity.
-        This is for users who want a more systematic, rules-based approach to timing.
+        Elite is built for systematic users: percentile + hold-time triggers, volatility-adjusted confidence, and scenario planning.
+        You also get inflation-first planning tools and higher automation that go beyond typical metals dashboards.
       </p>
 
       <div class="ctaRow" id="get">
@@ -191,20 +192,27 @@
       </div>
 
       <div class="note" id="checkout">
-        Payments come next. This page is now “subscription-quality” before wiring Stripe + Apple Pay.
+        Payments come next. This page is “subscription-quality” before wiring Stripe + Apple Pay.
       </div>
 
       <div class="grid2">
         <div class="panel">
           <h3 class="panelTitle">Everything in Pro, plus</h3>
           <ul class="bullets">
-            <li><b>50 alerts</b> + percentile alerts (top/bottom X%)</li>
+            <li><b>50 alerts</b> + percentile triggers (top/bottom X%)</li>
             <li><b>Hold-time alerts</b> (must remain above/below for N minutes)</li>
-            <li><b>Weekly premium digest</b> email (Mailersend next)</li>
+            <li><b>Weekly premium digest</b> email (MailerSend next)</li>
             <li><b>Confidence score</b> (volatility-adjusted)</li>
-            <li><b>Signal ladder recommendations</b> (configurable tranches)</li>
+            <li><b>Signal ladder</b> recommendations (configurable tranches)</li>
             <li><b>Scenario tool</b>: implied silver price at target GSR</li>
             <li><b>CSV export</b> for research and portfolio logs</li>
+
+            <!-- New Elite additions (short copy) -->
+            <li><b>Inflation-proof envelopes</b>: CPI-adjusted budgets + hedge envelope suggestions</li>
+            <li><b>Hedge-linked goals</b>: inflation-aware forecasts + “what-if” hedging</li>
+            <li><b>Jewelry photo scanner</b>: upload → estimate → melt value (coming)</li>
+            <li><b>Advanced inflation alerts</b>: category CPI + percentile triggers</li>
+            <li><b>Inflation shield score</b>: monthly hedge-vs-CPI readout</li>
           </ul>
         </div>
 
@@ -214,22 +222,22 @@
             <div class="row">
               <div class="ic">A</div>
               <div>
-                <b>Percentile awareness</b>
-                <span>Know when GSR is historically “extreme,” not just high/low.</span>
+                <b>Systematic triggers</b>
+                <span>Percentiles + hold-time conditions reduce noise and false positives.</span>
               </div>
             </div>
             <div class="row">
               <div class="ic">B</div>
               <div>
-                <b>Volatility-adjusted confidence</b>
-                <span>Signals change weight when markets get noisy.</span>
+                <b>Confidence weighting</b>
+                <span>Signals adapt when volatility changes, so you can prioritize setups.</span>
               </div>
             </div>
             <div class="row">
               <div class="ic">C</div>
               <div>
-                <b>Scenario planning</b>
-                <span>Instantly model “If GSR hits X, what does silver need to be?”</span>
+                <b>Inflation-first planning</b>
+                <span>Budgets and goals adjust to CPI with hedge guidance tied to metals signals.</span>
               </div>
             </div>
           </div>
@@ -240,21 +248,21 @@
     <section class="section">
       <div class="secHead">
         <h2>Elite toolkit</h2>
-        <div class="meta">More systematic, more scalable</div>
+        <div class="meta">More systematic, more automated</div>
       </div>
 
       <div class="cards3">
         <div class="mini">
-          <p class="t">Percentile Triggers</p>
-          <p class="d">Alert when GSR enters historically rare zones (top/bottom X%), not just arbitrary thresholds.</p>
+          <p class="t">Percentiles + Hold-Time</p>
+          <p class="d">Trigger on extremes and require persistence to reduce whipsaws.</p>
         </div>
         <div class="mini">
-          <p class="t">Confidence Score</p>
-          <p class="d">Volatility-adjusted scoring so you can distinguish strong vs weak signals.</p>
+          <p class="t">Confidence + Ladder</p>
+          <p class="d">Volatility-adjusted confidence and tranche-based ladder recommendations.</p>
         </div>
         <div class="mini">
-          <p class="t">Scenario + Ladder</p>
-          <p class="d">Plan entries/exits in tranches with scenario projections and ladder recommendations.</p>
+          <p class="t">Inflation Intelligence</p>
+          <p class="d">CPI-driven envelopes, goals, and category alerts linked to hedge actions.</p>
         </div>
       </div>
     </section>
@@ -292,7 +300,7 @@
               <td>Alerts</td>
               <td class="no">—</td>
               <td class="yes">10</td>
-              <td class="yes">50 + percentile</td>
+              <td class="yes">50 + percentiles</td>
             </tr>
             <tr>
               <td>Hold-time alerts</td>
@@ -324,6 +332,38 @@
               <td class="no">—</td>
               <td class="yes">Included</td>
             </tr>
+
+            <!-- New premium differentiators -->
+            <tr>
+              <td>Inflation-proof envelopes (CPI-adjusted budgeting)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Hedge-linked goals (inflation-aware forecasts)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Jewelry photo scanner &amp; appraiser</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included (coming)</td>
+            </tr>
+            <tr>
+              <td>Advanced inflation alerts (category CPI + percentiles)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Inflation shield score (hedge vs CPI)</td>
+              <td class="no">—</td>
+              <td class="no">—</td>
+              <td class="yes">Included</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -338,7 +378,7 @@
       <div class="faq">
         <details>
           <summary>Who is Elite for?</summary>
-          <p>Users who want more systematic triggers: percentiles, confidence scoring, and scenario planning.</p>
+          <p>Power users who want systematic triggers plus inflation-first planning tools that typical metals sites don’t offer.</p>
         </details>
         <details>
           <summary>Is Elite “trade advice”?</summary>
@@ -350,7 +390,7 @@
         </details>
         <details>
           <summary>When do payments go live?</summary>
-          <p>Next step after landing polish: Stripe Checkout + Apple Pay, then webhook gating and subscription state in Neon.</p>
+          <p>Next step after final landing polish: Stripe Checkout + Apple Pay, then webhook gating and subscription state in Neon.</p>
         </details>
       </div>
     </section>
