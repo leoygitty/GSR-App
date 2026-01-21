@@ -854,32 +854,23 @@ th{
   .pricingFaq{ grid-template-columns: 1fr; }
 }
 /* =========================================================
-   Mobile polish (append-only)
+   Mobile layout (clean, single block)
+   - KPI cards: 3 equal columns (GSR / GOLD / SILVER) on mobile
+   - No horizontal scroll
+   - Add a visual divider between KPI row and chart controls
    Desktop remains unchanged
-   Includes optional mobile chart height tweak
    ========================================================= */
 
 @media (max-width: 720px){
 
-  /* Optional tweak: slightly shorter charts on phones */
-  .chartCanvasWrap{ height: 220px; }
+  /* Global rhythm */
+  .shell{ padding: 18px 12px 34px; }
 
-  /* --- Global rhythm --- */
-  .shell{
-    padding: 22px 14px 40px;
-  }
-
-  .card{
-    padding: 14px;
-    border-radius: 16px;
-  }
-
-  /* --- Header / top bar --- */
   .topbar{
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
 
   h1{
@@ -888,16 +879,8 @@ th{
     letter-spacing: -0.02em;
   }
 
-  .sub{
-    font-size: 14px;
-    line-height: 1.45;
-    margin-bottom: 8px;
-  }
-
-  .metaLine{
-    font-size: 12px;
-    line-height: 1.4;
-  }
+  .sub{ font-size: 14px; line-height: 1.45; margin-bottom: 8px; }
+  .metaLine{ font-size: 12px; line-height: 1.4; }
 
   .actions{
     width: 100%;
@@ -913,315 +896,40 @@ th{
     gap: 8px;
   }
 
-  .navLink{
-    padding: 10px 12px;
-    font-size: 13px;
-  }
+  .navLink{ padding: 10px 12px; font-size: 13px; }
 
-  /* Make refresh button not feel tiny on mobile */
   .btn{
     padding: 10px 12px;
     border-radius: 999px;
     white-space: nowrap;
   }
 
-  /* --- KPI grid --- */
+  /* ========= KPI ROW: 3-up, equal width, no scroll ========= */
   .kpiGrid{
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
-    margin: 14px 0 12px;
-  }
-
-  .kpiCard{
-    padding: 14px;
-    border-radius: 16px;
-  }
-
-  .kpiLabel{
-    margin-bottom: 8px;
-  }
-
-  .kpiValue{
-    font-size: 34px;
-    line-height: 1.05;
-  }
-
-  .kpiSub{
-    font-size: 12px;
-  }
-
-  /* --- Controls row (segmented + toggles) --- */
-  .controls{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    margin: 10px 0 12px;
-  }
-
-  .segmented{
-    width: 100%;
-    justify-content: space-between;
-    gap: 4px;
-    padding: 4px;
-  }
-
-  .segBtn{
-    flex: 1 1 auto;
-    text-align: center;
-    padding: 10px 10px;
-    font-size: 13px;
-  }
-
-  .toggles{
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    font-size: 13px;
-  }
-
-  .toggle{
-    background: rgba(255,255,255,.65);
-    border: 1px solid rgba(17,17,20,.10);
-    padding: 10px 12px;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.04);
-    flex: 1 1 calc(33.333% - 8px);
-    justify-content: center;
-  }
-
-  /* --- Chart blocks --- */
-  .chartHeader{
-    padding: 10px 10px;
-  }
-
-  .chartName{
-    font-size: 13px;
-  }
-
-  .chartHint{
-    font-size: 11px;
-  }
-
-  .chartBlock{
-    border-radius: 14px;
-  }
-
-  /* --- Details table --- */
-  .tableWrap{
-    border-radius: 14px;
-  }
-  table{
-    font-size: 12px;
-  }
-  th, td{
-    padding: 10px 10px;
-  }
-
-  /* --- Pricing section (homepage) --- */
-  .pricingPanel{
-    border-radius: 18px;
-  }
-
-  .pricingTop{
-    padding: 14px;
-    gap: 10px;
-  }
-
-  .pricingTitle{
-    font-size: 22px;
-    line-height: 1.15;
-  }
-
-  .pricingSub{
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .pricingCtas{
-    gap: 8px;
-  }
-
-  .pricingCtas .btn2{
-    padding: 11px 12px;
-    font-size: 13px;
-  }
-
-  .planRow{
-    padding: 14px 14px;
-    gap: 10px;
-  }
-
-  .planDollars{
-    font-size: 26px;
-  }
-
-  .planDesc{
-    font-size: 13px;
-  }
-
-  .planFeatures{
-    padding-top: 6px;
-  }
-
-  .feat{
-    font-size: 13px;
-    padding-left: 16px;
-  }
-
-  .feat::before{
-    width: 9px;
-    height: 9px;
-    top: 4px;
-  }
-
-  .planCta{
-    justify-content: flex-start;
-    gap: 8px;
-    padding-top: 6px;
-  }
-
-  .planCta .btn2{
-    padding: 11px 12px;
-    font-size: 13px;
-  }
-
-  .pricingFaq{
-    padding: 14px;
-  }
-
-  .faqGrid details{
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
-
-  /* --- Pro/Elite pages (shared classes in styles.css) --- */
-  .pWrap{
-    padding: 22px 14px 44px;
-  }
-
-  .pTop{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .pNav{
-    justify-content: flex-start;
-    gap: 8px;
-  }
-
-  .heroCard{
-    border-radius: 18px;
-    padding: 14px;
-  }
-
-  .badgeRow{
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .priceTag .big{
-    font-size: 34px;
-  }
-
-  .hTitle{
-    font-size: 28px;
-    line-height: 1.08;
-  }
-
-  .hSub{
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .ctaRow{
-    gap: 8px;
-  }
-
-  .grid2{
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  .panel{
-    padding: 14px;
-    border-radius: 16px;
-  }
-
-  .cards3{
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  .mini{
-    min-height: auto;
-    padding: 14px;
-    border-radius: 16px;
-  }
-
-  .compare{
-    border-radius: 16px;
-  }
-
-  .compare table{
-    min-width: 720px; /* horizontal scroll on small screens */
-  }
-
-  .faqGrid{
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  .finalCta{
-    border-radius: 18px;
-    padding: 14px;
-    gap: 10px;
-  }
-}
-/* =========================================================
-   Mobile KPI + above-the-fold fix (append-only override)
-   Goal: 2-up KPIs + first chart visible without desktop changes
-   ========================================================= */
-
-@media (max-width: 720px){
-
-  /* tighten top spacing so charts appear sooner */
-  .shell{ padding: 18px 12px 34px; }
-  .topbar{ gap: 10px; margin-bottom: 10px; }
-  .kpiGrid{ margin: 10px 0 10px; gap: 10px; }
-  .controls{ margin: 8px 0 10px; gap: 10px; }
-
-  /* KPI grid: 2 columns on mobile */
-  .kpiGrid{
-    grid-template-columns: 1fr 1fr;
+    margin: 10px 0 10px;
     align-items: stretch;
   }
 
-  /* Make the 3rd KPI (Silver) full width for readability */
-  .kpiGrid .kpiCard:nth-child(3){
-    grid-column: 1 / -1;
-  }
-
-  /* Compact KPI cards (less vertical bloat) */
   .kpiCard{
     padding: 12px 12px 11px;
     border-radius: 16px;
   }
 
   .kpiLabel{
-    font-size: 11px;
-    margin-bottom: 6px;
+    font-size: 10.5px;
     letter-spacing: .14em;
+    margin-bottom: 6px;
   }
 
   .kpiValue{
-    font-size: 30px;
+    font-size: 22px;          /* fits 3-up cleanly */
     line-height: 1.05;
     margin-bottom: 6px;
+    letter-spacing: -0.02em;
   }
 
-  /* Prevent long timestamps/sources from making cards tall */
   .kpiSub{
     font-size: 11px;
     line-height: 1.25;
@@ -1230,37 +938,86 @@ th{
     text-overflow: ellipsis;
   }
 
-  /* Hard truncate the dynamic spans too */
+  /* Make long dynamic values never expand the card */
   #fetchedAt, #source{
     display: inline-block;
-    max-width: 220px;
+    max-width: 10.5ch;        /* forces the timestamp/source to truncate */
     vertical-align: bottom;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* Controls: keep segmented compact, reduce height */
-  .segmented{ padding: 4px; }
-  .segBtn{ padding: 9px 8px; font-size: 13px; }
-
-  /* Toggle pills: reduce height so first chart shows */
-  .toggle{
-    padding: 8px 10px;
-    border-radius: 14px;
+  /* ========= Divider between KPIs and controls ========= */
+  .controls{
+    position: relative;
+    margin: 10px 0 12px;
+    padding-top: 14px;        /* space for divider */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  /* Charts: slightly shorter on phones to bring first chart into view */
+  .controls::before{
+    content:"";
+    position:absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: rgba(17,17,20,.10);
+  }
+
+  /* Segmented buttons keep equal widths */
+  .segmented{
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .segBtn{
+    flex: 1 1 0;
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  /* Toggles: 3 equal pills, same width */
+  .toggles{
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .toggle{
+    background: rgba(255,255,255,.65);
+    border: 1px solid rgba(17,17,20,.10);
+    padding: 10px 10px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.04);
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  /* Charts: shorter so first chart is visible */
   .chartCanvasWrap{ height: 190px; }
 
-  .chartHeader{
-    padding: 9px 10px;
-  }
+  /* Charts card slightly tighter */
+  .card{ padding: 14px; border-radius: 16px; }
+  .chartHeader{ padding: 9px 10px; }
+
+  /* Pricing section (optional: keep it compact) */
+  .pricingTop{ padding: 14px; gap: 10px; }
+  .planRow{ padding: 14px; gap: 10px; }
+  .faqGrid{ grid-template-columns: 1fr; }
 }
 
-/* Even tighter on small phones (iPhone SE / very short viewports) */
+/* Smaller phones: tiny reductions so 3-up KPIs still fit */
 @media (max-width: 390px){
+  .kpiValue{ font-size: 20px; }
+  #fetchedAt, #source{ max-width: 9ch; }
   .chartCanvasWrap{ height: 175px; }
-  .kpiValue{ font-size: 28px; }
-  #fetchedAt, #source{ max-width: 180px; }
 }
