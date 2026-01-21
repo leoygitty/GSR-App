@@ -1,6 +1,6 @@
 /* sw.js — multi-page friendly service worker */
 
-const CACHE = "gsr-cache-v3"; // bump this when you change SW
+const CACHE = "gsr-cache-v4"; // bump this when you change SW
 const ASSETS = [
   "/",               // will resolve to /index.html via rewrite
   "/index.html",
