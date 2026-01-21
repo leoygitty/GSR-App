@@ -853,3 +853,329 @@ th{
   .planCta{ justify-content:flex-start; }
   .pricingFaq{ grid-template-columns: 1fr; }
 }
+/* =========================================================
+   Mobile polish (append-only)
+   Desktop remains unchanged
+   Includes optional mobile chart height tweak
+   ========================================================= */
+
+@media (max-width: 720px){
+
+  /* Optional tweak: slightly shorter charts on phones */
+  .chartCanvasWrap{ height: 220px; }
+
+  /* --- Global rhythm --- */
+  .shell{
+    padding: 22px 14px 40px;
+  }
+
+  .card{
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  /* --- Header / top bar --- */
+  .topbar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  h1{
+    font-size: 30px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .sub{
+    font-size: 14px;
+    line-height: 1.45;
+    margin-bottom: 8px;
+  }
+
+  .metaLine{
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .actions{
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .navLinks{
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .navLink{
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Make refresh button not feel tiny on mobile */
+  .btn{
+    padding: 10px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* --- KPI grid --- */
+  .kpiGrid{
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 14px 0 12px;
+  }
+
+  .kpiCard{
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .kpiLabel{
+    margin-bottom: 8px;
+  }
+
+  .kpiValue{
+    font-size: 34px;
+    line-height: 1.05;
+  }
+
+  .kpiSub{
+    font-size: 12px;
+  }
+
+  /* --- Controls row (segmented + toggles) --- */
+  .controls{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 10px 0 12px;
+  }
+
+  .segmented{
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .segBtn{
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 10px 10px;
+    font-size: 13px;
+  }
+
+  .toggles{
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .toggle{
+    background: rgba(255,255,255,.65);
+    border: 1px solid rgba(17,17,20,.10);
+    padding: 10px 12px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.04);
+    flex: 1 1 calc(33.333% - 8px);
+    justify-content: center;
+  }
+
+  /* --- Chart blocks --- */
+  .chartHeader{
+    padding: 10px 10px;
+  }
+
+  .chartName{
+    font-size: 13px;
+  }
+
+  .chartHint{
+    font-size: 11px;
+  }
+
+  .chartBlock{
+    border-radius: 14px;
+  }
+
+  /* --- Details table --- */
+  .tableWrap{
+    border-radius: 14px;
+  }
+  table{
+    font-size: 12px;
+  }
+  th, td{
+    padding: 10px 10px;
+  }
+
+  /* --- Pricing section (homepage) --- */
+  .pricingPanel{
+    border-radius: 18px;
+  }
+
+  .pricingTop{
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .pricingTitle{
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .pricingSub{
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .pricingCtas{
+    gap: 8px;
+  }
+
+  .pricingCtas .btn2{
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+
+  .planRow{
+    padding: 14px 14px;
+    gap: 10px;
+  }
+
+  .planDollars{
+    font-size: 26px;
+  }
+
+  .planDesc{
+    font-size: 13px;
+  }
+
+  .planFeatures{
+    padding-top: 6px;
+  }
+
+  .feat{
+    font-size: 13px;
+    padding-left: 16px;
+  }
+
+  .feat::before{
+    width: 9px;
+    height: 9px;
+    top: 4px;
+  }
+
+  .planCta{
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 6px;
+  }
+
+  .planCta .btn2{
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+
+  .pricingFaq{
+    padding: 14px;
+  }
+
+  .faqGrid details{
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  /* --- Pro/Elite pages (shared classes in styles.css) --- */
+  .pWrap{
+    padding: 22px 14px 44px;
+  }
+
+  .pTop{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .pNav{
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .heroCard{
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .badgeRow{
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .priceTag .big{
+    font-size: 34px;
+  }
+
+  .hTitle{
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .hSub{
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .ctaRow{
+    gap: 8px;
+  }
+
+  .grid2{
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .panel{
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .cards3{
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .mini{
+    min-height: auto;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .compare{
+    border-radius: 16px;
+  }
+
+  .compare table{
+    min-width: 720px; /* horizontal scroll on small screens */
+  }
+
+  .faqGrid{
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .finalCta{
+    border-radius: 18px;
+    padding: 14px;
+    gap: 10px;
+  }
+}
