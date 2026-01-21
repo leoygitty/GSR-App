@@ -1,61 +1,65 @@
-// v4 - explicit network/no-store for /api/*, network-first for shell
-const CACHE = "gsr-v4";
+/* sw.js — multi-page friendly service worker */
 
-const SHELL = [
-  "/",
+const CACHE = "gsr-cache-v3"; // bump this when you change SW
+const ASSETS = [
+  "/",               // will resolve to /index.html via rewrite
   "/index.html",
   "/styles.css",
   "/app.js",
+  "/icon.svg",
   "/manifest.json",
-  "/icon.svg"
+  "/pro/index.html",
+  "/elite/index.html"
 ];
 
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {})
+    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)));
-      await self.clients.claim();
-    })()
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => (k === CACHE ? null : caches.delete(k))))
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-
-  // Only handle GET
-  if (req.method !== "GET") return;
-
   const url = new URL(req.url);
 
-  // Never cache API responses: always go to network, bypass caches
-  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) {
-    event.respondWith(fetch(new Request(req, { cache: "no-store" })));
+  // Only handle same-origin GET
+  if (req.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // IMPORTANT: for real page navigations, go to network first so /pro and /elite load correctly.
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          // Update cache with the latest HTML
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((r) => r || caches.match("/index.html")))
+    );
     return;
   }
 
-  // Network-first for everything else; cache on success
+  // For static assets: cache-first, then update in background
   event.respondWith(
-    (async () => {
-      try {
-        const fresh = await fetch(new Request(req, { cache: "no-store" }));
-        // Cache only same-origin basic responses
-        if (url.origin === self.location.origin && fresh && fresh.ok && fresh.type === "basic") {
-          const cache = await caches.open(CACHE);
-          cache.put(req, fresh.clone());
-        }
-        return fresh;
-      } catch (e) {
-        const cached = await caches.match(req);
-        return cached || new Response("Offline", { status: 503 });
-      }
-    })()
+    caches.match(req).then((cached) => {
+      const fetchPromise = fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => cached);
+
+      return cached || fetchPromise;
+    })
   );
 });
