@@ -1,11 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-
   "crons": [
     { "path": "/api/cron_gsr", "schedule": "0 0 * * *" }
   ],
-
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
 
@@ -17,7 +15,6 @@
 
     { "source": "/(.*)", "destination": "/public/index.html" }
   ],
-
   "headers": [
     {
       "source": "/api/(.*)",
@@ -37,8 +34,6 @@
         { "key": "Expires", "value": "0" }
       ]
     },
-
-    /* Ensure /pro and /elite HTML is never cached (fixes “stale page” after deploys) */
     {
       "source": "/pro",
       "headers": [
