@@ -1272,21 +1272,19 @@ th{
   to{ transform: translateX(-50%); } /* we will duplicate content via JS for seamless loop */
 }
 /* =========================================================
-   Fixed top ticker (MetalMetric)
-   - Above everything (z-index)
-   - No blank gaps (track is duplicated by JS)
+   Fixed top ticker (MetalMetric) — FULL BLEED + SLOWER
    ========================================================= */
 
 :root{
   --tickerH: 42px;
+  --tickerPad: 16px;     /* edge padding; set to 0 if you want true edge-to-edge text */
+  --tickerSpeed: 55s;    /* slower = easier to read */
 }
 
 body{
-  /* reserve space for the fixed ticker */
   padding-top: var(--tickerH);
 }
 
-/* Full-width fixed bar */
 .ticker{
   position: fixed;
   top: 0;
@@ -1299,12 +1297,13 @@ body{
   backdrop-filter: blur(12px);
 }
 
-/* Keep content aligned with your 1120px shell, but bar stays full width */
+/* IMPORTANT: remove max-width constraint so it reaches screen edges */
 .tickerInner{
   height: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 0 20px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 var(--tickerPad);
   display: flex;
   align-items: center;
 }
@@ -1319,24 +1318,21 @@ body{
   align-items: center;
   width: max-content;
   white-space: nowrap;
-  gap: 0;
   transform: translate3d(0,0,0);
   will-change: transform;
-
-  /* don’t animate until JS says it’s filled */
   animation: none;
 }
 
 .tickerTrack.isReady{
-  animation: tickerMove 26s linear infinite;
+  animation: tickerMove var(--tickerSpeed) linear infinite;
 }
 
+/* Keep the seam clean: we animate -50% assuming JS duplicates content */
 @keyframes tickerMove{
   0%   { transform: translate3d(0,0,0); }
   100% { transform: translate3d(-50%,0,0); }
 }
 
-/* Item styling (skinny + clean) */
 .tickerGroup{
   display: inline-flex;
   align-items: center;
@@ -1375,15 +1371,18 @@ body{
   color: rgba(17,17,20,.62);
 }
 
-/* Respect reduced motion */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce){
   .tickerTrack.isReady{ animation: none; }
 }
 
-/* Mobile: slightly tighter */
+/* Mobile: slightly tighter + still readable + not too fast */
 @media (max-width: 720px){
-  :root{ --tickerH: 40px; }
-  .tickerInner{ padding: 0 12px; }
+  :root{
+    --tickerH: 40px;
+    --tickerPad: 12px;
+    --tickerSpeed: 70s;  /* slower on mobile */
+  }
   .tickLabel{ font-size: 11px; }
   .tickValue{ font-size: 11px; }
 }
