@@ -1271,3 +1271,119 @@ th{
   from{ transform: translateX(0); }
   to{ transform: translateX(-50%); } /* we will duplicate content via JS for seamless loop */
 }
+/* =========================================================
+   Fixed top ticker (MetalMetric)
+   - Above everything (z-index)
+   - No blank gaps (track is duplicated by JS)
+   ========================================================= */
+
+:root{
+  --tickerH: 42px;
+}
+
+body{
+  /* reserve space for the fixed ticker */
+  padding-top: var(--tickerH);
+}
+
+/* Full-width fixed bar */
+.ticker{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tickerH);
+  z-index: 9999;
+  border-bottom: 1px solid rgba(17,17,20,.08);
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(12px);
+}
+
+/* Keep content aligned with your 1120px shell, but bar stays full width */
+.tickerInner{
+  height: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+}
+
+.tickerViewport{
+  width: 100%;
+  overflow: hidden;
+}
+
+.tickerTrack{
+  display: flex;
+  align-items: center;
+  width: max-content;
+  white-space: nowrap;
+  gap: 0;
+  transform: translate3d(0,0,0);
+  will-change: transform;
+
+  /* don’t animate until JS says it’s filled */
+  animation: none;
+}
+
+.tickerTrack.isReady{
+  animation: tickerMove 26s linear infinite;
+}
+
+@keyframes tickerMove{
+  0%   { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(-50%,0,0); }
+}
+
+/* Item styling (skinny + clean) */
+.tickerGroup{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 14px;
+}
+
+.tickItem{
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tickLabel{
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: rgba(17,17,20,.55);
+}
+
+.tickValue{
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(17,17,20,.86);
+}
+
+.tickSep{
+  opacity: .45;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
+.tickCta .tickValue{
+  color: rgba(17,17,20,.62);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .tickerTrack.isReady{ animation: none; }
+}
+
+/* Mobile: slightly tighter */
+@media (max-width: 720px){
+  :root{ --tickerH: 40px; }
+  .tickerInner{ padding: 0 12px; }
+  .tickLabel{ font-size: 11px; }
+  .tickValue{ font-size: 11px; }
+}
