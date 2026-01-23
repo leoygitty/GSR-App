@@ -12,20 +12,90 @@
 
   <style>
     /* Ensures Chart.js canvases have a stable height within your existing layout */
-    .chartCanvasWrap {
-      height: 260px;
-      position: relative;
-    }
-    canvas.chartCanvas {
-      width: 100% !important;
-      height: 100% !important;
-      display: block;
-    }
+    .chartCanvasWrap { height: 260px; position: relative; }
+    canvas.chartCanvas { width: 100% !important; height: 100% !important; display: block; }
 
     /* Pricing section anchor spacing (kept local to avoid global impact) */
     #pricing { scroll-margin-top: 18px; }
 
-    /* Apple-level pricing: local-only polish so you can drop-in without touching global CSS */
+    /* =========================================================
+       TICKER: FULL-BLEED + READABLE SPEED (override-safe)
+       - Full width to screen edges (not constrained by .shell)
+       - No border radius, no inset padding
+       - Slower animation (adjust --tickerSeconds)
+       ========================================================= */
+    :root{
+      --tickerPad: 0px;          /* MUST be px, not "0x" */
+      --tickerH: 30px;           /* skinny bar */
+      --tickerSeconds: 32s;      /* slower = easier to read (try 28s–45s) */
+    }
+
+    .ticker{
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      width: 100vw;
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0;
+      border-radius: 0;
+      border-bottom: 1px solid rgba(17,17,20,.10);
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(10px);
+    }
+
+    .tickerInner{
+      width: 100%;
+      max-width: none;
+      padding: 0 var(--tickerPad);
+    }
+
+    .tickerViewport{
+      width: 100%;
+      overflow: hidden;
+      height: var(--tickerH);
+      display: flex;
+      align-items: center;
+    }
+
+    .tickerTrack{
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    /* Only animate once clones exist and sizing is correct */
+    .tickerTrack.isReady{
+      animation: tickerScroll var(--tickerSeconds) linear infinite;
+    }
+
+    @keyframes tickerScroll{
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); } /* works because we fill >2x and clones */
+    }
+
+    .tickerGroup{
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(17,17,20,.70);
+    }
+
+    .tickItem{ display:inline-flex; align-items:baseline; gap: 8px; }
+    .tickLabel{ opacity: .75; font-weight: 900; }
+    .tickValue{ font-weight: 900; color: rgba(17,17,20,.90); letter-spacing: .02em; }
+
+    .tickSep{ opacity: .45; font-weight: 900; }
+
+    .tickCta .tickValue{ color: rgba(10,132,255,.95); }
+
+    /* Keep the rest of your Apple-level pricing styles untouched */
     .pricingPanel{
       border: 1px solid rgba(17,17,20,.10);
       border-radius: 22px;
@@ -104,7 +174,6 @@
       color: rgba(17,17,20,.62);
     }
 
-    /* Apple-ish comparison rows */
     .planRows{ background: rgba(255,255,255,.82); }
     .planRow{
       display:grid;
@@ -174,10 +243,7 @@
       line-height: 1.4;
     }
 
-    .planFeatures{
-      display:grid;
-      gap: 8px;
-    }
+    .planFeatures{ display:grid; gap: 8px; }
     .feat{
       font-weight: 650;
       color: rgba(17,17,20,.78);
@@ -205,7 +271,6 @@
       flex-wrap: wrap;
     }
 
-    /* Uses your existing .btn2 styles on Pro/Elite pages; if not present globally, fallback to navLink look */
     .btn2{
       border:1px solid var(--stroke);
       background:rgba(255,255,255,.75);
@@ -254,10 +319,7 @@
       padding: 10px 12px;
       background: rgba(255,255,255,.72);
     }
-    .faqGrid summary{
-      cursor: pointer;
-      font-weight: 900;
-    }
+    .faqGrid summary{ cursor: pointer; font-weight: 900; }
     .faqGrid p{
       margin: 8px 0 0;
       line-height: 1.55;
@@ -277,16 +339,12 @@
 
 <body>
   <!-- =========================================================
-       FIXED TOP TICKER (ABOVE EVERYTHING)
-       - Full width
-       - Auto-duplicates so there's never a blank half
-       - Values come from your existing KPI elements via sync script
+       FIXED/Sticky TOP TICKER (ABOVE EVERYTHING)
        ========================================================= -->
   <div class="ticker" role="region" aria-label="Live prices ticker">
     <div class="tickerInner">
-      <div class="tickerViewport" aria-hidden="false">
+      <div class="tickerViewport">
         <div class="tickerTrack" id="tickerTrack">
-          <!-- One "live" group with IDs -->
           <div class="tickerGroup" id="tickerLiveGroup">
             <span class="tickItem">
               <span class="tickLabel">GOLD</span>
@@ -330,7 +388,7 @@
 
             <span class="tickSep">•</span>
           </div>
-          <!-- Clones will be appended by JS -->
+          <!-- clones appended by JS -->
         </div>
       </div>
     </div>
@@ -460,9 +518,6 @@
       </details>
     </section>
 
-    <!-- =========================
-         PRICING (Apple-level)
-         ========================= -->
     <section class="card" id="pricing" aria-label="Pricing">
       <div class="cardHead">
         <div class="cardTitle">Pricing</div>
@@ -598,17 +653,15 @@
     </footer>
   </main>
 
-  <!-- Chart.js (interactive charts) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
-
-  <!-- Your app logic -->
   <script defer src="/app.js"></script>
 
   <!-- =========================================================
-       Ticker sync + auto-duplicate (prevents blank half)
-       - Mirrors your existing KPI values into ticker IDs
-       - Clones ticker group until track is long enough
+       Ticker sync + auto-duplicate (prevents blanks)
+       - Fills to >= 2.5x viewport (more buffer)
+       - Starts animation only after fill
+       - Uses requestAnimationFrame to ensure correct measurements
        ========================================================= -->
   <script>
     (function(){
@@ -634,39 +687,45 @@
         return abs !== "—" ? abs : pct;
       };
 
-      // Duplicate ticker content until it covers >= 2x viewport (no blank gaps)
+      const stripCloneIds = (node) => {
+        node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+      };
+
       const ensureTickerFilled = () => {
         const track = $("tickerTrack");
-        const live = $("tickerLiveGroup");
+        const live  = $("tickerLiveGroup");
         if (!track || !live) return;
 
-        // Remove any existing clones (safe re-run)
+        track.classList.remove("isReady");
+
+        // Remove existing clones
         [...track.querySelectorAll(".tickerClone")].forEach(n => n.remove());
 
         const viewport = track.closest(".tickerViewport");
         if (!viewport) return;
 
-        const target = viewport.clientWidth * 2.2; // extra buffer
+        const target = viewport.clientWidth * 2.6; // extra buffer for seamless scroll
         let guard = 0;
 
         const makeClone = () => {
           const c = live.cloneNode(true);
           c.classList.add("tickerClone");
-          c.setAttribute("aria-hidden", "true");
+          c.setAttribute("aria-hidden","true");
           c.removeAttribute("id");
-          // Remove IDs inside clones (IDs must be unique)
-          c.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+          stripCloneIds(c);
           return c;
         };
 
-        // Keep appending clones until track is long enough
-        while (track.scrollWidth < target && guard < 20) {
+        // Append clones until we exceed target width
+        while (track.scrollWidth < target && guard < 30) {
           track.appendChild(makeClone());
           guard++;
         }
 
-        // Start animation once layout is valid
-        track.classList.add("isReady");
+        // Start animation after layout settles (prevents partial width issues)
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          track.classList.add("isReady");
+        }));
       };
 
       const sync = () => {
@@ -677,13 +736,16 @@
         setText("sbUpdated", readText("lastUpdatedHuman"));
       };
 
-      // Run once, then keep in sync
+      // Initial
       sync();
+      // Ensure sizing after fonts/layout
+      window.addEventListener("load", () => ensureTickerFilled());
       ensureTickerFilled();
 
+      // Observe KPI changes
       const mo = new MutationObserver(() => {
         sync();
-        // Re-check fill if numbers grow/shrink (rare but safe)
+        // Only re-fill if content width changed meaningfully
         ensureTickerFilled();
       });
 
@@ -692,10 +754,7 @@
         if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
       });
 
-      // Resize: re-fill and keep seamless
-      window.addEventListener("resize", () => {
-        ensureTickerFilled();
-      });
+      window.addEventListener("resize", () => ensureTickerFilled());
 
       // Light periodic sync
       setInterval(sync, 1200);
