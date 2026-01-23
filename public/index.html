@@ -289,7 +289,6 @@
       </div>
 
       <div class="actions">
-        <!-- Premium nav links (matches Pro/Elite pill buttons) -->
         <div class="navLinks" aria-label="Primary navigation">
           <a class="navLink" href="#pricing">Pricing</a>
           <a class="navLink" href="/pro">Pro</a>
@@ -299,6 +298,51 @@
         <button id="refreshBtn" class="btn" type="button">Refresh</button>
       </div>
     </header>
+
+    <!-- =========================
+         SIGNAL BAR (NEW)
+         left / middle / right
+         ========================= -->
+    <section class="signalBar" aria-label="Live signal bar">
+      <!-- Left: Live pricing -->
+      <div class="sbCol sbLeft">
+        <div class="sbKicker">Live pricing</div>
+        <div class="sbRow">
+          <div class="sbChip" aria-label="Gold price">
+            <span class="sbDot sbDotGold" aria-hidden="true"></span>
+            <span class="sbLabel">Gold</span>
+            <span class="sbValue" id="sbGold">—</span>
+          </div>
+          <div class="sbChip" aria-label="Silver price">
+            <span class="sbDot sbDotSilver" aria-hidden="true"></span>
+            <span class="sbLabel">Silver</span>
+            <span class="sbValue" id="sbSilver">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle: GSR + delta -->
+      <div class="sbCol sbMid">
+        <div class="sbKicker">Gold / Silver</div>
+        <div class="sbMain">
+          <div class="sbMainValue" id="sbGsr">—</div>
+          <div class="sbMainSub">
+            <span class="muted">Δ:</span>
+            <span id="sbDelta">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Status / context -->
+      <div class="sbCol sbRight">
+        <div class="sbKicker">Status</div>
+        <div class="sbStatus">
+          <span class="sbPill" id="sbPill">Live</span>
+          <span class="sbMeta"><span class="muted">Updated:</span> <span id="sbUpdated">—</span></span>
+        </div>
+        <div class="sbHint muted">Signals & alerts unlock with Pro/Elite.</div>
+      </div>
+    </section>
 
     <section class="kpiGrid">
       <div class="kpiCard">
@@ -434,7 +478,6 @@
         </div>
 
         <div class="planRows">
-          <!-- Free -->
           <div class="planRow" aria-label="Free plan">
             <div>
               <div class="planTopLine">
@@ -460,7 +503,6 @@
             </div>
           </div>
 
-          <!-- Pro -->
           <div class="planRow planRowPro" aria-label="Pro plan">
             <div>
               <div class="planTopLine">
@@ -486,7 +528,6 @@
             </div>
           </div>
 
-          <!-- Elite -->
           <div class="planRow planRowElite" aria-label="Elite plan">
             <div>
               <div class="planTopLine">
@@ -544,12 +585,79 @@
 
   <!-- Chart.js (interactive charts) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- REQUIRED for time scale support (x-axis dates) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 
-  <!-- Your app logic (runs after Chart.js + adapter are available) -->
+  <!-- Your app logic -->
   <script defer src="/app.js"></script>
+
+  <!-- =========================
+       Signal Bar sync (NEW)
+       Mirrors your existing DOM values into the bar
+       ========================= -->
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+
+      const readText = (id) => {
+        const el = $(id);
+        const t = (el && el.textContent || "").trim();
+        return t && t !== "—" ? t : "—";
+      };
+
+      const setText = (id, val) => {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = val;
+      };
+
+      const computeDeltaLine = () => {
+        const abs = readText("deltaAbs");
+        const pct = readText("deltaPct");
+        if (abs === "—" && pct === "—") return "—";
+        if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
+        return abs !== "—" ? abs : pct;
+      };
+
+      const setPill = () => {
+        const pill = $("sbPill");
+        if (!pill) return;
+
+        const absRaw = (($( "deltaAbs")?.textContent || "")).trim();
+        const pctRaw = (($( "deltaPct")?.textContent || "")).trim();
+
+        // Detect sign via existing classes or minus sign in text
+        const isDown = absRaw.startsWith("-") || pctRaw.startsWith("-") || $("#deltaAbs")?.classList.contains("neg") || $("#deltaPct")?.classList.contains("neg");
+        const isUp   = absRaw.startsWith("+") || pctRaw.startsWith("+") || $("#deltaAbs")?.classList.contains("pos") || $("#deltaPct")?.classList.contains("pos");
+
+        pill.classList.remove("isUp","isDown");
+
+        if (isUp) { pill.classList.add("isUp"); pill.textContent = "Up"; return; }
+        if (isDown) { pill.classList.add("isDown"); pill.textContent = "Down"; return; }
+        pill.textContent = "Live";
+      };
+
+      const sync = () => {
+        setText("sbGold", readText("gold"));
+        setText("sbSilver", readText("silver"));
+        setText("sbGsr", readText("gsr"));
+        setText("sbDelta", computeDeltaLine());
+        setText("sbUpdated", readText("lastUpdatedHuman"));
+        setPill();
+      };
+
+      // Run once, then keep in sync (covers refresh + async fetch timing)
+      sync();
+      const mo = new MutationObserver(sync);
+      const watchIds = ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"];
+      watchIds.forEach(id => {
+        const el = $(id);
+        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
+      });
+
+      // Safety: also re-sync periodically (cheap)
+      setInterval(sync, 1200);
+    })();
+  </script>
 
   <script>
     if ('serviceWorker' in navigator) {
