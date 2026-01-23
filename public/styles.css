@@ -14,9 +14,9 @@
   --pro: #0a84ff;
   --elite: #a86cff;
 
-  /* Fixed top ticker */
-  --tickerH: 30px;        /* must match index.html :root --tickerH */
-  --tickerSeconds: 36s;   /* must match index.html :root --tickerSeconds */
+  /* Fixed top ticker (matches index.html variables) */
+  --tickerH: 30px;
+  --tickerSeconds: 36s;
 }
 
 /* =========================
@@ -29,6 +29,9 @@ body{
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
+
+  /* Reserve space for the fixed top ticker */
+  padding-top: var(--tickerH);
 }
 
 /* =========================
@@ -73,7 +76,6 @@ h1{
   margin-bottom: 18px;
 }
 
-/* Actions area now contains nav links + refresh button */
 .actions{
   display:flex;
   gap:10px;
@@ -81,7 +83,6 @@ h1{
   flex-wrap: wrap;
 }
 
-/* Nav links (pill style) */
 .navLinks{
   display:flex;
   gap:10px;
@@ -113,7 +114,6 @@ h1{
   color: var(--pro);
 }
 
-/* Base button */
 .btn{
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,.75);
@@ -259,7 +259,6 @@ h1{
 .chartName{ font-weight: 900; }
 .chartHint{ font-size: 12px; }
 
-/* Details + table */
 .details{ margin-top: 12px; }
 .tableWrap{
   overflow:auto;
@@ -282,7 +281,6 @@ th{
   font-weight: 900;
 }
 
-/* Empty state */
 .emptyState{
   border: 1px dashed rgba(17,17,20,.18);
   border-radius: 14px;
@@ -301,7 +299,6 @@ th{
   font-size: 13px;
 }
 
-/* Footer */
 .footer{
   margin-top: 14px;
   color: var(--muted);
@@ -484,7 +481,6 @@ th{
   margin:0 0 8px;
 }
 
-/* bullet list used on premium pages */
 .pBullets{
   margin:0;
   padding-left: 18px;
@@ -492,7 +488,6 @@ th{
 }
 .pBullets li{ margin: 8px 0; }
 
-/* value rows */
 .checkGrid{ display:grid; gap:10px; }
 .checkRow{
   display:flex;
@@ -621,9 +616,6 @@ th{
 .finalCta .left b{ display:block; font-size: 16px; }
 .finalCta .left span{ color: var(--muted); font-size: 13px; }
 
-/* =========================
-   Responsive (tablet)
-   ========================= */
 @media (max-width: 980px){
   .kpiGrid{ grid-template-columns: 1fr; }
   h1{ font-size: 34px; }
@@ -639,9 +631,6 @@ th{
 
 /* =========================================================
    Mobile layout (single consolidated block)
-   - KPI cards: 3 equal columns (GSR / GOLD / SILVER)
-   - Refresh pinned top-right
-   - Nav pills centered below title
    ========================================================= */
 @media (max-width: 720px){
   .shell{ padding: 18px 12px 34px; }
@@ -790,6 +779,12 @@ th{
 
   .card{ padding: 14px; border-radius: 16px; }
   .chartHeader{ padding: 9px 10px; }
+
+  /* Mobile ticker: slow slightly more for readability */
+  :root{
+    --tickerH: 30px;
+    --tickerSeconds: 44s;
+  }
 }
 
 @media (max-width: 390px){
@@ -806,9 +801,8 @@ th{
 }
 
 /* =========================================================
-   Fixed TOP ticker (FULL BLEED, no leftover spacing)
-   - Only keep ONE ticker implementation (remove any others)
-   - This matches the updated index.html ticker structure
+   Fixed TOP ticker — FULL BLEED (ONLY implementation)
+   Matches index.html: .ticker > .tickerInner > .tickerViewport > .tickerTrack > .tickerGroup
    ========================================================= */
 
 .ticker{
@@ -817,7 +811,6 @@ th{
   left: 0;
   right: 0;
   width: 100vw;
-  max-width: none;
   margin: 0;
   padding: 0;
   border-radius: 0;
@@ -830,12 +823,13 @@ th{
 .tickerInner{
   height: var(--tickerH);
   width: 100%;
-  max-width: none;
   margin: 0;
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
   display:flex;
   align-items:center;
+
+  /* Safe-area padding only, no visual inset */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .tickerViewport{
@@ -879,27 +873,8 @@ th{
 .tickValue{ font-weight:900; color: rgba(17,17,20,.90); letter-spacing:.02em; }
 .tickSep{ opacity:.45; font-weight:900; }
 
-.tickCta a{
-  text-decoration:none;
-  font-weight:900;
-  color: rgba(10,132,255,.95);
-}
+.tickCta .tickValue{ color: rgba(10,132,255,.95); }
 
-/* Spacer inserted by index.html */
-.tickerSpacer{
-  height: var(--tickerH);
-}
-
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce){
   .tickerTrack.isReady{ animation: none; }
-}
-
-/* Mobile: slightly slower */
-@media (max-width: 720px){
-  :root{
-    --tickerH: 30px;
-    --tickerSeconds: 44s;
-  }
-  .tickerGroup{ font-size: 11px; }
 }
