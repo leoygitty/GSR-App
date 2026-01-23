@@ -15,6 +15,9 @@
   --elite: #a86cff;
 }
 
+/* =========================
+   Base
+   ========================= */
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
 body{
@@ -28,14 +31,6 @@ body{
   max-width: 1120px;
   margin: 0 auto;
   padding: 36px 20px 50px;
-}
-
-.topbar{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 18px;
-  margin-bottom: 18px;
 }
 
 h1{
@@ -58,6 +53,18 @@ h1{
 
 .muted{ color: var(--muted); }
 .dot{ margin: 0 8px; opacity:.5; }
+.hidden{ display:none !important; }
+
+/* =========================
+   Header / Nav / Buttons
+   ========================= */
+.topbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
 
 /* Actions area now contains nav links + refresh button */
 .actions{
@@ -115,7 +122,9 @@ h1{
 }
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-/* KPI cards */
+/* =========================
+   KPI cards
+   ========================= */
 .kpiGrid{
   display:grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -149,7 +158,9 @@ h1{
 .pos{ color: #0a7a3d; font-weight: 800; }
 .neg{ color: #b00020; font-weight: 800; }
 
-/* Controls */
+/* =========================
+   Controls
+   ========================= */
 .controls{
   display:flex;
   align-items:center;
@@ -194,7 +205,9 @@ h1{
   user-select:none;
 }
 
-/* Card */
+/* =========================
+   Card / Charts / Tables
+   ========================= */
 .card{
   background: var(--card);
   border: 1px solid var(--stroke);
@@ -218,7 +231,6 @@ h1{
   color: var(--muted);
 }
 
-/* Charts */
 .chartsWrap{
   display:flex;
   flex-direction:column;
@@ -289,12 +301,9 @@ th{
   font-size: 12px;
 }
 
-.hidden{ display:none !important; }
-
 /* =========================================================
    Premium shared components (global, consistent across pages)
    ========================================================= */
-
 .pWrap{ max-width:1120px; margin:0 auto; padding:28px 20px 60px; }
 
 .pTop{
@@ -322,7 +331,9 @@ th{
   letter-spacing: -0.02em;
 }
 .brandDot{
-  width:12px; height:12px; border-radius:999px;
+  width:12px;
+  height:12px;
+  border-radius:999px;
   background: linear-gradient(135deg, rgba(10,132,255,1), rgba(153,69,255,1));
   box-shadow:0 10px 30px rgba(153,69,255,.22);
 }
@@ -486,7 +497,8 @@ th{
   background: rgba(246,246,247,.55);
 }
 .ic{
-  width:26px; height:26px;
+  width:26px;
+  height:26px;
   border-radius: 10px;
   display:flex;
   align-items:center;
@@ -602,23 +614,10 @@ th{
 .finalCta .left b{ display:block; font-size: 16px; }
 .finalCta .left span{ color: var(--muted); font-size: 13px; }
 
-@media (max-width: 980px){
-  .kpiGrid{ grid-template-columns: 1fr; }
-  h1{ font-size: 34px; }
-  .controls{ flex-direction: column; align-items:flex-start; }
-  .actions{ width: 100%; justify-content:flex-start; }
-
-  .grid2{ grid-template-columns: 1fr; }
-  .cards3{ grid-template-columns: 1fr; }
-  .faqGrid{ grid-template-columns: 1fr; }
-  .hTitle{ font-size: 34px; }
-  .priceTag .big{ font-size: 34px; }
-}
 /* ===========================
    Apple-style Pricing (v2)
    Append-only additions
    =========================== */
-
 .pricingHero{
   display:grid;
   grid-template-columns: 1.4fr .6fr;
@@ -642,27 +641,23 @@ th{
   font-weight: 900;
   margin-bottom: 8px;
 }
-
 .pricingTitle{
   margin: 0 0 8px;
   font-size: 28px;
   letter-spacing: -0.02em;
 }
-
 .pricingSub{
   margin: 0 0 12px;
   color: rgba(17,17,20,.70);
   line-height: 1.55;
   max-width: 80ch;
 }
-
 .pricingCtas{
   display:flex;
   flex-wrap:wrap;
   gap: 10px;
   margin-bottom: 10px;
 }
-
 .pricingNote{
   color: rgba(17,17,20,.62);
   font-size: 12px;
@@ -677,21 +672,18 @@ th{
   flex-direction:column;
   justify-content:center;
 }
-
 .pricingStatLabel{
   font-size: 12px;
   color: rgba(17,17,20,.62);
   font-weight: 800;
   margin-bottom: 6px;
 }
-
 .pricingStatValue{
   font-size: 18px;
   font-weight: 900;
   letter-spacing: -0.01em;
   margin-bottom: 4px;
 }
-
 .pricingStatSub{
   font-size: 12px;
   color: rgba(17,17,20,.62);
@@ -713,7 +705,6 @@ th{
   border-bottom: 1px solid rgba(17,17,20,.08);
   align-items:center;
 }
-
 .planRow:last-child{ border-bottom: 0; }
 
 .planTop{
@@ -722,11 +713,7 @@ th{
   justify-content:space-between;
   gap: 10px;
 }
-
-.planName{
-  font-weight: 900;
-  font-size: 16px;
-}
+.planName{ font-weight: 900; font-size: 16px; }
 
 .planPrice{
   display:flex;
@@ -734,18 +721,15 @@ th{
   gap: 6px;
   margin-top: 6px;
 }
-
 .planDollars{
   font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.03em;
 }
-
 .planPer{
   font-weight: 800;
   color: rgba(17,17,20,.62);
 }
-
 .planDesc{
   margin-top: 6px;
   color: rgba(17,17,20,.66);
@@ -756,7 +740,6 @@ th{
   display:grid;
   gap: 8px;
 }
-
 .feat{
   font-weight: 650;
   color: rgba(17,17,20,.78);
@@ -765,7 +748,6 @@ th{
   padding-left: 20px;
   position: relative;
 }
-
 .feat::before{
   content:"";
   width: 10px;
@@ -796,13 +778,11 @@ th{
   background: rgba(255,255,255,.70);
   color: rgba(17,17,20,.72);
 }
-
 .pillPro{
   border-color: rgba(10,132,255,.28);
   background: rgba(10,132,255,.12);
   color: #0a84ff;
 }
-
 .pillElite{
   border-color: rgba(168,108,255,.30);
   background: rgba(168,108,255,.14);
@@ -814,7 +794,6 @@ th{
     radial-gradient(900px 220px at 15% 0%, rgba(10,132,255,.10), transparent 60%),
     rgba(255,255,255,.86);
 }
-
 .planRowElite{
   background:
     radial-gradient(900px 220px at 15% 0%, rgba(168,108,255,.10), transparent 60%),
@@ -827,19 +806,16 @@ th{
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
-
 .pricingFaq details{
   border: 1px solid rgba(17,17,20,.10);
   border-radius: 14px;
   padding: 10px 12px;
   background: rgba(255,255,255,.72);
 }
-
 .pricingFaq summary{
   cursor: pointer;
   font-weight: 900;
 }
-
 .pricingFaq p{
   margin: 8px 0 0;
   line-height: 1.55;
@@ -847,30 +823,187 @@ th{
   font-size: 13px;
 }
 
+/* =========================================================
+   Signal Bar (Live Banner) — required by index.html
+   ========================================================= */
+.signalBar{
+  margin: 10px 0 14px;
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  background:
+    radial-gradient(900px 240px at 12% 20%, rgba(10,132,255,.10), transparent 60%),
+    radial-gradient(700px 220px at 88% 30%, rgba(168,108,255,.08), transparent 60%),
+    rgba(255,255,255,.78);
+  backdrop-filter: blur(10px);
+  display: grid;
+  grid-template-columns: 1fr .9fr 1fr;
+  gap: 0;
+  overflow: hidden;
+}
+.sbCol{
+  padding: 12px 14px;
+  min-width: 0;
+}
+.sbCol + .sbCol{
+  border-left: 1px solid rgba(17,17,20,.08);
+}
+.sbKicker{
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+.sbRow{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sbChip{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(17,17,20,.10);
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 10px 30px rgba(0,0,0,.04);
+  min-width: 0;
+}
+.sbDot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+.sbDotGold{ background: rgba(255, 179, 0, .9); }
+.sbDotSilver{ background: rgba(120, 120, 135, .75); }
+.sbLabel{
+  font-weight: 900;
+  color: rgba(17,17,20,.76);
+  font-size: 12px;
+}
+.sbValue{
+  font-weight: 900;
+  font-size: 13px;
+  color: rgba(17,17,20,.90);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16ch;
+}
+
+/* Middle emphasis */
+.sbMid{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+.sbMainValue{
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.sbMainSub{
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(17,17,20,.74);
+  font-weight: 800;
+}
+
+/* Right side */
+.sbStatus{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sbPill{
+  display:inline-flex;
+  align-items:center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(17,17,20,.12);
+  background: rgba(255,255,255,.70);
+  color: rgba(17,17,20,.72);
+}
+.sbPill.isUp{
+  border-color: rgba(10,122,61,.25);
+  background: rgba(10,122,61,.10);
+  color: #0a7a3d;
+}
+.sbPill.isDown{
+  border-color: rgba(176,0,32,.22);
+  background: rgba(176,0,32,.08);
+  color: #b00020;
+}
+.sbMeta{
+  font-family: var(--mono);
+  font-size: 12px;
+  color: rgba(17,17,20,.70);
+  white-space: nowrap;
+}
+.sbHint{
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* =========================
+   Responsive (tablet)
+   ========================= */
 @media (max-width: 980px){
+  .kpiGrid{ grid-template-columns: 1fr; }
+  h1{ font-size: 34px; }
+  .controls{ flex-direction: column; align-items:flex-start; }
+  .actions{ width: 100%; justify-content:flex-start; }
+
+  .grid2{ grid-template-columns: 1fr; }
+  .cards3{ grid-template-columns: 1fr; }
+  .faqGrid{ grid-template-columns: 1fr; }
+  .hTitle{ font-size: 34px; }
+  .priceTag .big{ font-size: 34px; }
+
   .pricingHero{ grid-template-columns: 1fr; }
   .planRow{ grid-template-columns: 1fr; }
   .planCta{ justify-content:flex-start; }
   .pricingFaq{ grid-template-columns: 1fr; }
 }
-/* =========================================================
-   Mobile layout (clean, single block)
-   - KPI cards: 3 equal columns (GSR / GOLD / SILVER) on mobile
-   - No horizontal scroll
-   - Add a visual divider between KPI row and chart controls
-   Desktop remains unchanged
-   ========================================================= */
 
+/* =========================================================
+   Mobile layout (single consolidated block)
+   - KPI cards: 3 equal columns (GSR / GOLD / SILVER)
+   - Refresh pinned top-right
+   - Nav pills centered below title
+   ========================================================= */
 @media (max-width: 720px){
 
   /* Global rhythm */
   .shell{ padding: 18px 12px 34px; }
 
+  /* Header layout (FINAL behavior) */
   .topbar{
+    position: relative;
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
     margin-bottom: 10px;
+    padding-top: 54px; /* reserves space so Refresh never overlaps */
+  }
+
+  .titleBlock{
+    width: 100%;
+    text-align: center;
   }
 
   h1{
@@ -882,54 +1015,61 @@ th{
   .sub{ font-size: 14px; line-height: 1.45; margin-bottom: 8px; }
   .metaLine{ font-size: 12px; line-height: 1.4; }
 
+  .titleBlock .metaLine{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .titleBlock .dot{ display:none; }
+
+  #refreshBtn{
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    z-index: 10;
+    margin: 0;
+    white-space: nowrap;
+    padding: 10px 12px;
+  }
+
   .actions{
     width: 100%;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: 10px;
   }
 
   .navLinks{
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 8px;
   }
-
   .navLink{ padding: 10px 12px; font-size: 13px; }
 
-  .btn{
-    padding: 10px 12px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-
-  /* ========= KPI ROW: 3-up, equal width, no scroll ========= */
+  /* ========= KPI ROW: 3-up, equal width ========= */
   .kpiGrid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin: 10px 0 10px;
     align-items: stretch;
   }
-
   .kpiCard{
     padding: 12px 12px 11px;
     border-radius: 16px;
   }
-
   .kpiLabel{
     font-size: 10.5px;
     letter-spacing: .14em;
     margin-bottom: 6px;
   }
-
   .kpiValue{
-    font-size: 22px;          /* fits 3-up cleanly */
+    font-size: 22px;
     line-height: 1.05;
     margin-bottom: 6px;
     letter-spacing: -0.02em;
   }
-
   .kpiSub{
     font-size: 11px;
     line-height: 1.25;
@@ -941,7 +1081,7 @@ th{
   /* Make long dynamic values never expand the card */
   #fetchedAt, #source{
     display: inline-block;
-    max-width: 10.5ch;        /* forces the timestamp/source to truncate */
+    max-width: 10.5ch;
     vertical-align: bottom;
     white-space: nowrap;
     overflow: hidden;
@@ -952,12 +1092,11 @@ th{
   .controls{
     position: relative;
     margin: 10px 0 12px;
-    padding-top: 14px;        /* space for divider */
+    padding-top: 14px;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
-
   .controls::before{
     content:"";
     position:absolute;
@@ -968,14 +1107,13 @@ th{
     background: rgba(17,17,20,.10);
   }
 
-  /* Segmented buttons keep equal widths */
+  /* Segmented buttons equal widths */
   .segmented{
     width: 100%;
     justify-content: space-between;
     gap: 4px;
     padding: 4px;
   }
-
   .segBtn{
     flex: 1 1 0;
     text-align: center;
@@ -983,7 +1121,7 @@ th{
     font-size: 13px;
   }
 
-  /* Toggles: 3 equal pills, same width */
+  /* Toggles: 3 equal pills */
   .toggles{
     width: 100%;
     display: grid;
@@ -991,7 +1129,6 @@ th{
     gap: 10px;
     font-size: 13px;
   }
-
   .toggle{
     background: rgba(255,255,255,.65);
     border: 1px solid rgba(17,17,20,.10);
@@ -1005,14 +1142,24 @@ th{
   /* Charts: shorter so first chart is visible */
   .chartCanvasWrap{ height: 190px; }
 
-  /* Charts card slightly tighter */
+  /* Card slightly tighter */
   .card{ padding: 14px; border-radius: 16px; }
   .chartHeader{ padding: 9px 10px; }
 
-  /* Pricing section (optional: keep it compact) */
-  .pricingTop{ padding: 14px; gap: 10px; }
-  .planRow{ padding: 14px; gap: 10px; }
-  .faqGrid{ grid-template-columns: 1fr; }
+  /* Signal bar stacks cleanly */
+  .signalBar{ grid-template-columns: 1fr; }
+  .sbCol + .sbCol{
+    border-left: 0;
+    border-top: 1px solid rgba(17,17,20,.08);
+  }
+  .sbMid{
+    align-items:flex-start;
+    text-align:left;
+  }
+  .sbMainValue{ font-size: 26px; }
+  .sbRow{ gap: 8px; }
+  .sbChip{ width: 100%; justify-content:space-between; }
+  .sbValue{ max-width: 20ch; }
 }
 
 /* Smaller phones: tiny reductions so 3-up KPIs still fit */
@@ -1020,98 +1167,4 @@ th{
   .kpiValue{ font-size: 20px; }
   #fetchedAt, #source{ max-width: 9ch; }
   .chartCanvasWrap{ height: 175px; }
-}
-/* =========================================================
-   Mobile header tweaks (append-only)
-   - Center title block
-   - Move Refresh to top-right
-   ========================================================= */
-@media (max-width: 720px){
-
-  /* Center the title/sub/meta */
-  .titleBlock{
-    text-align: center;
-  }
-  .titleBlock .metaLine{
-    display:flex;
-    justify-content:center;
-    flex-wrap:wrap;
-    gap: 6px;
-  }
-  .titleBlock .dot{ display:none; } /* optional: cleaner wrap on small screens */
-
-  /* Put nav links + refresh on one row, refresh pinned right */
-  .actions{
-    display:grid;
-    grid-template-columns: 1fr auto;
-    align-items:center;
-    gap: 10px;
-  }
-
-  .navLinks{
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: nowrap;          /* keep pills on one row */
-    overflow: hidden;           /* no sideways scroll */
-  }
-
-  #refreshBtn{
-    justify-self: end;
-    margin-left: 0;
-  }
-}
-/* =========================================================
-   Mobile header: FINAL override (append-only)
-   - H1 centered
-   - Refresh pinned top-right (no layout side-effects)
-   - Nav pills centered below
-   ========================================================= */
-@media (max-width: 720px){
-
-  /* Anchor for absolute positioning */
-  .topbar{
-    position: relative;
-    padding-top: 54px; /* reserves space so Refresh never overlaps content */
-  }
-
-  /* Center the title block content */
-  .titleBlock{
-    width: 100%;
-    text-align: center;
-  }
-  .titleBlock h1,
-  .titleBlock .sub,
-  .titleBlock .metaLine{
-    text-align: center;
-  }
-
-  /* Optional: cleaner meta wrapping on small screens */
-  .titleBlock .metaLine{
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-  }
-  .titleBlock .dot{ display:none; }
-
-  /* Put Refresh in the top-right corner */
-  #refreshBtn{
-    position: absolute;
-    top: 14px;
-    right: 12px;
-    z-index: 10;
-    margin: 0;
-  }
-
-  /* Center the nav pills row under the title */
-  .actions{
-    width: 100%;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-  }
-  .navLinks{
-    width: 100%;
-    justify-content: center;
-  }
 }
