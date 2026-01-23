@@ -1380,7 +1380,7 @@ body{
 @media (max-width: 720px){
   :root{
     --tickerH: 40px;
-    --tickerPad: 12px;
+    --tickerPad: 0px;
     --tickerSpeed: 70s;  /* slower on mobile */
   }
   .tickLabel{ font-size: 11px; }
