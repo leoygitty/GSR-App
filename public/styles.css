@@ -1386,3 +1386,21 @@ body{
   .tickLabel{ font-size: 11px; }
   .tickValue{ font-size: 11px; }
 }
+.ticker{
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.tickerInner{
+  max-width: none !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.tickerViewport{
+  width: 100% !important;
+}
