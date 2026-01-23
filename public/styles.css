@@ -1060,3 +1060,58 @@ th{
     margin-left: 0;
   }
 }
+/* =========================================================
+   Mobile header: FINAL override (append-only)
+   - H1 centered
+   - Refresh pinned top-right (no layout side-effects)
+   - Nav pills centered below
+   ========================================================= */
+@media (max-width: 720px){
+
+  /* Anchor for absolute positioning */
+  .topbar{
+    position: relative;
+    padding-top: 54px; /* reserves space so Refresh never overlaps content */
+  }
+
+  /* Center the title block content */
+  .titleBlock{
+    width: 100%;
+    text-align: center;
+  }
+  .titleBlock h1,
+  .titleBlock .sub,
+  .titleBlock .metaLine{
+    text-align: center;
+  }
+
+  /* Optional: cleaner meta wrapping on small screens */
+  .titleBlock .metaLine{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .titleBlock .dot{ display:none; }
+
+  /* Put Refresh in the top-right corner */
+  #refreshBtn{
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    z-index: 10;
+    margin: 0;
+  }
+
+  /* Center the nav pills row under the title */
+  .actions{
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .navLinks{
+    width: 100%;
+    justify-content: center;
+  }
+}
