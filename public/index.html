@@ -276,6 +276,66 @@
 </head>
 
 <body>
+  <!-- =========================================================
+       FIXED TOP TICKER (ABOVE EVERYTHING)
+       - Full width
+       - Auto-duplicates so there's never a blank half
+       - Values come from your existing KPI elements via sync script
+       ========================================================= -->
+  <div class="ticker" role="region" aria-label="Live prices ticker">
+    <div class="tickerInner">
+      <div class="tickerViewport" aria-hidden="false">
+        <div class="tickerTrack" id="tickerTrack">
+          <!-- One "live" group with IDs -->
+          <div class="tickerGroup" id="tickerLiveGroup">
+            <span class="tickItem">
+              <span class="tickLabel">GOLD</span>
+              <span class="tickValue" id="sbGold">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
+            <span class="tickItem">
+              <span class="tickLabel">SILVER</span>
+              <span class="tickValue" id="sbSilver">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
+            <span class="tickItem">
+              <span class="tickLabel">GSR</span>
+              <span class="tickValue" id="sbGsr">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
+            <span class="tickItem">
+              <span class="tickLabel">Δ</span>
+              <span class="tickValue" id="sbDelta">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
+            <span class="tickItem">
+              <span class="tickLabel">UPDATED</span>
+              <span class="tickValue" id="sbUpdated">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
+            <span class="tickItem tickCta">
+              <span class="tickLabel">SIGNALS</span>
+              <span class="tickValue">Pro / Elite</span>
+            </span>
+
+            <span class="tickSep">•</span>
+          </div>
+          <!-- Clones will be appended by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <main class="shell">
     <header class="topbar">
       <div class="titleBlock">
@@ -298,42 +358,6 @@
         <button id="refreshBtn" class="btn" type="button">Refresh</button>
       </div>
     </header>
-
-    <!-- =========================
-         SIGNAL BAR (SKINNY MOVING TICKER)
-         ========================= -->
-    <section class="signalBar" aria-label="Live signal bar">
-      <div class="signalTrack">
-        <div class="signalRow" id="signalRow">
-          <span class="signalItem">
-            <span class="signalLabel">GSR</span>
-            <span class="signalValue" id="sigGsr">—</span>
-            <span class="signalDelta" id="sigDelta">—</span>
-          </span>
-
-          <span class="signalSep" aria-hidden="true">•</span>
-
-          <span class="signalItem">
-            <span class="signalLabel">Gold</span>
-            <span class="signalValue" id="sigGold">—</span>
-          </span>
-
-          <span class="signalSep" aria-hidden="true">•</span>
-
-          <span class="signalItem">
-            <span class="signalLabel">Silver</span>
-            <span class="signalValue" id="sigSilver">—</span>
-          </span>
-
-          <span class="signalSep" aria-hidden="true">•</span>
-
-          <span class="signalItem signalMeta">
-            <span class="signalLabel">Updated</span>
-            <span class="signalValue" id="sigUpdated">—</span>
-          </span>
-        </div>
-      </div>
-    </section>
 
     <section class="kpiGrid">
       <div class="kpiCard">
@@ -581,11 +605,11 @@
   <!-- Your app logic -->
   <script defer src="/app.js"></script>
 
-  <!-- =========================
-       Signal Bar ticker sync (NEW)
-       Mirrors your existing KPI DOM values into the ticker
-       Also duplicates the row once for seamless -50% looping
-       ========================= -->
+  <!-- =========================================================
+       Ticker sync + auto-duplicate (prevents blank half)
+       - Mirrors your existing KPI values into ticker IDs
+       - Clones ticker group until track is long enough
+       ========================================================= -->
   <script>
     (function(){
       const $ = (id) => document.getElementById(id);
@@ -610,48 +634,71 @@
         return abs !== "—" ? abs : pct;
       };
 
-      const setDeltaClass = () => {
-        const chip = $("sigDelta");
-        if (!chip) return;
+      // Duplicate ticker content until it covers >= 2x viewport (no blank gaps)
+      const ensureTickerFilled = () => {
+        const track = $("tickerTrack");
+        const live = $("tickerLiveGroup");
+        if (!track || !live) return;
 
-        const absRaw = ( ($("deltaAbs")?.textContent || "") ).trim();
-        chip.classList.remove("pos","neg");
+        // Remove any existing clones (safe re-run)
+        [...track.querySelectorAll(".tickerClone")].forEach(n => n.remove());
 
-        if (/^[-−]/.test(absRaw)) chip.classList.add("neg");
-        else if (/^\+/.test(absRaw)) chip.classList.add("pos");
-      };
+        const viewport = track.closest(".tickerViewport");
+        if (!viewport) return;
 
-      const ensureDuped = () => {
-        const row = $("signalRow");
-        if (!row) return;
-        if (row.dataset.duped) return;
+        const target = viewport.clientWidth * 2.2; // extra buffer
+        let guard = 0;
 
-        row.dataset.duped = "1";
-        row.innerHTML = row.innerHTML + row.innerHTML; // duplicate for seamless translateX(-50%)
+        const makeClone = () => {
+          const c = live.cloneNode(true);
+          c.classList.add("tickerClone");
+          c.setAttribute("aria-hidden", "true");
+          c.removeAttribute("id");
+          // Remove IDs inside clones (IDs must be unique)
+          c.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+          return c;
+        };
+
+        // Keep appending clones until track is long enough
+        while (track.scrollWidth < target && guard < 20) {
+          track.appendChild(makeClone());
+          guard++;
+        }
+
+        // Start animation once layout is valid
+        track.classList.add("isReady");
       };
 
       const sync = () => {
-        setText("sigGold", readText("gold"));
-        setText("sigSilver", readText("silver"));
-        setText("sigGsr", readText("gsr"));
-        setText("sigDelta", computeDeltaLine());
-        setText("sigUpdated", readText("lastUpdatedHuman"));
-        setDeltaClass();
-        ensureDuped();
+        setText("sbGold", readText("gold"));
+        setText("sbSilver", readText("silver"));
+        setText("sbGsr", readText("gsr"));
+        setText("sbDelta", computeDeltaLine());
+        setText("sbUpdated", readText("lastUpdatedHuman"));
       };
 
-      // Initial sync
+      // Run once, then keep in sync
       sync();
+      ensureTickerFilled();
 
-      // Observe KPI changes (covers refresh + async fetch timing)
-      const mo = new MutationObserver(sync);
+      const mo = new MutationObserver(() => {
+        sync();
+        // Re-check fill if numbers grow/shrink (rare but safe)
+        ensureTickerFilled();
+      });
+
       ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
         const el = $(id);
         if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
       });
 
-      // Light safety re-sync (cheap)
-      setInterval(sync, 1500);
+      // Resize: re-fill and keep seamless
+      window.addEventListener("resize", () => {
+        ensureTickerFilled();
+      });
+
+      // Light periodic sync
+      setInterval(sync, 1200);
     })();
   </script>
 
