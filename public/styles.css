@@ -1175,3 +1175,99 @@ th{
   flex-wrap:wrap;
   align-items:center;
 }
+/* =========================================================
+   Signal Bar (live ticker) — compact + moving
+   ========================================================= */
+
+.signalBar{
+  margin: 10px 0 14px;
+  border: 1px solid rgba(17,17,20,.10);
+  border-radius: 999px;
+  background: rgba(255,255,255,.70);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.04);
+  overflow: hidden;
+}
+
+.signalTrack{
+  position: relative;
+  height: 40px;               /* slim, not bulky */
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+}
+
+.signalRow{
+  display:inline-flex;
+  align-items:center;
+  gap: 12px;
+  white-space: nowrap;
+  padding: 0 16px;
+
+  /* marquee animation */
+  will-change: transform;
+  animation: signalMarquee 26s linear infinite;
+}
+
+.signalItem{
+  display:inline-flex;
+  align-items:baseline;
+  gap: 8px;
+  font-weight: 800;
+  color: rgba(17,17,20,.85);
+}
+
+.signalLabel{
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(17,17,20,.55);
+  font-weight: 900;
+}
+
+.signalValue{
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  font-weight: 900;
+}
+
+.signalDelta{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(17,17,20,.10);
+  background: rgba(255,255,255,.65);
+}
+
+.signalDelta.pos{ color:#0a7a3d; border-color: rgba(10,122,61,.22); background: rgba(10,122,61,.08); }
+.signalDelta.neg{ color:#b00020; border-color: rgba(176,0,32,.22); background: rgba(176,0,32,.08); }
+
+.signalSep{
+  opacity:.45;
+  font-weight: 900;
+}
+
+/* Slightly lighter meta item */
+.signalMeta .signalValue{ color: rgba(17,17,20,.70); font-weight: 800; }
+
+/* Pause on hover (desktop polish) */
+.signalBar:hover .signalRow{ animation-play-state: paused; }
+
+/* Accessibility: honor reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .signalRow{ animation: none; }
+}
+
+/* Mobile: still slim, slightly faster, ensure it fits nicely */
+@media (max-width: 720px){
+  .signalTrack{ height: 38px; }
+  .signalRow{ animation-duration: 20s; padding: 0 14px; }
+  .signalValue{ font-size: 13px; }
+}
+
+/* Keyframes for ticker motion */
+@keyframes signalMarquee{
+  from{ transform: translateX(0); }
+  to{ transform: translateX(-50%); } /* we will duplicate content via JS for seamless loop */
+}
