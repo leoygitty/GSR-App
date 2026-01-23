@@ -19,81 +19,94 @@
     #pricing { scroll-margin-top: 18px; }
 
     /* =========================================================
-       TICKER: FULL-BLEED + READABLE SPEED (override-safe)
-       - Full width to screen edges (not constrained by .shell)
-       - No border radius, no inset padding
-       - Slower animation (adjust --tickerSeconds)
+       FIXED FULL-BLEED TOP TICKER (EDGE-TO-EDGE)
+       - Not constrained by .shell or any max-width rules
+       - Uses !important to override styles.css safely
+       - Slower scroll (adjust --tickerSeconds)
+       - Includes spacer so it sits ABOVE everything and doesn't overlap header
        ========================================================= */
     :root{
-      --tickerPad: 0px;          /* MUST be px, not "0x" */
-      --tickerH: 30px;           /* skinny bar */
-      --tickerSeconds: 32s;      /* slower = easier to read (try 28s–45s) */
+      --tickerH: 30px;        /* skinny bar */
+      --tickerSeconds: 36s;   /* slower = easier to read (try 30s–50s) */
     }
 
     .ticker{
-      position: sticky;
-      top: 0;
-      z-index: 9999;
-      width: 100vw;
-      left: 50%;
-      transform: translateX(-50%);
-      margin: 0;
-      border-radius: 0;
-      border-bottom: 1px solid rgba(17,17,20,.10);
-      background: rgba(255,255,255,.86);
-      backdrop-filter: blur(10px);
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100vw !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      z-index: 99999 !important;
+
+      border-bottom: 1px solid rgba(17,17,20,.10) !important;
+      background: rgba(255,255,255,.90) !important;
+      backdrop-filter: blur(10px) !important;
     }
 
+    /* Ensures inner never inherits a container max-width */
     .tickerInner{
-      width: 100%;
-      max-width: none;
-      padding: 0 var(--tickerPad);
+      width: 100% !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding-left: env(safe-area-inset-left) !important;
+      padding-right: env(safe-area-inset-right) !important;
     }
 
     .tickerViewport{
-      width: 100%;
-      overflow: hidden;
-      height: var(--tickerH);
-      display: flex;
-      align-items: center;
+      width: 100% !important;
+      height: var(--tickerH) !important;
+      overflow: hidden !important;
+      display: flex !important;
+      align-items: center !important;
     }
 
     .tickerTrack{
-      display: inline-flex;
-      align-items: center;
-      white-space: nowrap;
-      will-change: transform;
+      display: inline-flex !important;
+      align-items: center !important;
+      white-space: nowrap !important;
+      will-change: transform !important;
     }
 
-    /* Only animate once clones exist and sizing is correct */
     .tickerTrack.isReady{
-      animation: tickerScroll var(--tickerSeconds) linear infinite;
+      animation: tickerScroll var(--tickerSeconds) linear infinite !important;
     }
 
     @keyframes tickerScroll{
       0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); } /* works because we fill >2x and clones */
+      100% { transform: translateX(-50%); }
     }
 
     .tickerGroup{
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 12px;
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: rgba(17,17,20,.70);
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      padding: 0 12px !important;
+      font-family: var(--mono) !important;
+      font-size: 12px !important;
+      letter-spacing: .12em !important;
+      text-transform: uppercase !important;
+      color: rgba(17,17,20,.70) !important;
     }
 
-    .tickItem{ display:inline-flex; align-items:baseline; gap: 8px; }
-    .tickLabel{ opacity: .75; font-weight: 900; }
-    .tickValue{ font-weight: 900; color: rgba(17,17,20,.90); letter-spacing: .02em; }
+    .tickItem{ display:inline-flex !important; align-items:baseline !important; gap: 8px !important; }
+    .tickLabel{ opacity: .75 !important; font-weight: 900 !important; }
+    .tickValue{ font-weight: 900 !important; color: rgba(17,17,20,.90) !important; letter-spacing: .02em !important; }
+    .tickSep{ opacity: .45 !important; font-weight: 900 !important; }
 
-    .tickSep{ opacity: .45; font-weight: 900; }
+    .tickCta a{
+      text-decoration: none !important;
+      font-weight: 900 !important;
+      color: rgba(10,132,255,.95) !important;
+    }
 
-    .tickCta .tickValue{ color: rgba(10,132,255,.95); }
+    /* Spacer: pushes site content down so ticker sits above EVERYTHING */
+    .tickerSpacer{
+      height: var(--tickerH) !important;
+    }
 
     /* Keep the rest of your Apple-level pricing styles untouched */
     .pricingPanel{
@@ -339,27 +352,14 @@
 
 <body>
   <!-- =========================================================
-       FIXED/Sticky TOP TICKER (ABOVE EVERYTHING)
+       FIXED FULL-WIDTH TOP TICKER (ABOVE EVERYTHING)
        ========================================================= -->
   <div class="ticker" role="region" aria-label="Live prices ticker">
     <div class="tickerInner">
       <div class="tickerViewport">
         <div class="tickerTrack" id="tickerTrack">
+          <!-- One "live" group with IDs -->
           <div class="tickerGroup" id="tickerLiveGroup">
-            <span class="tickItem">
-              <span class="tickLabel">GOLD</span>
-              <span class="tickValue" id="sbGold">—</span>
-            </span>
-
-            <span class="tickSep">•</span>
-
-            <span class="tickItem">
-              <span class="tickLabel">SILVER</span>
-              <span class="tickValue" id="sbSilver">—</span>
-            </span>
-
-            <span class="tickSep">•</span>
-
             <span class="tickItem">
               <span class="tickLabel">GSR</span>
               <span class="tickValue" id="sbGsr">—</span>
@@ -381,9 +381,23 @@
 
             <span class="tickSep">•</span>
 
+            <span class="tickItem">
+              <span class="tickLabel">GOLD</span>
+              <span class="tickValue" id="sbGold">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
+            <span class="tickItem">
+              <span class="tickLabel">SILVER</span>
+              <span class="tickValue" id="sbSilver">—</span>
+            </span>
+
+            <span class="tickSep">•</span>
+
             <span class="tickItem tickCta">
               <span class="tickLabel">SIGNALS</span>
-              <span class="tickValue">Pro / Elite</span>
+              <span class="tickValue"><a href="/pro">PRO</a> / <a href="/elite">ELITE</a></span>
             </span>
 
             <span class="tickSep">•</span>
@@ -393,6 +407,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Spacer so ticker doesn't overlap your header/buttons -->
+  <div class="tickerSpacer" aria-hidden="true"></div>
 
   <main class="shell">
     <header class="topbar">
@@ -659,9 +676,8 @@
 
   <!-- =========================================================
        Ticker sync + auto-duplicate (prevents blanks)
-       - Fills to >= 2.5x viewport (more buffer)
-       - Starts animation only after fill
-       - Uses requestAnimationFrame to ensure correct measurements
+       - Fills to >= 3x viewport (strong buffer)
+       - Starts animation only after fill + layout settles
        ========================================================= -->
   <script>
     (function(){
@@ -675,8 +691,7 @@
 
       const setText = (id, val) => {
         const el = $(id);
-        if (!el) return;
-        el.textContent = val;
+        if (el) el.textContent = val;
       };
 
       const computeDeltaLine = () => {
@@ -699,12 +714,12 @@
         track.classList.remove("isReady");
 
         // Remove existing clones
-        [...track.querySelectorAll(".tickerClone")].forEach(n => n.remove());
+        track.querySelectorAll(".tickerClone").forEach(n => n.remove());
 
         const viewport = track.closest(".tickerViewport");
         if (!viewport) return;
 
-        const target = viewport.clientWidth * 2.6; // extra buffer for seamless scroll
+        const target = viewport.clientWidth * 3; // strong buffer = no blank half
         let guard = 0;
 
         const makeClone = () => {
@@ -716,13 +731,12 @@
           return c;
         };
 
-        // Append clones until we exceed target width
-        while (track.scrollWidth < target && guard < 30) {
+        while (track.scrollWidth < target && guard < 50) {
           track.appendChild(makeClone());
           guard++;
         }
 
-        // Start animation after layout settles (prevents partial width issues)
+        // Start animation after layout settles
         requestAnimationFrame(() => requestAnimationFrame(() => {
           track.classList.add("isReady");
         }));
@@ -738,14 +752,16 @@
 
       // Initial
       sync();
-      // Ensure sizing after fonts/layout
-      window.addEventListener("load", () => ensureTickerFilled());
       ensureTickerFilled();
+
+      window.addEventListener("load", () => {
+        sync();
+        ensureTickerFilled();
+      });
 
       // Observe KPI changes
       const mo = new MutationObserver(() => {
         sync();
-        // Only re-fill if content width changed meaningfully
         ensureTickerFilled();
       });
 
@@ -754,7 +770,7 @@
         if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
       });
 
-      window.addEventListener("resize", () => ensureTickerFilled());
+      window.addEventListener("resize", ensureTickerFilled);
 
       // Light periodic sync
       setInterval(sync, 1200);
