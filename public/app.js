@@ -320,18 +320,22 @@ async function load(forRange = CURRENT_RANGE, { force = false } = {}) {
 
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
 
-    // Delta vs previous
+    // Delta vs previous (small polish: consistent sign, avoid "+0.00", use ASCII "-")
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
       const dAbs = Number(curr.gsr) - Number(prev.gsr);
       const dPct = (Number(prev.gsr) !== 0) ? (dAbs / Number(prev.gsr)) * 100 : NaN;
 
-      const sign = dAbs > 0 ? "+" : (dAbs < 0 ? "−" : "");
+      const isUp = Number.isFinite(dAbs) && dAbs > 0;
+      const isDown = Number.isFinite(dAbs) && dAbs < 0;
+      const sign = isUp ? "+" : (isDown ? "-" : "");
+
       $("deltaAbs").textContent = Number.isFinite(dAbs) ? `${sign}${fmtNum(Math.abs(dAbs), 4)}` : "—";
       $("deltaPct").textContent = Number.isFinite(dPct) ? `${sign}${fmtNum(Math.abs(dPct), 2)}%` : "—";
-      $("deltaAbs").className = dAbs > 0 ? "pos" : (dAbs < 0 ? "neg" : "");
-      $("deltaPct").className = dAbs > 0 ? "pos" : (dAbs < 0 ? "neg" : "");
+
+      $("deltaAbs").className = isUp ? "pos" : (isDown ? "neg" : "");
+      $("deltaPct").className = isUp ? "pos" : (isDown ? "neg" : "");
     } else {
       $("deltaAbs").textContent = "—";
       $("deltaPct").textContent = "—";
