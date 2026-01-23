@@ -13,6 +13,10 @@
   /* Accents */
   --pro: #0a84ff;
   --elite: #a86cff;
+
+  /* Fixed top ticker */
+  --tickerH: 30px;        /* must match index.html :root --tickerH */
+  --tickerSeconds: 36s;   /* must match index.html :root --tickerSeconds */
 }
 
 /* =========================
@@ -27,6 +31,9 @@ body{
   color: var(--text);
 }
 
+/* =========================
+   Layout
+   ========================= */
 .shell{
   max-width: 1120px;
   margin: 0 auto;
@@ -614,351 +621,6 @@ th{
 .finalCta .left b{ display:block; font-size: 16px; }
 .finalCta .left span{ color: var(--muted); font-size: 13px; }
 
-/* ===========================
-   Apple-style Pricing (v2)
-   Append-only additions
-   =========================== */
-.pricingHero{
-  display:grid;
-  grid-template-columns: 1.4fr .6fr;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(17,17,20,.10);
-  background:
-    radial-gradient(900px 320px at 15% 0%, rgba(10,132,255,.14), transparent 55%),
-    radial-gradient(900px 320px at 75% 0%, rgba(153,69,255,.12), transparent 58%),
-    rgba(255,255,255,.78);
-  box-shadow: var(--shadow);
-  margin-bottom: 14px;
-}
-
-.pricingKicker{
-  font-size: 12px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: rgba(17,17,20,.62);
-  font-weight: 900;
-  margin-bottom: 8px;
-}
-.pricingTitle{
-  margin: 0 0 8px;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-}
-.pricingSub{
-  margin: 0 0 12px;
-  color: rgba(17,17,20,.70);
-  line-height: 1.55;
-  max-width: 80ch;
-}
-.pricingCtas{
-  display:flex;
-  flex-wrap:wrap;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.pricingNote{
-  color: rgba(17,17,20,.62);
-  font-size: 12px;
-}
-
-.pricingStat{
-  border: 1px solid rgba(17,17,20,.10);
-  background: rgba(255,255,255,.72);
-  border-radius: 16px;
-  padding: 12px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-}
-.pricingStatLabel{
-  font-size: 12px;
-  color: rgba(17,17,20,.62);
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-.pricingStatValue{
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-.pricingStatSub{
-  font-size: 12px;
-  color: rgba(17,17,20,.62);
-}
-
-.pricingSurface{
-  border: 1px solid rgba(17,17,20,.10);
-  border-radius: 18px;
-  overflow: hidden;
-  background: rgba(255,255,255,.82);
-  box-shadow: var(--shadow);
-}
-
-.planRow{
-  display:grid;
-  grid-template-columns: 1fr 1.4fr .6fr;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(17,17,20,.08);
-  align-items:center;
-}
-.planRow:last-child{ border-bottom: 0; }
-
-.planTop{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-}
-.planName{ font-weight: 900; font-size: 16px; }
-
-.planPrice{
-  display:flex;
-  align-items:baseline;
-  gap: 6px;
-  margin-top: 6px;
-}
-.planDollars{
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-}
-.planPer{
-  font-weight: 800;
-  color: rgba(17,17,20,.62);
-}
-.planDesc{
-  margin-top: 6px;
-  color: rgba(17,17,20,.66);
-  font-size: 13px;
-}
-
-.planFeatures{
-  display:grid;
-  gap: 8px;
-}
-.feat{
-  font-weight: 650;
-  color: rgba(17,17,20,.78);
-  font-size: 13px;
-  line-height: 1.35;
-  padding-left: 20px;
-  position: relative;
-}
-.feat::before{
-  content:"";
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(17,17,20,.22);
-  position:absolute;
-  left: 0;
-  top: 3px;
-}
-
-.planCta{
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-}
-
-.pill{
-  display:inline-flex;
-  align-items:center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  border: 1px solid rgba(17,17,20,.12);
-  background: rgba(255,255,255,.70);
-  color: rgba(17,17,20,.72);
-}
-.pillPro{
-  border-color: rgba(10,132,255,.28);
-  background: rgba(10,132,255,.12);
-  color: #0a84ff;
-}
-.pillElite{
-  border-color: rgba(168,108,255,.30);
-  background: rgba(168,108,255,.14);
-  color: #a86cff;
-}
-
-.planRowPro{
-  background:
-    radial-gradient(900px 220px at 15% 0%, rgba(10,132,255,.10), transparent 60%),
-    rgba(255,255,255,.86);
-}
-.planRowElite{
-  background:
-    radial-gradient(900px 220px at 15% 0%, rgba(168,108,255,.10), transparent 60%),
-    rgba(255,255,255,.86);
-}
-
-.pricingFaq{
-  margin-top: 12px;
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.pricingFaq details{
-  border: 1px solid rgba(17,17,20,.10);
-  border-radius: 14px;
-  padding: 10px 12px;
-  background: rgba(255,255,255,.72);
-}
-.pricingFaq summary{
-  cursor: pointer;
-  font-weight: 900;
-}
-.pricingFaq p{
-  margin: 8px 0 0;
-  line-height: 1.55;
-  color: rgba(17,17,20,.66);
-  font-size: 13px;
-}
-
-/* =========================================================
-   Signal Bar (Live Banner) — required by index.html
-   ========================================================= */
-.signalBar{
-  margin: 10px 0 14px;
-  border: 1px solid var(--stroke);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  background:
-    radial-gradient(900px 240px at 12% 20%, rgba(10,132,255,.10), transparent 60%),
-    radial-gradient(700px 220px at 88% 30%, rgba(168,108,255,.08), transparent 60%),
-    rgba(255,255,255,.78);
-  backdrop-filter: blur(10px);
-  display: grid;
-  grid-template-columns: 1fr .9fr 1fr;
-  gap: 0;
-  overflow: hidden;
-}
-.sbCol{
-  padding: 12px 14px;
-  min-width: 0;
-}
-.sbCol + .sbCol{
-  border-left: 1px solid rgba(17,17,20,.08);
-}
-.sbKicker{
-  font-size: 11px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 900;
-  margin-bottom: 8px;
-}
-.sbRow{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.sbChip{
-  display:flex;
-  align-items:center;
-  gap: 8px;
-  padding: 9px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(17,17,20,.10);
-  background: rgba(255,255,255,.70);
-  box-shadow: 0 10px 30px rgba(0,0,0,.04);
-  min-width: 0;
-}
-.sbDot{
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  flex: 0 0 auto;
-}
-.sbDotGold{ background: rgba(255, 179, 0, .9); }
-.sbDotSilver{ background: rgba(120, 120, 135, .75); }
-.sbLabel{
-  font-weight: 900;
-  color: rgba(17,17,20,.76);
-  font-size: 12px;
-}
-.sbValue{
-  font-weight: 900;
-  font-size: 13px;
-  color: rgba(17,17,20,.90);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 16ch;
-}
-
-/* Middle emphasis */
-.sbMid{
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-}
-.sbMainValue{
-  font-size: 28px;
-  font-weight: 950;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-.sbMainSub{
-  margin-top: 6px;
-  font-size: 12px;
-  color: rgba(17,17,20,.74);
-  font-weight: 800;
-}
-
-/* Right side */
-.sbStatus{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.sbPill{
-  display:inline-flex;
-  align-items:center;
-  padding: 7px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 950;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  border: 1px solid rgba(17,17,20,.12);
-  background: rgba(255,255,255,.70);
-  color: rgba(17,17,20,.72);
-}
-.sbPill.isUp{
-  border-color: rgba(10,122,61,.25);
-  background: rgba(10,122,61,.10);
-  color: #0a7a3d;
-}
-.sbPill.isDown{
-  border-color: rgba(176,0,32,.22);
-  background: rgba(176,0,32,.08);
-  color: #b00020;
-}
-.sbMeta{
-  font-family: var(--mono);
-  font-size: 12px;
-  color: rgba(17,17,20,.70);
-  white-space: nowrap;
-}
-.sbHint{
-  margin-top: 6px;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 /* =========================
    Responsive (tablet)
    ========================= */
@@ -973,11 +635,6 @@ th{
   .faqGrid{ grid-template-columns: 1fr; }
   .hTitle{ font-size: 34px; }
   .priceTag .big{ font-size: 34px; }
-
-  .pricingHero{ grid-template-columns: 1fr; }
-  .planRow{ grid-template-columns: 1fr; }
-  .planCta{ justify-content:flex-start; }
-  .pricingFaq{ grid-template-columns: 1fr; }
 }
 
 /* =========================================================
@@ -987,18 +644,15 @@ th{
    - Nav pills centered below title
    ========================================================= */
 @media (max-width: 720px){
-
-  /* Global rhythm */
   .shell{ padding: 18px 12px 34px; }
 
-  /* Header layout (FINAL behavior) */
   .topbar{
     position: relative;
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
     margin-bottom: 10px;
-    padding-top: 54px; /* reserves space so Refresh never overlaps */
+    padding-top: 54px;
   }
 
   .titleBlock{
@@ -1048,7 +702,6 @@ th{
   }
   .navLink{ padding: 10px 12px; font-size: 13px; }
 
-  /* ========= KPI ROW: 3-up, equal width ========= */
   .kpiGrid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
@@ -1078,7 +731,6 @@ th{
     text-overflow: ellipsis;
   }
 
-  /* Make long dynamic values never expand the card */
   #fetchedAt, #source{
     display: inline-block;
     max-width: 10.5ch;
@@ -1088,7 +740,6 @@ th{
     text-overflow: ellipsis;
   }
 
-  /* ========= Divider between KPIs and controls ========= */
   .controls{
     position: relative;
     margin: 10px 0 12px;
@@ -1107,7 +758,6 @@ th{
     background: rgba(17,17,20,.10);
   }
 
-  /* Segmented buttons equal widths */
   .segmented{
     width: 100%;
     justify-content: space-between;
@@ -1121,7 +771,6 @@ th{
     font-size: 13px;
   }
 
-  /* Toggles: 3 equal pills */
   .toggles{
     width: 100%;
     display: grid;
@@ -1139,35 +788,15 @@ th{
     white-space: nowrap;
   }
 
-  /* Charts: shorter so first chart is visible */
-  .chartCanvasWrap{ height: 190px; }
-
-  /* Card slightly tighter */
   .card{ padding: 14px; border-radius: 16px; }
   .chartHeader{ padding: 9px 10px; }
-
-  /* Signal bar stacks cleanly */
-  .signalBar{ grid-template-columns: 1fr; }
-  .sbCol + .sbCol{
-    border-left: 0;
-    border-top: 1px solid rgba(17,17,20,.08);
-  }
-  .sbMid{
-    align-items:flex-start;
-    text-align:left;
-  }
-  .sbMainValue{ font-size: 26px; }
-  .sbRow{ gap: 8px; }
-  .sbChip{ width: 100%; justify-content:space-between; }
-  .sbValue{ max-width: 20ch; }
 }
 
-/* Smaller phones: tiny reductions so 3-up KPIs still fit */
 @media (max-width: 390px){
   .kpiValue{ font-size: 20px; }
   #fetchedAt, #source{ max-width: 9ch; }
-  .chartCanvasWrap{ height: 175px; }
 }
+
 /* ===== Final CTA: tighten button row layout (safe, used on Pro/Elite) ===== */
 .finalCta .right{
   display:flex;
@@ -1175,200 +804,90 @@ th{
   flex-wrap:wrap;
   align-items:center;
 }
+
 /* =========================================================
-   Signal Bar (live ticker) — compact + moving
+   Fixed TOP ticker (FULL BLEED, no leftover spacing)
+   - Only keep ONE ticker implementation (remove any others)
+   - This matches the updated index.html ticker structure
    ========================================================= */
-
-.signalBar{
-  margin: 10px 0 14px;
-  border: 1px solid rgba(17,17,20,.10);
-  border-radius: 999px;
-  background: rgba(255,255,255,.70);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.04);
-  overflow: hidden;
-}
-
-.signalTrack{
-  position: relative;
-  height: 40px;               /* slim, not bulky */
-  display:flex;
-  align-items:center;
-  overflow:hidden;
-}
-
-.signalRow{
-  display:inline-flex;
-  align-items:center;
-  gap: 12px;
-  white-space: nowrap;
-  padding: 0 16px;
-
-  /* marquee animation */
-  will-change: transform;
-  animation: signalMarquee 26s linear infinite;
-}
-
-.signalItem{
-  display:inline-flex;
-  align-items:baseline;
-  gap: 8px;
-  font-weight: 800;
-  color: rgba(17,17,20,.85);
-}
-
-.signalLabel{
-  font-size: 12px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: rgba(17,17,20,.55);
-  font-weight: 900;
-}
-
-.signalValue{
-  font-size: 14px;
-  letter-spacing: -0.01em;
-  font-weight: 900;
-}
-
-.signalDelta{
-  font-size: 12px;
-  font-weight: 900;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(17,17,20,.10);
-  background: rgba(255,255,255,.65);
-}
-
-.signalDelta.pos{ color:#0a7a3d; border-color: rgba(10,122,61,.22); background: rgba(10,122,61,.08); }
-.signalDelta.neg{ color:#b00020; border-color: rgba(176,0,32,.22); background: rgba(176,0,32,.08); }
-
-.signalSep{
-  opacity:.45;
-  font-weight: 900;
-}
-
-/* Slightly lighter meta item */
-.signalMeta .signalValue{ color: rgba(17,17,20,.70); font-weight: 800; }
-
-/* Pause on hover (desktop polish) */
-.signalBar:hover .signalRow{ animation-play-state: paused; }
-
-/* Accessibility: honor reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .signalRow{ animation: none; }
-}
-
-/* Mobile: still slim, slightly faster, ensure it fits nicely */
-@media (max-width: 720px){
-  .signalTrack{ height: 38px; }
-  .signalRow{ animation-duration: 20s; padding: 0 14px; }
-  .signalValue{ font-size: 13px; }
-}
-
-/* Keyframes for ticker motion */
-@keyframes signalMarquee{
-  from{ transform: translateX(0); }
-  to{ transform: translateX(-50%); } /* we will duplicate content via JS for seamless loop */
-}
-/* =========================================================
-   Fixed top ticker (MetalMetric) — FULL BLEED + SLOWER
-   ========================================================= */
-
-:root{
-  --tickerH: 42px;
-  --tickerPad: 16px;     /* edge padding; set to 0 if you want true edge-to-edge text */
-  --tickerSpeed: 55s;    /* slower = easier to read */
-}
-
-body{
-  padding-top: var(--tickerH);
-}
 
 .ticker{
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--tickerH);
-  z-index: 9999;
-  border-bottom: 1px solid rgba(17,17,20,.08);
-  background: rgba(255,255,255,.78);
-  backdrop-filter: blur(12px);
+  width: 100vw;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  z-index: 99999;
+  border-bottom: 1px solid rgba(17,17,20,.10);
+  background: rgba(255,255,255,.90);
+  backdrop-filter: blur(10px);
 }
 
-/* IMPORTANT: remove max-width constraint so it reaches screen edges */
 .tickerInner{
-  height: 100%;
+  height: var(--tickerH);
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 0 var(--tickerPad);
-  display: flex;
-  align-items: center;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  display:flex;
+  align-items:center;
 }
 
 .tickerViewport{
   width: 100%;
+  height: var(--tickerH);
   overflow: hidden;
+  display:flex;
+  align-items:center;
 }
 
 .tickerTrack{
-  display: flex;
-  align-items: center;
-  width: max-content;
+  display: inline-flex;
+  align-items:center;
   white-space: nowrap;
-  transform: translate3d(0,0,0);
   will-change: transform;
-  animation: none;
 }
 
 .tickerTrack.isReady{
-  animation: tickerMove var(--tickerSpeed) linear infinite;
+  animation: tickerScroll var(--tickerSeconds) linear infinite;
 }
 
-/* Keep the seam clean: we animate -50% assuming JS duplicates content */
-@keyframes tickerMove{
-  0%   { transform: translate3d(0,0,0); }
-  100% { transform: translate3d(-50%,0,0); }
+@keyframes tickerScroll{
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .tickerGroup{
-  display: inline-flex;
-  align-items: center;
+  display:inline-flex;
+  align-items:center;
   gap: 10px;
-  padding-right: 14px;
-}
-
-.tickItem{
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.tickLabel{
-  font-size: 12px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  font-weight: 900;
-  color: rgba(17,17,20,.55);
-}
-
-.tickValue{
+  padding: 0 12px;
   font-family: var(--mono);
   font-size: 12px;
-  font-weight: 900;
-  color: rgba(17,17,20,.86);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(17,17,20,.70);
 }
 
-.tickSep{
-  opacity: .45;
-  font-weight: 900;
-  padding: 0 2px;
+.tickItem{ display:inline-flex; align-items:baseline; gap:8px; }
+.tickLabel{ opacity:.75; font-weight:900; }
+.tickValue{ font-weight:900; color: rgba(17,17,20,.90); letter-spacing:.02em; }
+.tickSep{ opacity:.45; font-weight:900; }
+
+.tickCta a{
+  text-decoration:none;
+  font-weight:900;
+  color: rgba(10,132,255,.95);
 }
 
-.tickCta .tickValue{
-  color: rgba(17,17,20,.62);
+/* Spacer inserted by index.html */
+.tickerSpacer{
+  height: var(--tickerH);
 }
 
 /* Reduced motion */
@@ -1376,31 +895,11 @@ body{
   .tickerTrack.isReady{ animation: none; }
 }
 
-/* Mobile: slightly tighter + still readable + not too fast */
+/* Mobile: slightly slower */
 @media (max-width: 720px){
   :root{
-    --tickerH: 40px;
-    --tickerPad: 0px;
-    --tickerSpeed: 70s;  /* slower on mobile */
+    --tickerH: 30px;
+    --tickerSeconds: 44s;
   }
-  .tickLabel{ font-size: 11px; }
-  .tickValue{ font-size: 11px; }
-}
-.ticker{
-  left: 0 !important;
-  right: 0 !important;
-  width: auto !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
-}
-
-.tickerInner{
-  max-width: none !important;
-  width: 100% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.tickerViewport{
-  width: 100% !important;
+  .tickerGroup{ font-size: 11px; }
 }
