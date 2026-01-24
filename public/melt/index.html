@@ -1455,87 +1455,89 @@
         return res.json();
       }
 
-     async function fetchSpots() {
+    async function fetchSpots() {
   setStatus("Fetching live spot…", "");
-
-  // helper (define BEFORE first use)
-  function isByFinite(v) { return typeof v === "number" && isFinite(v); }
-
   try {
-    // 1) Bulk attempts (some deployments vary on trailing slash / relative path)
-    const bulkUrls = ["/api/spot", "/api/spot/", "../api/spot", "../api/spot/"];
-    let bulk = null;
+    // helper
+    const pickNum = (obj, keys) => {
+      if (!obj || typeof obj !== "object") return null;
+      for (const k of keys) {
+        if (k in obj) {
+          const n = parseFloat(obj[k]);
+          if (isFinite(n)) return n;
+        }
+      }
+      return null;
+    };
 
-    for (const u of bulkUrls) {
-      try { bulk = await fetchAny(u); break; } catch {}
-    }
+    // 1) Prefer /api/latest (this is what your dashboard likely uses)
+    let latest = null;
+    try { latest = await fetchAny("/api/latest"); } catch {}
 
-    if (bulk != null) {
-      const g = extractSpotRobust(bulk, "gold");
-      const s = extractSpotRobust(bulk, "silver");
-      const p = extractSpotRobust(bulk, "platinum");
+    if (latest && typeof latest === "object" && latest.ok !== false) {
+      const g = pickNum(latest, ["gold_usd", "xauusd", "xau", "gold", "goldUsd", "spot_gold", "spotGold"]);
+      const s = pickNum(latest, ["silver_usd", "xagusd", "xag", "silver", "silverUsd", "spot_silver", "spotSilver"]);
+      const p = pickNum(latest, ["platinum_usd", "xptusd", "xpt", "platinum", "platinumUsd", "spot_platinum", "spotPlatinum"]);
 
       if (isFinite(g)) state.spots.gold = g;
       if (isFinite(s)) state.spots.silver = s;
-      if (isByFinite(p)) state.spots.platinum = p;
+      if (isFinite(p)) state.spots.platinum = p;
+
+      const upd = latest.updated_at || latest.updatedAt || latest.date_utc || latest.utc || latest.d || latest.date;
+      if (upd) state.updatedAt = String(upd);
     }
 
-    // 2) If still missing, try common single-metal query patterns
-    const sym = { gold: "XAUUSD", silver: "XAGUSD", platinum: "XPTUSD" };
-    const metalKeys = ["gold", "silver", "platinum"];
-    const queryBases = [
-      (m) => `/api/spot?metal=${encodeURIComponent(m)}`,
-      (m) => `/api/spot?symbol=${encodeURIComponent(sym[m])}`,
-      (m) => `/api/spot?ticker=${encodeURIComponent(sym[m])}`
-    ];
+    // 2) Use /api/spot only as a supplement (and ignore ok:false payloads)
+    // This is where platinum would normally come from if latest doesn't include it.
+    let spot = null;
+    try { spot = await fetchAny("/api/spot"); } catch {}
 
-    for (const m of metalKeys) {
-      if (isFinite(state.spots[m])) continue;
-
-      for (const mkUrl of queryBases) {
-        try {
-          const one = await fetchAny(mkUrl(m));
-          const v = extractSpotRobust(one, m);
-          if (isFinite(v)) { state.spots[m] = v; break; }
-        } catch {}
+    if (spot && typeof spot === "object" && spot.ok === false) {
+      // Surface the real reason in UI
+      const err = spot.error ? String(spot.error) : "Spot endpoint error";
+      if (err.includes("401")) {
+        setStatus("Live spot is blocked (401 Unauthorized). Fix /api/spot credentials or use Manual.", "warn");
+      } else {
+        setStatus(`Live spot error: ${err}. Use Manual or fix /api/spot.`, "warn");
       }
+    } else if (spot != null) {
+      // If /api/spot returns anything usable, parse it (fallback extractor)
+      const g = extractSpotRobust(spot, "gold");
+      const s = extractSpotRobust(spot, "silver");
+      const p = extractSpotRobust(spot, "platinum");
+
+      if (isFinite(g)) state.spots.gold = g;
+      if (isFinite(s)) state.spots.silver = s;
+      if (isFinite(p)) state.spots.platinum = p;
     }
 
-    // 3) Fallback to /api/latest (often has gold/silver at least)
-    if (!isFinite(state.spots.gold) || !isFinite(state.spots.silver) || !isFinite(state.spots.platinum)) {
-      const latestUrls = ["/api/latest", "/api/latest/", "../api/latest", "../api/latest/"];
-      for (const u of latestUrls) {
-        try {
-          const latest = await fetchAny(u);
-
-          const g2 = extractSpotRobust(latest, "gold");
-          const s2 = extractSpotRobust(latest, "silver");
-          const p2 = extractSpotRobust(latest, "platinum");
-
-          if (isFinite(g2)) state.spots.gold = g2;
-          if (isFinite(s2)) state.spots.silver = s2;
-          if (isFinite(p2)) state.spots.platinum = p2;
-
-          break;
-        } catch {}
-      }
+    // Timestamp if none from API
+    if (!state.updatedAt) {
+      state.updatedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
     }
 
-    // Timestamp (local UI timestamp — not the market timestamp)
-    state.updatedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
     updateSpotHeaderUI();
 
     const active = getActiveSpot();
-    if (isFinite(active)) setStatus("Live spot loaded. Ready.", "good");
-    else setStatus("Spot response received but could not be parsed. (Open /api/spot to confirm payload.)", "warn");
+    if (isFinite(active)) {
+      setStatus("Live spot loaded. Ready.", "good");
+    } else {
+      setStatus(
+        state.spotMode === "auto"
+          ? "Live spot unavailable for this metal. Switch to Manual or fix /api/spot."
+          : "Enter a manual spot price, then Calculate.",
+        "warn"
+      );
+    }
 
     compute(true);
   } catch (e) {
     updateSpotHeaderUI();
-    setStatus("Spot fetch failed. Switch to Manual to enter spot.", "bad");
+    setStatus("Spot fetch failed. Switch to Manual or fix /api/spot.", "bad");
     compute(true);
   }
 }
+
 
 
       function renderSilverLadder(weightG, spot, canCalc) {
