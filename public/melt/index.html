@@ -1186,41 +1186,37 @@
         spots: { gold: null, silver: null, platinum: null },
         updatedAt: null,
         lastCalcOk: false
-          };
+                };
 
-      // --- numeric helpers (null-safe)
-      const num = (v) => {
-        if (v === null || v === undefined) return NaN;
-        if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
-        // handle numeric strings and "4,979.70" style values
-        const s = String(v).replace(/,/g, "").trim();
-        const n = parseFloat(s);
+      // ---- Safe number helpers (prevents null/undefined toLocaleString crashes)
+      const toNum = (v) => {
+        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
         return Number.isFinite(n) ? n : NaN;
       };
 
       const fmt2 = (v) => {
-        const n = num(v);
+        const n = toNum(v);
         return Number.isFinite(n)
           ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
           : "—";
       };
 
       const fmt4 = (v) => {
-        const n = num(v);
+        const n = toNum(v);
         return Number.isFinite(n)
           ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
           : "—";
       };
 
       const fmt6 = (v) => {
-        const n = num(v);
+        const n = toNum(v);
         return Number.isFinite(n)
           ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })
           : "—";
       };
 
       const money = (v) => {
-        const n = num(v);
+        const n = toNum(v);
         if (!Number.isFinite(n)) return "$—";
         return n.toLocaleString(undefined, {
           style: "currency",
@@ -1408,13 +1404,26 @@
         compute(true);
       }
 
-      async function fetchAny(path) {
+          async function fetchAny(path) {
         const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
-        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const res = await fetch(url, {
+          cache: "no-store",
+          headers: { "Accept": "application/json" }
+        });
+
         const text = await res.text();
+
+        // Parse JSON safely (but keep raw text for debugging)
         let data;
-        try { data = JSON.parse(text); }
-        catch { throw new Error(`Non-JSON from ${path}`); }
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          const err = new Error(`Non-JSON from ${path}: ${text.slice(0, 160)}`);
+          err.status = res.status;
+          err.payload = text;
+          throw err;
+        }
+
         if (!res.ok) {
           const msg = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
           const err = new Error(msg);
@@ -1422,72 +1431,125 @@
           err.payload = data;
           throw err;
         }
+
         return data;
       }
 
       function pullSpotFromKnownShape(obj) {
-        if (!obj || typeof obj !== "object") return { g: null, s: null, p: null, updated: null, ok: false, err: "Invalid response" };
+        const toNum = (v) => {
+          const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
+          return Number.isFinite(n) ? n : NaN;
+        };
 
-        if (obj.ok === false) {
-          return { g: null, s: null, p: null, updated: null, ok: false, err: obj.error ? String(obj.error) : "Spot returned ok:false" };
+        const pickFinite = (...vals) => {
+          for (const v of vals) {
+            const n = toNum(v);
+            if (Number.isFinite(n)) return n;
+          }
+          return NaN;
+        };
+
+        const stamp = (v) => {
+          if (!v) return null;
+          if (typeof v === "string") return v;
+          if (typeof v === "number" && Number.isFinite(v)) return new Date(v).toISOString();
+          try {
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? null : d.toISOString();
+          } catch {
+            return null;
+          }
+        };
+
+        if (!obj || typeof obj !== "object") {
+          return { g: null, s: null, p: null, updated: null, ok: false, err: "Invalid response" };
         }
 
-        const g = parseFloat(obj.gold_usd);
-        const s = parseFloat(obj.silver_usd);
+        if (obj.ok === false) {
+          return {
+            g: null,
+            s: null,
+            p: null,
+            updated: null,
+            ok: false,
+            err: obj.error ? String(obj.error) : "Spot returned ok:false"
+          };
+        }
 
-        // platinum optional for now
-        const pRaw = (obj.platinum_usd ?? obj.xpt_usd ?? obj.platinum ?? null);
-        const p = pRaw == null ? null : parseFloat(pRaw);
+        // Your /api/spot returns gold_usd + silver_usd (and may include normalized/raw).
+        const g = pickFinite(obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold);
+        const s = pickFinite(obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver);
 
-        const updated = formatUtcStamp(obj.fetched_at_utc || obj.updated_at || obj.updatedAt || obj.date || null);
+        // platinum is optional; support common keys if present
+        const p = pickFinite(
+          obj.platinum_usd,
+          obj?.normalized?.platinum,
+          obj.xpt_usd,
+          obj.xpt,
+          obj.platinum,
+          obj?.raw?.platinum
+        );
+
+        const updated = stamp(
+          obj.fetched_at_utc ||
+          obj.updated_at ||
+          obj.updatedAt ||
+          obj.date_utc ||
+          obj.utc ||
+          obj.date ||
+          null
+        );
 
         return {
-          g: isFinite(g) ? g : null,
-          s: isFinite(s) ? s : null,
-          p: isFinite(p) ? p : null,
+          g: Number.isFinite(g) ? g : null,
+          s: Number.isFinite(s) ? s : null,
+          p: Number.isFinite(p) ? p : null,
           updated: updated || null,
           ok: true,
           err: null
         };
       }
 
-                     async function fetchSpots() {
+      async function fetchSpots() {
         setStatus("Fetching live spot…", "");
+
         try {
-          const data = await fetchJson("/api/spot?ts=" + Date.now());
+          // Fetch both; /api/spot has gold/silver, /api/latest may provide platinum if you add it later.
+          const [spotRes, latestRes] = await Promise.allSettled([
+            fetchAny("/api/spot"),
+            fetchAny("/api/latest")
+          ]);
 
-          if (!data || typeof data !== "object") throw new Error("Invalid spot payload");
-          if (data.ok === false) throw new Error(data.error || "Spot returned ok:false");
+          const spot = (spotRes.status === "fulfilled") ? spotRes.value : null;
+          const latest = (latestRes.status === "fulfilled") ? latestRes.value : null;
 
-          // pick the first finite number (IMPORTANT: avoids NaN blocking fallthrough)
-          const pickFinite = (...vals) => {
-            for (const v of vals) {
-              const n = num(v);
-              if (Number.isFinite(n)) return n;
-            }
-            return NaN;
-          };
+          // Prefer latest first, then fill gaps from spot
+          const a = pullSpotFromKnownShape(latest || {});
+          if (a.ok) {
+            if (a.g != null) state.spots.gold = a.g;
+            if (a.s != null) state.spots.silver = a.s;
+            if (a.p != null) state.spots.platinum = a.p;
+            if (a.updated) state.updatedAt = a.updated;
+          }
 
-          // Prefer normalized + *_usd fields (your API provides these)
-          const gold = pickFinite(data.gold_usd, data?.normalized?.gold, data.gold, data?.raw?.gold);
-          const silver = pickFinite(data.silver_usd, data?.normalized?.silver, data.silver, data?.raw?.silver);
+          const b = pullSpotFromKnownShape(spot || {});
+          if (b.ok) {
+            if (state.spots.gold == null && b.g != null) state.spots.gold = b.g;
+            if (state.spots.silver == null && b.s != null) state.spots.silver = b.s;
+            if (state.spots.platinum == null && b.p != null) state.spots.platinum = b.p;
+            if (!state.updatedAt && b.updated) state.updatedAt = b.updated;
+          } else if (spot && spot.ok === false) {
+            // Surface API error message instead of silently failing
+            setStatus("Live spot error: " + (b.err || "Unknown").toString(), "warn");
+          }
 
-          // platinum optional for now
-          const platinum = pickFinite(data.platinum_usd, data?.normalized?.platinum, data.platinum, data?.raw?.platinum);
-
-          state.spots.gold = Number.isFinite(gold) ? gold : null;
-          state.spots.silver = Number.isFinite(silver) ? silver : null;
-          state.spots.platinum = Number.isFinite(platinum) ? platinum : null;
-
-          state.updatedAt =
-            (data.fetched_at_utc ? String(data.fetched_at_utc) : "") ||
-            (data.date ? String(data.date) : "") ||
-            new Date().toISOString();
+          // If still no timestamp, set one so the UI doesn't look broken
+          if (!state.updatedAt) state.updatedAt = new Date().toISOString();
 
           updateSpotHeaderUI();
 
           const active = getActiveSpot();
-          if (Number.isFinite(active)) {
+          if (Number.isFinite(active) && active > 0) {
             setStatus("Live spot loaded. Ready.", "good");
           } else {
             setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
@@ -1495,8 +1557,12 @@
 
           compute(true);
         } catch (e) {
+          console.error("[melt] fetchSpots failed:", e);
           updateSpotHeaderUI();
-          setStatus("Spot fetch failed: " + (e?.message || String(e)) + ". Switch to Manual or fix /api/spot.", "bad");
+          setStatus(
+            "Spot fetch failed: " + (e?.message || String(e)) + ". Switch to Manual or fix /api/spot.",
+            "bad"
+          );
           compute(true);
         }
       }
