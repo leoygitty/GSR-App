@@ -1451,7 +1451,7 @@
         };
       }
 
-               async function fetchSpots() {
+                     async function fetchSpots() {
         setStatus("Fetching live spot…", "");
         try {
           const data = await fetchJson("/api/spot?ts=" + Date.now());
@@ -1459,37 +1459,35 @@
           if (!data || typeof data !== "object") throw new Error("Invalid spot payload");
           if (data.ok === false) throw new Error(data.error || "Spot returned ok:false");
 
-          const gold =
-            num(data.gold_usd) ??
-            num(data?.normalized?.gold) ??
-            num(data.gold) ??
-            num(data?.raw?.gold);
+          // pick the first finite number (IMPORTANT: avoids NaN blocking fallthrough)
+          const pickFinite = (...vals) => {
+            for (const v of vals) {
+              const n = num(v);
+              if (Number.isFinite(n)) return n;
+            }
+            return NaN;
+          };
 
-          const silver =
-            num(data.silver_usd) ??
-            num(data?.normalized?.silver) ??
-            num(data.silver) ??
-            num(data?.raw?.silver);
+          // Prefer normalized + *_usd fields (your API provides these)
+          const gold = pickFinite(data.gold_usd, data?.normalized?.gold, data.gold, data?.raw?.gold);
+          const silver = pickFinite(data.silver_usd, data?.normalized?.silver, data.silver, data?.raw?.silver);
 
-          const platinum =
-            num(data.platinum_usd) ??
-            num(data?.normalized?.platinum) ??
-            num(data.platinum) ??
-            num(data?.raw?.platinum);
+          // platinum optional for now
+          const platinum = pickFinite(data.platinum_usd, data?.normalized?.platinum, data.platinum, data?.raw?.platinum);
 
-          // store as real numbers or null
           state.spots.gold = Number.isFinite(gold) ? gold : null;
           state.spots.silver = Number.isFinite(silver) ? silver : null;
           state.spots.platinum = Number.isFinite(platinum) ? platinum : null;
 
           state.updatedAt =
-            (data.fetched_at_utc ? String(data.fetched_at_utc) : null) ||
-            (data.date ? String(data.date) : null) ||
+            (data.fetched_at_utc ? String(data.fetched_at_utc) : "") ||
+            (data.date ? String(data.date) : "") ||
             new Date().toISOString();
 
           updateSpotHeaderUI();
 
-          if (Number.isFinite(num(state.spots.gold)) || Number.isFinite(num(state.spots.silver)) || Number.isFinite(num(state.spots.platinum))) {
+          const active = getActiveSpot();
+          if (Number.isFinite(active)) {
             setStatus("Live spot loaded. Ready.", "good");
           } else {
             setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
