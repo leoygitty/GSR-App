@@ -1186,16 +1186,42 @@
         spots: { gold: null, silver: null, platinum: null },
         updatedAt: null,
         lastCalcOk: false
-     };
+          };
 
-      const isNum = (n) => typeof n === "number" && Number.isFinite(n);
+      // --- numeric helpers (null-safe)
+      const num = (v) => {
+        if (v === null || v === undefined) return NaN;
+        if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+        // handle numeric strings and "4,979.70" style values
+        const s = String(v).replace(/,/g, "").trim();
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : NaN;
+      };
 
-      const fmt2 = (n) => isNum(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
-      const fmt4 = (n) => isNum(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
-      const fmt6 = (n) => isNum(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 }) : "—";
+      const fmt2 = (v) => {
+        const n = num(v);
+        return Number.isFinite(n)
+          ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : "—";
+      };
 
-      const money = (n) => {
-        if (!isNum(n)) return "$—";
+      const fmt4 = (v) => {
+        const n = num(v);
+        return Number.isFinite(n)
+          ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+          : "—";
+      };
+
+      const fmt6 = (v) => {
+        const n = num(v);
+        return Number.isFinite(n)
+          ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })
+          : "—";
+      };
+
+      const money = (v) => {
+        const n = num(v);
+        if (!Number.isFinite(n)) return "$—";
         return n.toLocaleString(undefined, {
           style: "currency",
           currency: "USD",
@@ -1203,6 +1229,7 @@
           maximumFractionDigits: 2
         });
       };
+
 
 
       const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1234,30 +1261,23 @@
         pillPlatinum.classList.toggle("isActive", state.metal === "platinum");
       }
 
-      function getActiveSpot() {
-        if (state.spotMode === "manual") return parseFloat(manualSpot.value);
-        return state.spots[state.metal];
+           function getActiveSpot() {
+        if (state.spotMode === "manual") return num(manualSpot.value);
+        return num(state.spots[state.metal]);
       }
 
-            function updateSpotHeaderUI() {
+
+                  function updateSpotHeaderUI() {
         highlightActiveMetalPill();
 
-        // Use strict numeric checks (avoid isFinite(null) === true)
-        spotGoldPill.textContent = (typeof state.spots.gold === "number" && Number.isFinite(state.spots.gold))
-          ? money(state.spots.gold)
-          : "$—";
-
-        spotSilverPill.textContent = (typeof state.spots.silver === "number" && Number.isFinite(state.spots.silver))
-          ? money(state.spots.silver)
-          : "$—";
-
-        spotPlatinumPill.textContent = (typeof state.spots.platinum === "number" && Number.isFinite(state.spots.platinum))
-          ? money(state.spots.platinum)
-          : "$—";
+        spotGoldPill.textContent = money(state.spots.gold);
+        spotSilverPill.textContent = money(state.spots.silver);
+        spotPlatinumPill.textContent = money(state.spots.platinum);
 
         chipUpdated.textContent = state.updatedAt || "—";
         meltUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Melt tool • live spot";
       }
+
 
 
       function updateSpotHeaderUI() {
@@ -1431,52 +1451,37 @@
         };
       }
 
-          async function fetchSpots() {
+               async function fetchSpots() {
         setStatus("Fetching live spot…", "");
         try {
-          const url = "/api/spot?ts=" + Date.now(); // cache-bust
-          const data = await fetchJson(url);
+          const data = await fetchJson("/api/spot?ts=" + Date.now());
 
-          if (!data || typeof data !== "object") {
-            throw new Error("Spot payload missing/invalid.");
-          }
-          if (data.ok === false) {
-            throw new Error(data.error || "Spot endpoint returned ok:false");
-          }
-
-          // Prefer normalized + *_usd fields (your /api/spot shows these)
-          const toNum = (v) => {
-            const n = parseFloat(v);
-            return Number.isFinite(n) ? n : null;
-          };
+          if (!data || typeof data !== "object") throw new Error("Invalid spot payload");
+          if (data.ok === false) throw new Error(data.error || "Spot returned ok:false");
 
           const gold =
-            toNum(data.gold_usd) ??
-            toNum(data?.normalized?.gold) ??
-            toNum(data.gold) ??
-            toNum(data?.raw?.gold) ??
-            null;
+            num(data.gold_usd) ??
+            num(data?.normalized?.gold) ??
+            num(data.gold) ??
+            num(data?.raw?.gold);
 
           const silver =
-            toNum(data.silver_usd) ??
-            toNum(data?.normalized?.silver) ??
-            toNum(data.silver) ??
-            toNum(data?.raw?.silver) ??
-            null;
+            num(data.silver_usd) ??
+            num(data?.normalized?.silver) ??
+            num(data.silver) ??
+            num(data?.raw?.silver);
 
-          // Platinum is fine to remain null for now until you add it server-side
           const platinum =
-            toNum(data.platinum_usd) ??
-            toNum(data?.normalized?.platinum) ??
-            toNum(data.platinum) ??
-            toNum(data?.raw?.platinum) ??
-            null;
+            num(data.platinum_usd) ??
+            num(data?.normalized?.platinum) ??
+            num(data.platinum) ??
+            num(data?.raw?.platinum);
 
-          state.spots.gold = gold;
-          state.spots.silver = silver;
-          state.spots.platinum = platinum;
+          // store as real numbers or null
+          state.spots.gold = Number.isFinite(gold) ? gold : null;
+          state.spots.silver = Number.isFinite(silver) ? silver : null;
+          state.spots.platinum = Number.isFinite(platinum) ? platinum : null;
 
-          // Timestamp / updated label
           state.updatedAt =
             (data.fetched_at_utc ? String(data.fetched_at_utc) : null) ||
             (data.date ? String(data.date) : null) ||
@@ -1484,24 +1489,20 @@
 
           updateSpotHeaderUI();
 
-          // Status message based on whether we got *anything*
-          const haveGold = typeof gold === "number" && Number.isFinite(gold);
-          const haveSilver = typeof silver === "number" && Number.isFinite(silver);
-
-          if (haveGold || haveSilver) {
+          if (Number.isFinite(num(state.spots.gold)) || Number.isFinite(num(state.spots.silver)) || Number.isFinite(num(state.spots.platinum))) {
             setStatus("Live spot loaded. Ready.", "good");
           } else {
-            setStatus("Live spot unavailable. Switch to Manual or check /api/spot.", "warn");
+            setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
           }
 
           compute(true);
         } catch (e) {
           updateSpotHeaderUI();
-          const msg = (e && e.message) ? e.message : String(e);
-          setStatus(`Spot fetch failed: ${msg}. Switch to Manual or fix /api/spot.`, "bad");
+          setStatus("Spot fetch failed: " + (e?.message || String(e)) + ". Switch to Manual or fix /api/spot.", "bad");
           compute(true);
         }
       }
+
 
 
 
