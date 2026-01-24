@@ -27,7 +27,7 @@ def _http_get_text(url: str, timeout: int = 15) -> str:
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "Mozilla/5.0 (MetalMetric; +https://metalmetric.com)",
+            "User-Agent": "Mozilla/5.0 (MetalMetric-Futures; +https://metalmetric.com)",
             "Accept": "text/csv,text/plain,application/json;q=0.9,*/*;q=0.8",
         },
         method="GET",
@@ -161,7 +161,7 @@ class handler(BaseHTTPRequestHandler):
                 "silver_usd": float(silver_px),
                 "gsr": float(gsr),
                 "fetched_at_utc": now_utc,
-               "source": "futures_stooq",
+                "source": "futures_stooq",
                 "market": {
                     "date": market_date,
                     "time": market_time,
