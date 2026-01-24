@@ -161,7 +161,7 @@ class handler(BaseHTTPRequestHandler):
                 "silver_usd": float(silver_px),
                 "gsr": float(gsr),
                 "fetched_at_utc": now_utc,
-                "source": "spot_stooq",
+               "source": "futures_stooq",
                 "market": {
                     "date": market_date,
                     "time": market_time,
