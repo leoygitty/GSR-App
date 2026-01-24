@@ -1455,82 +1455,88 @@
         return res.json();
       }
 
-      async function fetchSpots() {
-        setStatus("Fetching live spot…", "");
+     async function fetchSpots() {
+  setStatus("Fetching live spot…", "");
+
+  // helper (define BEFORE first use)
+  function isByFinite(v) { return typeof v === "number" && isFinite(v); }
+
+  try {
+    // 1) Bulk attempts (some deployments vary on trailing slash / relative path)
+    const bulkUrls = ["/api/spot", "/api/spot/", "../api/spot", "../api/spot/"];
+    let bulk = null;
+
+    for (const u of bulkUrls) {
+      try { bulk = await fetchAny(u); break; } catch {}
+    }
+
+    if (bulk != null) {
+      const g = extractSpotRobust(bulk, "gold");
+      const s = extractSpotRobust(bulk, "silver");
+      const p = extractSpotRobust(bulk, "platinum");
+
+      if (isFinite(g)) state.spots.gold = g;
+      if (isFinite(s)) state.spots.silver = s;
+      if (isByFinite(p)) state.spots.platinum = p;
+    }
+
+    // 2) If still missing, try common single-metal query patterns
+    const sym = { gold: "XAUUSD", silver: "XAGUSD", platinum: "XPTUSD" };
+    const metalKeys = ["gold", "silver", "platinum"];
+    const queryBases = [
+      (m) => `/api/spot?metal=${encodeURIComponent(m)}`,
+      (m) => `/api/spot?symbol=${encodeURIComponent(sym[m])}`,
+      (m) => `/api/spot?ticker=${encodeURIComponent(sym[m])}`
+    ];
+
+    for (const m of metalKeys) {
+      if (isFinite(state.spots[m])) continue;
+
+      for (const mkUrl of queryBases) {
         try {
-          let bulk = null;
-
-          // 1) try bulk /api/spot
-          try { bulk = await fetchJson("/api/spot"); } catch {}
-
-          if (bulk) {
-            const g = extractSpotAnyShape(bulk, "gold");
-            const s = extractSpotAnyShape(bulk, "silver");
-            const p = extractSpotAnyShape(bulk, "platinum");
-
-            if (isFinite(g)) state.spots.gold = g;
-            if (isFinite(s)) state.spots.silver = s;
-            if (isFinite(p)) state.spots.platinum = p;
-
-            const upd = extractUpdatedAny(bulk);
-            if (upd) state.updatedAt = upd;
-          }
-
-          // 2) If missing metals, try single metal queries
-          const missing = [];
-          if (!isFinite(state.spots.gold)) missing.push("gold");
-          if (!isFinite(state.spots.silver)) missing.push("silver");
-          if (!isFinite(state.spots.platinum)) missing.push("platinum");
-
-          if (missing.length) {
-            await Promise.allSettled(missing.map(async (m) => {
-              try {
-                const one = await fetchJson("/api/spot?metal=" + encodeURIComponent(m));
-                const v = extractSpotAnyShape(one, m);
-                if (isFinite(v)) state.spots[m] = v;
-                const upd = extractUpdatedAny(one);
-                if (upd) state.updatedAt = upd;
-              } catch {}
-            }));
-          }
-
-          // 3) Fallback to /api/latest
-          if (!isFinite(state.spots.gold) || !isFinite(state.spots.silver) || !isFinite(state.spots.platinum)) {
-            try {
-              const latest = await fetchJson("/api/latest");
-              const g2 = extractSpotAnyShape(latest, "gold");
-              const s2 = extractSpotAnyShape(latest, "silver");
-              const p2 = extractSpotAnyShape(latest, "platinum");
-
-              if (isFinite(g2)) state.spots.gold = g2;
-              if (isFinite(s2)) state.spots.silver = s2;
-              if (isFinite(p2)) state.spots.platinum = p2;
-
-              const upd2 = extractUpdatedAny(latest);
-              if (upd2) state.updatedAt = upd2;
-            } catch {}
-          }
-
-          if (!state.updatedAt) {
-            state.updatedAt = new Date().toISOString().replace("T"," ").slice(0,19) + " UTC";
-          }
-
-          updateSpotHeaderUI();
-
-          const active = getActiveSpot();
-          if (isFinite(active)) {
-            setStatus("Live spot loaded. Ready.", "good");
-          } else {
-            setStatus("Live spot unavailable for this metal. Switch to Manual to enter spot.", "warn");
-          }
-
-          compute(true);
-        } catch (e) {
-          updateSpotHeaderUI();
-          setStatus("Spot fetch failed. Switch to Manual to enter spot.", "bad");
-          compute(true);
-        }
+          const one = await fetchAny(mkUrl(m));
+          const v = extractSpotRobust(one, m);
+          if (isFinite(v)) { state.spots[m] = v; break; }
+        } catch {}
       }
+    }
+
+    // 3) Fallback to /api/latest (often has gold/silver at least)
+    if (!isFinite(state.spots.gold) || !isFinite(state.spots.silver) || !isFinite(state.spots.platinum)) {
+      const latestUrls = ["/api/latest", "/api/latest/", "../api/latest", "../api/latest/"];
+      for (const u of latestUrls) {
+        try {
+          const latest = await fetchAny(u);
+
+          const g2 = extractSpotRobust(latest, "gold");
+          const s2 = extractSpotRobust(latest, "silver");
+          const p2 = extractSpotRobust(latest, "platinum");
+
+          if (isFinite(g2)) state.spots.gold = g2;
+          if (isFinite(s2)) state.spots.silver = s2;
+          if (isFinite(p2)) state.spots.platinum = p2;
+
+          break;
+        } catch {}
+      }
+    }
+
+    // Timestamp (local UI timestamp — not the market timestamp)
+    state.updatedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+    updateSpotHeaderUI();
+
+    const active = getActiveSpot();
+    if (isFinite(active)) setStatus("Live spot loaded. Ready.", "good");
+    else setStatus("Spot response received but could not be parsed. (Open /api/spot to confirm payload.)", "warn");
+
+    compute(true);
+  } catch (e) {
+    updateSpotHeaderUI();
+    setStatus("Spot fetch failed. Switch to Manual to enter spot.", "bad");
+    compute(true);
+  }
+}
+
 
       function renderSilverLadder(weightG, spot, canCalc) {
         ladderList.innerHTML = "";
