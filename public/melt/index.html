@@ -1231,110 +1231,33 @@
         return state.spots[state.metal];
       }
 
-      function extractNumber(x) {
-        const n = parseFloat(x);
-        return isFinite(n) ? n : null;
-      }
-
-      // Handles many possible JSON shapes (bulk, single, array)
-      function extractSpotAnyShape(obj, metal) {
-        if (obj == null) return null;
-
-        // raw number
-        if (typeof obj === "number") return isFinite(obj) ? obj : null;
-
-        // string number
-        if (typeof obj === "string") return extractNumber(obj);
-
-        // array of items
-        if (Array.isArray(obj)) {
-          for (const item of obj) {
-            const got = extractSpotAnyShape(item, metal);
-            if (isFinite(got)) return got;
-          }
-          return null;
-        }
-
-        if (typeof obj !== "object") return null;
-
-        // common direct keys
-        const keySets = {
-          gold: ["gold", "gold_usd", "xau", "xauusd", "XAUUSD", "XAU", "spot_gold", "spotGold", "price_gold", "priceGold"],
-          silver: ["silver", "silver_usd", "xag", "xagusd", "XAGUSD", "XAG", "spot_silver", "spotSilver", "price_silver", "priceSilver"],
-          platinum: ["platinum", "platinum_usd", "xpt", "xptusd", "XPTUSD", "XPT", "spot_platinum", "spotPlatinum", "price_platinum", "pricePlatinum"]
-        };
-
-        for (const k of keySets[metal]) {
-          if (k in obj) {
-            const n = extractNumber(obj[k]);
-            if (isFinite(n)) return n;
-          }
-        }
-
-        // common single-response shapes: {spot: 123}, {price: 123}, {value: 123}
-        for (const k of ["spot", "price", "value", "usd", "last"]) {
-          if (k in obj) {
-            const n = extractNumber(obj[k]);
-            if (isFinite(n)) return n;
-          }
-        }
-
-        // symbol/metal tagged shapes
-        const sym = (obj.symbol || obj.sym || obj.ticker || obj.metal || obj.asset || "").toString().toUpperCase();
-        if (sym) {
-          const wants = metal === "gold" ? ["XAU", "XAUUSD", "GOLD"] :
-                        metal === "silver" ? ["XAG", "XAGUSD", "SILVER"] :
-                        ["XPT", "XPTUSD", "PLATINUM"];
-          if (wants.some(w => sym.includes(w))) {
-            const n = extractSpotAnyShape(obj.price ?? obj.spot ?? obj.value ?? obj.usd, metal);
-            if (isFinite(n)) return n;
-          }
-        }
-
-        // nested containers
-        const nests = ["spot", "data", "prices", "result", "latest", "meta"];
-        for (const nkey of nests) {
-          if (obj[nkey] && typeof obj[nkey] === "object") {
-            const got = extractSpotAnyShape(obj[nkey], metal);
-            if (isFinite(got)) return got;
-          }
-        }
-
-        return null;
-      }
-
-      function extractUpdatedAny(obj) {
-        if (!obj || typeof obj !== "object") return null;
-        const keys = ["updated", "updated_at", "updatedAt", "timestamp", "ts", "asof", "as_of", "date_utc", "utc"];
-        for (const k of keys) {
-          if (k in obj && obj[k]) return String(obj[k]);
-        }
-        if (obj.meta && typeof obj.meta === "object") {
-          for (const k of keys) {
-            if (k in obj.meta && obj.meta[k]) return String(obj.meta[k]);
-          }
-        }
-        return null;
+      function formatUtcStamp(input) {
+        if (!input) return null;
+        const d = new Date(input);
+        if (!isFinite(d.getTime())) return String(input);
+        const yyyy = d.getUTCFullYear();
+        const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(d.getUTCDate()).padStart(2, "0");
+        const hh = String(d.getUTCHours()).padStart(2, "0");
+        const mi = String(d.getUTCMinutes()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd} ${hh}:${mi} UTC`;
       }
 
       function updateSpotHeaderUI() {
         highlightActiveMetalPill();
-
         spotGoldPill.textContent = isFinite(state.spots.gold) ? money(state.spots.gold) : "$—";
         spotSilverPill.textContent = isFinite(state.spots.silver) ? money(state.spots.silver) : "$—";
         spotPlatinumPill.textContent = isFinite(state.spots.platinum) ? money(state.spots.platinum) : "$—";
-
-        chipUpdated.textContent = state.updatedAt || "—";
+        chipUpdated.textContent = state.updatedAt ? state.updatedAt.replace(" UTC","") : "—";
         meltUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Melt tool • live spot";
       }
 
       function updatePurityHint() {
+        const p = isFinite(state.purity) ? state.purity : 0;
         if (state.purityLabel === "Custom") {
-          const p = isFinite(state.purity) ? state.purity : 0;
           purityHint.textContent = `Custom (${p.toFixed(3)})`;
           return;
         }
-        const p = isFinite(state.purity) ? state.purity : 0;
         purityHint.textContent = `${state.purityLabel} (${p.toFixed(3)})`;
       }
 
@@ -1350,7 +1273,7 @@
 
           const top = document.createElement("div");
           top.className = "pTop";
-          top.innerHTML = `<span class="mono">${o.label}</span><span class="mono" style="opacity:.78">${o.purity === null ? "" : ""}</span>`;
+          top.innerHTML = `<span class="mono">${o.label}</span>`;
 
           const sub = document.createElement("div");
           sub.className = "pSub";
@@ -1420,7 +1343,6 @@
         updateSpotHeaderUI();
         compute(true);
 
-        // if auto mode and we don't have this metal yet, try to fetch
         if (state.spotMode === "auto" && !isFinite(state.spots[m])) fetchSpots();
       }
 
@@ -1449,96 +1371,94 @@
         compute(true);
       }
 
-      async function fetchJson(url) {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
+      async function fetchAny(path) {
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch { throw new Error(`Non-JSON from ${path}`); }
+        if (!res.ok) {
+          const msg = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
+          const err = new Error(msg);
+          err.status = res.status;
+          err.payload = data;
+          throw err;
+        }
+        return data;
       }
 
-    async function fetchSpots() {
-  setStatus("Fetching live spot…", "");
-  try {
-    // helper
-    const pickNum = (obj, keys) => {
-      if (!obj || typeof obj !== "object") return null;
-      for (const k of keys) {
-        if (k in obj) {
-          const n = parseFloat(obj[k]);
-          if (isFinite(n)) return n;
+      function pullSpotFromKnownShape(obj) {
+        if (!obj || typeof obj !== "object") return { g: null, s: null, p: null, updated: null, ok: false, err: "Invalid response" };
+
+        if (obj.ok === false) {
+          return { g: null, s: null, p: null, updated: null, ok: false, err: obj.error ? String(obj.error) : "Spot returned ok:false" };
+        }
+
+        const g = parseFloat(obj.gold_usd);
+        const s = parseFloat(obj.silver_usd);
+
+        // platinum optional for now
+        const pRaw = (obj.platinum_usd ?? obj.xpt_usd ?? obj.platinum ?? null);
+        const p = pRaw == null ? null : parseFloat(pRaw);
+
+        const updated = formatUtcStamp(obj.fetched_at_utc || obj.updated_at || obj.updatedAt || obj.date || null);
+
+        return {
+          g: isFinite(g) ? g : null,
+          s: isFinite(s) ? s : null,
+          p: isFinite(p) ? p : null,
+          updated: updated || null,
+          ok: true,
+          err: null
+        };
+      }
+
+      async function fetchSpots() {
+        setStatus("Fetching live spot…", "");
+        btnRefresh.disabled = true;
+
+        try {
+          // Primary source: /api/spot (you confirmed it works now)
+          const spot = await fetchAny("/api/spot");
+          const parsed = pullSpotFromKnownShape(spot);
+
+          if (!parsed.ok) {
+            setStatus(`Live spot error: ${parsed.err}. Switch to Manual if needed.`, "warn");
+            updateSpotHeaderUI();
+            compute(true);
+            return;
+          }
+
+          if (isFinite(parsed.g)) state.spots.gold = parsed.g;
+          if (isFinite(parsed.s)) state.spots.silver = parsed.s;
+          // platinum optional (safe no-op if missing)
+          if (isFinite(parsed.p)) state.spots.platinum = parsed.p;
+
+          state.updatedAt = parsed.updated || formatUtcStamp(new Date().toISOString());
+
+          updateSpotHeaderUI();
+
+          const active = getActiveSpot();
+          if (state.spotMode === "auto") {
+            if (isFinite(active) && active > 0) setStatus("Live spot loaded. Ready.", "good");
+            else if (state.metal === "platinum") setStatus("Platinum live spot not available yet. Switch to Manual.", "warn");
+            else setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
+          } else {
+            setStatus("Manual spot mode. Enter price, then Calculate.", "warn");
+          }
+
+          // refresh computed values without overwriting status aggressively
+          compute(false);
+        } catch (e) {
+          const msg = (e && e.message) ? String(e.message) : "Spot fetch failed";
+          setStatus(`Spot fetch failed: ${msg}. Switch to Manual or fix /api/spot.`, "bad");
+          updateSpotHeaderUI();
+          compute(true);
+        } finally {
+          btnRefresh.disabled = false;
         }
       }
-      return null;
-    };
-
-    // 1) Prefer /api/latest (this is what your dashboard likely uses)
-    let latest = null;
-    try { latest = await fetchAny("/api/latest"); } catch {}
-
-    if (latest && typeof latest === "object" && latest.ok !== false) {
-      const g = pickNum(latest, ["gold_usd", "xauusd", "xau", "gold", "goldUsd", "spot_gold", "spotGold"]);
-      const s = pickNum(latest, ["silver_usd", "xagusd", "xag", "silver", "silverUsd", "spot_silver", "spotSilver"]);
-      const p = pickNum(latest, ["platinum_usd", "xptusd", "xpt", "platinum", "platinumUsd", "spot_platinum", "spotPlatinum"]);
-
-      if (isFinite(g)) state.spots.gold = g;
-      if (isFinite(s)) state.spots.silver = s;
-      if (isFinite(p)) state.spots.platinum = p;
-
-      const upd = latest.updated_at || latest.updatedAt || latest.date_utc || latest.utc || latest.d || latest.date;
-      if (upd) state.updatedAt = String(upd);
-    }
-
-    // 2) Use /api/spot only as a supplement (and ignore ok:false payloads)
-    // This is where platinum would normally come from if latest doesn't include it.
-    let spot = null;
-    try { spot = await fetchAny("/api/spot"); } catch {}
-
-    if (spot && typeof spot === "object" && spot.ok === false) {
-      // Surface the real reason in UI
-      const err = spot.error ? String(spot.error) : "Spot endpoint error";
-      if (err.includes("401")) {
-        setStatus("Live spot is blocked (401 Unauthorized). Fix /api/spot credentials or use Manual.", "warn");
-      } else {
-        setStatus(`Live spot error: ${err}. Use Manual or fix /api/spot.`, "warn");
-      }
-    } else if (spot != null) {
-      // If /api/spot returns anything usable, parse it (fallback extractor)
-      const g = extractSpotRobust(spot, "gold");
-      const s = extractSpotRobust(spot, "silver");
-      const p = extractSpotRobust(spot, "platinum");
-
-      if (isFinite(g)) state.spots.gold = g;
-      if (isFinite(s)) state.spots.silver = s;
-      if (isFinite(p)) state.spots.platinum = p;
-    }
-
-    // Timestamp if none from API
-    if (!state.updatedAt) {
-      state.updatedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
-    }
-
-    updateSpotHeaderUI();
-
-    const active = getActiveSpot();
-    if (isFinite(active)) {
-      setStatus("Live spot loaded. Ready.", "good");
-    } else {
-      setStatus(
-        state.spotMode === "auto"
-          ? "Live spot unavailable for this metal. Switch to Manual or fix /api/spot."
-          : "Enter a manual spot price, then Calculate.",
-        "warn"
-      );
-    }
-
-    compute(true);
-  } catch (e) {
-    updateSpotHeaderUI();
-    setStatus("Spot fetch failed. Switch to Manual or fix /api/spot.", "bad");
-    compute(true);
-  }
-}
-
-
 
       function renderSilverLadder(weightG, spot, canCalc) {
         ladderList.innerHTML = "";
@@ -1590,17 +1510,12 @@
         const spot = getActiveSpot();
         updateSpotHeaderUI();
 
-        // default: not calculated until inputs + spot are valid
         state.lastCalcOk = false;
         btnCopy.disabled = true;
 
         const isSilverJunk = (state.metal === "silver" && state.silverMode === "junk");
-
-        if (isSilverJunk) {
-          computeJunkMode(spot, forceStatus);
-        } else {
-          computePurityMode(spot, forceStatus);
-        }
+        if (isSilverJunk) computeJunkMode(spot, forceStatus);
+        else computePurityMode(spot, forceStatus);
       }
 
       function computePurityMode(spot, forceStatus) {
@@ -1615,7 +1530,6 @@
         const pureG = (weightValid && purityValid) ? weightG * state.purity : NaN;
         const pureOzt = (weightValid && purityValid) ? (pureG * G_TO_OZT) : NaN;
 
-        // KPI row always shows computables even if spot missing
         kWeight.textContent = weightValid ? `${fmt2(weight)} ${unit}` : "—";
         kWeightSub.textContent = weightValid ? `${fmt2(weightG)} g` : "—";
 
@@ -1628,19 +1542,16 @@
         kSpot.textContent = spotValid ? money(spot) : "—";
         kSpotSub.textContent = spotValid ? "$ per oz t" : (state.spotMode === "auto" ? "Live spot missing" : "Enter spot");
 
-        // Summary line
         const metal = metalName(state.metal).toLowerCase();
         summaryLine.textContent = (weightValid && purityValid)
           ? `${fmt2(weight)} ${unit} of ${state.purityLabel.toLowerCase()} ${metal}`
           : "—";
 
-        // Total
         if (weightValid && purityValid && spotValid) {
           const value = pureOzt * spot;
           totalValue.textContent = money(Math.round(value * 100) / 100);
           state.lastCalcOk = true;
           btnCopy.disabled = false;
-
           if (forceStatus) setStatus("Calculated.", "good");
         } else {
           totalValue.textContent = "$—";
@@ -1651,7 +1562,6 @@
           }
         }
 
-        // Silver ladder
         if (state.metal === "silver") {
           ladderWeightLabel.textContent = weightValid ? `${fmt2(weightG)} g` : "—";
           renderSilverLadder(weightG, spot, !!(weightValid && spotValid));
@@ -1684,7 +1594,6 @@
 
         const hasCoins = totalQty > 0;
 
-        // KPIs repurposed
         kWeight.textContent = hasCoins ? `${totalQty} coins` : "—";
         kWeightSub.textContent = hasCoins ? "Total pieces" : "—";
 
@@ -1699,7 +1608,6 @@
 
         summaryLine.textContent = hasCoins ? `Junk Silver • ${totalQty} coins • ${fmt4(totalFineOzt)} oz t fine` : "Junk Silver • enter quantities";
 
-        // Total
         if (spotValid && hasCoins) {
           const totalVal = totalFineOzt * spot;
           totalValue.textContent = money(Math.round(totalVal * 100) / 100);
@@ -1714,7 +1622,6 @@
           }
         }
 
-        // Breakdown
         junkFineLabel.textContent = hasCoins ? `${fmt4(totalFineOzt)} oz t fine` : "—";
         bdTable.innerHTML = "";
 
@@ -1744,7 +1651,6 @@
       btnSilverPurity.addEventListener("click", () => setSilverMode("purity"));
       btnSilverJunk.addEventListener("click", () => setSilverMode("junk"));
 
-      // Auto-updates still happen, but Calculate exists for “intent”
       weightInput.addEventListener("input", () => compute(false));
       unitSelect.addEventListener("change", () => compute(false));
 
@@ -1760,12 +1666,10 @@
       btnRefresh.addEventListener("click", fetchSpots);
 
       btnCalculate.addEventListener("click", () => {
-        // If auto spot missing, attempt fetch and then compute
         if (state.spotMode === "auto" && !isFinite(getActiveSpot())) {
           fetchSpots().finally(() => compute(true));
           return;
         }
-        // If manual mode and empty spot, guide user
         if (state.spotMode === "manual" && (!manualSpot.value || !isFinite(parseFloat(manualSpot.value)))) {
           setStatus("Enter a manual spot price, then Calculate.", "warn");
           manualSpot.style.display = "block";
@@ -1775,7 +1679,6 @@
         compute(true);
       });
 
-      // Enter key = Calculate
       [weightInput, unitSelect, manualSpot, customPurityInput].forEach(node => {
         if (!node) return;
         node.addEventListener("keydown", (e) => {
