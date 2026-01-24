@@ -1,76 +1,1701 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Melt Calculator — Premium Metals Valuation</title>
-  <link rel="stylesheet" href="../styles.css">
-  <link rel="icon" href="../icon.svg">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Melt Value Calculator — MetalMetric</title>
+
+  <!-- Keep global styles (variables/typography) but DO NOT rely on global utility classes here -->
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../icon.svg" />
+
+  <!-- Scoped, melt-only styles (safe; namespaced under body.meltPage) -->
+  <style>
+    :root{
+      /* Fallbacks if global vars differ */
+      --m-bg: #0b0f14;
+      --m-panel: rgba(255,255,255,.04);
+      --m-panel2: rgba(255,255,255,.06);
+      --m-border: rgba(255,255,255,.10);
+      --m-border2: rgba(255,255,255,.14);
+      --m-text: rgba(255,255,255,.92);
+      --m-subtext: rgba(255,255,255,.64);
+      --m-muted: rgba(255,255,255,.50);
+      --m-shadow: 0 18px 60px rgba(0,0,0,.50);
+      --m-radius: 18px;
+      --m-radius2: 14px;
+      --m-focus: rgba(142, 200, 255, .55);
+
+      --m-accent: rgba(142, 200, 255, 1);
+      --m-gold: rgba(245, 200, 90, 1);
+      --m-silver: rgba(210, 220, 232, 1);
+      --m-plat: rgba(180, 195, 255, 1);
+
+      --m-good: rgba(52, 211, 153, 1);
+      --m-bad: rgba(248, 113, 113, 1);
+      --m-warn: rgba(251, 191, 36, 1);
+    }
+
+    body.meltPage{
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 520px at 20% 0%, rgba(142,200,255,.12), transparent 60%),
+        radial-gradient(900px 520px at 80% 0%, rgba(245,200,90,.10), transparent 60%),
+        var(--m-bg);
+      color: var(--m-text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    body.meltPage a{ color: inherit; text-decoration: none; }
+    body.meltPage a:hover{ text-decoration: underline; text-decoration-color: rgba(255,255,255,.35); }
+
+    .mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+    .meltWrap{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+
+    /* Top bar */
+    .meltTop{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .meltBrand{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .meltMark{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+      border: 1px solid var(--m-border);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      display: grid; place-items: center;
+    }
+    .meltMark svg{ opacity: .92; }
+    .meltBrandText{ display: flex; flex-direction: column; line-height: 1.1; }
+    .meltBrandText b{ font-size: 14px; letter-spacing: .2px; }
+    .meltBrandText span{ font-size: 12px; color: var(--m-subtext); }
+
+    .meltNav{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pillRow{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--m-border);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .pill strong{ font-weight: 650; letter-spacing: .2px; }
+    .pill small{ color: var(--m-subtext); font-size: 11px; }
+
+    .btn{
+      appearance: none;
+      border: 1px solid var(--m-border);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.90);
+      padding: 9px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.28);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select: none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); border-color: var(--m-border2); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); }
+    .btn:focus-visible{
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(142,200,255,.18), 0 18px 60px rgba(0,0,0,.35);
+      border-color: rgba(142,200,255,.45);
+    }
+
+    /* Hero */
+    .meltHero{
+      margin: 12px 0 22px;
+      padding: 18px 18px 0;
+    }
+    .meltHero h1{
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    .meltHero p{
+      margin: 0;
+      color: var(--m-subtext);
+      font-size: 14px;
+    }
+
+    /* Layout grid */
+    .meltGrid{
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px){
+      .meltGrid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border-radius: var(--m-radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--m-border);
+      box-shadow: var(--m-shadow);
+      overflow: hidden;
+    }
+    .cardHeader{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .cardHeader h2{
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: .3px;
+      font-weight: 650;
+      color: rgba(255,255,255,.86);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .cardBody{ padding: 16px; }
+
+    /* Segmented controls */
+    .seg{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+    }
+    .seg.seg2{ grid-template-columns: 1fr 1fr; }
+    .seg button{
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(255,255,255,.72);
+      border-radius: 12px;
+      padding: 10px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .12s ease, border-color .12s ease, color .12s ease;
+      user-select: none;
+    }
+    .seg button:hover{ background: rgba(255,255,255,.04); }
+    .seg button[aria-selected="true"],
+    .seg button[aria-pressed="true"]{
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.14);
+      color: rgba(255,255,255,.92);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .segIcon{
+      width: 14px; height: 14px; display: inline-block;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+      opacity: .95;
+    }
+
+    /* Form controls */
+    .row{
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (max-width: 980px){
+      .row{ grid-template-columns: 1fr 160px; }
+    }
+    .field label{
+      display: block;
+      font-size: 11px;
+      color: var(--m-subtext);
+      margin-bottom: 6px;
+      letter-spacing: .2px;
+    }
+    .control{
+      width: 100%;
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.90);
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .control:hover{ border-color: rgba(255,255,255,.16); }
+    .control:focus{
+      border-color: rgba(142,200,255,.50);
+      box-shadow: 0 0 0 4px rgba(142,200,255,.14);
+      background: rgba(255,255,255,.06);
+    }
+    select.control{ padding-right: 34px; }
+
+    /* Purity grid */
+    .purityBlock{ margin-top: 14px; }
+    .purityHeader{
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .purityHeader .hint{
+      font-size: 11px;
+      color: var(--m-muted);
+    }
+    .purityGrid{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .pBtn{
+      appearance: none;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.86);
+      padding: 10px 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select: none;
+      min-height: 50px;
+    }
+    .pBtn:hover{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); transform: translateY(-1px); }
+    .pBtn:active{ transform: translateY(0); }
+    .pBtn[aria-pressed="true"]{
+      background: rgba(142,200,255,.10);
+      border-color: rgba(142,200,255,.32);
+      box-shadow: 0 0 0 4px rgba(142,200,255,.10);
+    }
+    .pTop{
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      font-weight: 650; font-size: 12px;
+    }
+    .pSub{
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--m-subtext);
+      line-height: 1.2;
+    }
+
+    .customPurityRow{
+      margin-top: 10px;
+      display: none;
+      gap: 10px;
+      align-items: center;
+    }
+    .customPurityRow.isOn{ display: flex; }
+    .customPurityRow .control{ flex: 1; }
+
+    /* Junk silver inputs */
+    .junkNote{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.68);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .coinGrid{
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      background: rgba(0,0,0,.18);
+    }
+    .coinRow{
+      display: grid;
+      grid-template-columns: 1.2fr .9fr .9fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+    }
+    .coinRow:first-child{ border-top: none; }
+    .coinHead{
+      background: rgba(255,255,255,.03);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.62);
+    }
+    .coinName{
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .coinName b{ font-size: 13px; letter-spacing: -0.01em; }
+    .coinName span{ font-size: 11px; color: rgba(255,255,255,.58); }
+    .qtyControl{
+      padding: 10px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+      width: 100%;
+      font-size: 13px;
+      outline: none;
+    }
+    .qtyControl:focus{
+      border-color: rgba(142,200,255,.50);
+      box-shadow: 0 0 0 4px rgba(142,200,255,.14);
+    }
+
+    /* Spot mode */
+    .spotBlock{
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .spotMode{
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .chip{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.78);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip[aria-pressed="true"]{
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.92);
+      border-color: rgba(255,255,255,.16);
+    }
+    .spotInline{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .statusBar{
+      padding: 2px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .status{
+      font-size: 12px;
+      color: var(--m-subtext);
+      min-height: 18px;
+    }
+    .status.bad{ color: rgba(248,113,113,.95); }
+    .status.good{ color: rgba(52,211,153,.95); }
+    .status.warn{ color: rgba(251,191,36,.95); }
+
+    /* Result */
+    .resultHero{
+      padding: 18px 16px 12px;
+      background: linear-gradient(180deg, rgba(142,200,255,.10), rgba(255,255,255,.00));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .resultHero .label{
+      font-size: 11px;
+      color: rgba(255,255,255,.65);
+      letter-spacing: .28em;
+      text-transform: uppercase;
+    }
+    .resultHero .value{
+      margin-top: 8px;
+      font-size: 44px;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+      line-height: 1.0;
+    }
+    .resultHero .sub{
+      margin-top: 8px;
+      color: var(--m-subtext);
+      font-size: 13px;
+    }
+
+    .kpiRow{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px 16px 16px;
+    }
+    @media (max-width: 980px){
+      .kpiRow{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .kpi{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding: 12px 12px;
+    }
+    .kpi .k{ font-size: 10px; color: rgba(255,255,255,.58); letter-spacing: .22em; text-transform: uppercase; }
+    .kpi .v{ margin-top: 6px; font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
+    .kpi .s{ margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.62); }
+
+    .calcMeta{
+      padding: 0 16px 16px;
+    }
+    .metaLine{
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 0;
+      border-top: 1px dashed rgba(255,255,255,.10);
+      font-size: 13px;
+      color: rgba(255,255,255,.82);
+    }
+    .metaLine:first-child{ border-top: none; }
+    .metaLine span{ color: rgba(255,255,255,.62); }
+
+    /* Silver ladder (purity values list) */
+    .ladder{
+      padding: 0 16px 16px;
+    }
+    .ladderHeader{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 2px 0 10px;
+      color: rgba(255,255,255,.82);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .ladderHeader small{
+      font-weight: 500;
+      color: rgba(255,255,255,.58);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .ladderList{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      background: rgba(0,0,0,.18);
+    }
+    .ladderRow{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      cursor: pointer;
+      user-select: none;
+    }
+    .ladderRow:first-child{ border-top: none; }
+    .ladderRow:hover{ background: rgba(255,255,255,.03); }
+    .ladderRow.isActive{
+      background: rgba(142,200,255,.08);
+      border-top-color: rgba(142,200,255,.18);
+      box-shadow: inset 0 0 0 1px rgba(142,200,255,.16);
+    }
+    .ladderLeft{
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .ladderTop{
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1px;
+      white-space: nowrap;
+    }
+    .ladderName{
+      font-size: 13px;
+      font-weight: 650;
+      color: rgba(255,255,255,.88);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ladderDesc{
+      font-size: 12px;
+      color: rgba(255,255,255,.58);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ladderVal{
+      font-size: 14px;
+      font-weight: 750;
+      color: rgba(255,255,255,.92);
+      white-space: nowrap;
+    }
+
+    /* Junk breakdown */
+    .breakdown{
+      padding: 0 16px 16px;
+    }
+    .bdHeader{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 2px 0 10px;
+      color: rgba(255,255,255,.82);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .bdHeader small{
+      font-weight: 500;
+      color: rgba(255,255,255,.58);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .bdTable{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      background: rgba(0,0,0,.18);
+    }
+    .bdRow{
+      display: grid;
+      grid-template-columns: 1.2fr .7fr .7fr .9fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+    }
+    .bdRow:first-child{ border-top: none; }
+    .bdHead{
+      background: rgba(255,255,255,.03);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.62);
+    }
+    .bdRight{ text-align: right; }
+
+    /* FAQ */
+    .faq{
+      margin-top: 14px;
+      padding-top: 18px;
+    }
+    .faq h3{
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,.80);
+      letter-spacing: .2px;
+    }
+    details{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    summary{
+      cursor: pointer;
+      list-style: none;
+      padding: 12px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,.86);
+      user-select: none;
+    }
+    summary::-webkit-details-marker{ display: none; }
+    summary .chev{
+      opacity: .6;
+      transition: transform .12s ease;
+    }
+    details[open] summary .chev{ transform: rotate(180deg); opacity: .85; }
+    details .content{
+      padding: 0 12px 12px;
+      color: rgba(255,255,255,.70);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
 </head>
-<body class="bg-black text-gray-100">
-  <section class="py-16 px-6">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-4xl font-bold text-center mb-12">Melt Value Calculator</h1>
-      
-      <!-- Metal Tabs -->
-      <div class="flex justify-center mb-8">
-        <button class="metal-tab active" data-metal="gold"><span class="text-gold">👑</span> Gold</button>
-        <button class="metal-tab" data-metal="silver"><span class="text-gray-300">⚪</span> Silver</button>
-        <button class="metal-tab" data-metal="platinum"><span class="text-blue-300">🔲</span> Platinum</button>
-      </div>
-      
-      <!-- Input Form -->
-      <div class="card p-8 mb-8">
-        <div class="grid md:grid-cols-3 gap-6">
-          <div>
-            <label class="block text-sm font-medium mb-2">Weight</label>
-            <input type="number" id="weight" value="1" min="0" step="0.01" class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Unit</label>
-            <select id="unit" class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2">
-              <option value="g">Grams (g)</option>
-              <option value="ozt">Troy Ounces (oz t)</option>
-              <option value="dwt">Pennyweight (dwt)</option>
-              <option value="kg">Kilograms (kg)</option>
-              <option value="oz">Ounces (oz)</option>
-              <option value="lb">Pounds (lb)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Purity / Karat</label>
-            <div id="purity-options" class="flex flex-wrap gap-2"></div>
-          </div>
+
+<body class="meltPage">
+  <div class="meltWrap">
+
+    <!-- Top -->
+    <div class="meltTop">
+      <div class="meltBrand">
+        <div class="meltMark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M5 19V6.5c0-.7.8-1.1 1.4-.7l5.6 3.9 5.6-3.9c.6-.4 1.4 0 1.4.7V19" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="meltBrandText">
+          <b>MetalMetric</b>
+          <span class="mono" id="meltUpdatedSmall">Melt tool • live spot</span>
         </div>
       </div>
-      
-      <!-- Output -->
-      <div class="card p-8 mb-12 output-hidden" id="output">
-        <h2 class="text-3xl font-bold text-center mb-6 text-gold">Total Melt Value: <span id="total-value">$0.00</span></h2>
-        <p class="text-center text-gray-400 mb-4" id="summary">1 Gram of 24K Gold</p>
-        <table class="w-full text-left">
-          <tr><td class="py-2 border-b border-gray-700">Weight</td><td id="out-weight"></td></tr>
-          <tr><td class="py-2 border-b border-gray-700">Purity</td><td id="out-purity"></td></tr>
-          <tr><td class="py-2 border-b border-gray-700">Pure Metal</td><td id="out-pure"></td></tr>
-          <tr><td class="py-2">Spot Price</td><td id="out-spot"></td></tr>
-        </table>
-      </div>
-      
-      <!-- FAQ -->
-      <div class="accordion">
-        <details class="accordion-item">
-          <summary>How is melt value calculated?</summary>
-          <p>Pure metal = weight × purity. Convert to troy oz, then multiply by spot price.</p>
-        </details>
-        <details class="accordion-item">
-          <summary>What is the difference between karats?</summary>
-          <p>24K is 99.9% pure, 18K is 75%, etc.</p>
-        </details>
-        <!-- Add more from your specs or reference -->
+
+      <div class="meltNav">
+        <div class="pillRow" aria-label="Spot prices">
+          <div class="pill" title="Spot price per troy ounce">
+            <strong id="chipLabel">Gold</strong>
+            <span class="mono" id="chipSpot">$—</span>
+            <small id="chipUnit">/ oz t</small>
+          </div>
+          <div class="pill" title="Data freshness">
+            <strong>Updated</strong>
+            <span class="mono" id="chipUpdated">—</span>
+          </div>
+        </div>
+
+        <button class="btn" id="btnRefresh" type="button">Refresh spot</button>
+        <a class="btn" href="../index.html">Dashboard</a>
       </div>
     </div>
-  </section>
 
-  <script src="../app.js"></script>  <!-- Or add inline if preferred -->
+    <!-- Hero -->
+    <div class="meltHero">
+      <h1>Gold, Silver & Platinum Melt Value Calculator</h1>
+      <p>Live spot when available. Purity ladder for silver. Junk silver mode uses ASW multipliers (spot × ASW).</p>
+    </div>
+
+    <div class="meltGrid">
+      <!-- INPUT CARD -->
+      <section class="card" aria-label="Input">
+        <div class="cardHeader">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7 3h10M7 21h10M9 3v18m6-18v18" stroke="rgba(255,255,255,.72)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Input
+          </h2>
+          <button class="btn" id="btnReset" type="button">Reset</button>
+        </div>
+
+        <div class="cardBody">
+          <!-- Metal tabs -->
+          <div class="seg" role="tablist" aria-label="Metal selection">
+            <button type="button" role="tab" class="segBtn" data-metal="gold" aria-selected="true">
+              <span class="segIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                  <path d="M4 18h16M6 18l-2-9 6 4 2-6 2 6 6-4-2 9" stroke="rgba(245,200,90,.95)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Gold
+            </button>
+            <button type="button" role="tab" class="segBtn" data-metal="silver" aria-selected="false">
+              <span class="segIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                  <circle cx="12" cy="12" r="8" stroke="rgba(210,220,232,.95)" stroke-width="2"/>
+                </svg>
+              </span>
+              Silver
+            </button>
+            <button type="button" role="tab" class="segBtn" data-metal="platinum" aria-selected="false">
+              <span class="segIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                  <rect x="6" y="6" width="12" height="12" rx="2" stroke="rgba(180,195,255,.95)" stroke-width="2"/>
+                </svg>
+              </span>
+              Platinum
+            </button>
+          </div>
+
+          <!-- Silver-only mode -->
+          <div id="silverModeWrap" style="display:none; margin-top:12px;">
+            <div class="seg seg2" role="group" aria-label="Silver calculator mode">
+              <button type="button" id="btnSilverPurity" aria-pressed="true">Purity (Sterling → Fine)</button>
+              <button type="button" id="btnSilverJunk" aria-pressed="false">Junk Silver (Coins)</button>
+            </div>
+          </div>
+
+          <!-- Purity mode inputs -->
+          <div id="purityModeInputs">
+            <!-- Weight + Unit -->
+            <div class="row">
+              <div class="field">
+                <label for="weight">Weight</label>
+                <input class="control mono" type="number" id="weight" inputmode="decimal" min="0" step="0.01" value="1" />
+              </div>
+              <div class="field">
+                <label for="unit">Unit</label>
+                <select class="control" id="unit">
+                  <option value="g" selected>g</option>
+                  <option value="ozt">oz t</option>
+                  <option value="dwt">dwt</option>
+                  <option value="kg">kg</option>
+                  <option value="oz">oz</option>
+                  <option value="lb">lb</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Purity -->
+            <div class="purityBlock">
+              <div class="purityHeader">
+                <div class="field" style="margin:0;">
+                  <label style="margin:0;">Purity</label>
+                </div>
+                <div class="hint mono" id="purityHint">24K (0.999)</div>
+              </div>
+
+              <div class="purityGrid" id="purityGrid" aria-label="Purity options"></div>
+
+              <div class="customPurityRow" id="customPurityRow" aria-label="Custom purity">
+                <input class="control mono" id="customPurity" type="number" min="0" max="1" step="0.001" placeholder="Custom purity (0.000–1.000)" />
+                <button class="btn" type="button" id="btnApplyCustom">Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Junk mode inputs -->
+          <div id="junkModeInputs" style="display:none;">
+            <div class="junkNote">
+              <b>Junk Silver uses ASW multipliers.</b> Melt value is calculated as
+              <span class="mono">spot ($/oz t) × ASW (troy oz fine)</span>.
+              Enter coin quantities below.
+            </div>
+
+            <div class="coinGrid" aria-label="Junk silver coin quantities">
+              <div class="coinRow coinHead">
+                <div>Coin</div>
+                <div class="mono">ASW (oz t)</div>
+                <div>Qty</div>
+              </div>
+
+              <div class="coinRow">
+                <div class="coinName">
+                  <b>90% Dime</b>
+                  <span>Pre-1965 US</span>
+                </div>
+                <div class="mono">0.0723</div>
+                <input class="qtyControl mono" id="qtyDime" type="number" min="0" step="1" value="0" />
+              </div>
+
+              <div class="coinRow">
+                <div class="coinName">
+                  <b>90% Quarter</b>
+                  <span>Pre-1965 US</span>
+                </div>
+                <div class="mono">0.1790</div>
+                <input class="qtyControl mono" id="qtyQuarter" type="number" min="0" step="1" value="0" />
+              </div>
+
+              <div class="coinRow">
+                <div class="coinName">
+                  <b>90% Half Dollar</b>
+                  <span>Pre-1965 US</span>
+                </div>
+                <div class="mono">0.3617</div>
+                <input class="qtyControl mono" id="qtyHalf" type="number" min="0" step="1" value="0" />
+              </div>
+
+              <div class="coinRow">
+                <div class="coinName">
+                  <b>90% Silver Dollar</b>
+                  <span>Morgan/Peace standard</span>
+                </div>
+                <div class="mono">0.7730</div>
+                <input class="qtyControl mono" id="qtyDollar" type="number" min="0" step="1" value="0" />
+              </div>
+
+              <div class="coinRow">
+                <div class="coinName">
+                  <b>40% Kennedy Half</b>
+                  <span>1965–1970</span>
+                </div>
+                <div class="mono">0.1479</div>
+                <input class="qtyControl mono" id="qtyHalf40" type="number" min="0" step="1" value="0" />
+              </div>
+
+              <div class="coinRow">
+                <div class="coinName">
+                  <b>35% War Nickel</b>
+                  <span>1942–1945</span>
+                </div>
+                <div class="mono">0.0563</div>
+                <input class="qtyControl mono" id="qtyWarNickel" type="number" min="0" step="1" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Spot block (used by both modes) -->
+          <div class="spotBlock">
+            <div class="field">
+              <label>Spot price</label>
+            </div>
+
+            <div class="spotMode" role="group" aria-label="Spot mode">
+              <button class="chip" id="modeAuto" type="button" aria-pressed="true">Auto (live)</button>
+              <button class="chip" id="modeManual" type="button" aria-pressed="false">Manual</button>
+            </div>
+
+            <div class="spotInline">
+              <input class="control mono" id="manualSpot" type="number" min="0" step="0.01" placeholder="Enter spot ($ per oz t)" style="display:none;" />
+              <div class="statusBar">
+                <div class="status" id="statusText">Fetching spot…</div>
+                <button class="btn" id="btnCopy" type="button" title="Copy melt value to clipboard">Copy value</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OUTPUT CARD -->
+      <section class="card" aria-label="Melt value">
+        <div class="cardHeader">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 14l5-5 4 4 7-7" stroke="rgba(142,200,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 7v6h-6" stroke="rgba(142,200,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Melt Value
+          </h2>
+          <div class="pill" title="Price basis">
+            <strong>USD</strong>
+            <span class="mono">/ oz t</span>
+          </div>
+        </div>
+
+        <div class="resultHero">
+          <div class="label">Total Melt Value</div>
+          <div class="value mono" id="totalValue">$0.00</div>
+          <div class="sub mono" id="summaryLine">1.00 g of 24K gold</div>
+        </div>
+
+        <div class="kpiRow" id="kpiRow">
+          <div class="kpi">
+            <div class="k">Weight</div>
+            <div class="v mono" id="kWeight">—</div>
+            <div class="s mono" id="kWeightSub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Purity</div>
+            <div class="v mono" id="kPurity">—</div>
+            <div class="s mono" id="kPuritySub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Pure metal</div>
+            <div class="v mono" id="kPure">—</div>
+            <div class="s mono" id="kPureSub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Spot price</div>
+            <div class="v mono" id="kSpot">—</div>
+            <div class="s mono" id="kSpotSub">—</div>
+          </div>
+        </div>
+
+        <!-- Silver purity ladder (Silver + Purity mode only) -->
+        <div class="ladder" id="silverLadder" style="display:none;">
+          <div class="ladderHeader">
+            <div>Silver Purity Values: Sterling to Fine</div>
+            <small class="mono" id="ladderWeightLabel">—</small>
+          </div>
+          <div class="ladderList" id="ladderList"></div>
+        </div>
+
+        <!-- Junk breakdown (Silver + Junk mode only) -->
+        <div class="breakdown" id="junkBreakdown" style="display:none;">
+          <div class="bdHeader">
+            <div>Junk Silver Breakdown</div>
+            <small class="mono" id="junkFineLabel">—</small>
+          </div>
+          <div class="bdTable" id="bdTable"></div>
+        </div>
+
+        <div class="calcMeta" id="calcMeta">
+          <div class="metaLine">
+            <div>Formula</div>
+            <div class="mono"><span>pure_g</span> = weight_g × purity</div>
+          </div>
+          <div class="metaLine">
+            <div>Conversion</div>
+            <div class="mono"><span>oz t</span> = pure_g × 0.0321507466</div>
+          </div>
+          <div class="metaLine">
+            <div>Value</div>
+            <div class="mono"><span>USD</span> = oz_t × spot</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq" aria-label="FAQ">
+      <h3>FAQ</h3>
+
+      <details>
+        <summary>
+          How is melt value calculated?
+          <span class="chev" aria-hidden="true">▾</span>
+        </summary>
+        <div class="content">
+          Purity mode:
+          <ol style="margin:10px 0 0 18px; padding:0; color: rgba(255,255,255,.70);">
+            <li><span class="mono">pure_grams = weight_grams × purity</span></li>
+            <li><span class="mono">troy_oz = pure_grams × 0.0321507466</span></li>
+            <li><span class="mono">value = troy_oz × spot</span> (spot is <span class="mono">$ / oz t</span>)</li>
+          </ol>
+          <div style="margin-top:10px;">
+            Junk silver mode uses the equivalent shortcut:
+            <span class="mono">value = spot × ASW</span>, where ASW is fine silver troy ounces.
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>
+          Why does it use troy ounces?
+          <span class="chev" aria-hidden="true">▾</span>
+        </summary>
+        <div class="content">
+          Precious metals are quoted in <span class="mono">troy ounces (oz t)</span>.
+          Regular ounces and pounds are <span class="mono">avoirdupois</span> units. We convert everything to grams, then to troy ounces.
+        </div>
+      </details>
+
+      <details>
+        <summary>
+          What is ASW (Actual Silver Weight)?
+          <span class="chev" aria-hidden="true">▾</span>
+        </summary>
+        <div class="content">
+          ASW is the amount of <b>fine silver</b> in a coin, expressed in <span class="mono">troy ounces</span>.
+          Melt value is <span class="mono">spot ($/oz t) × ASW (oz t)</span>.
+        </div>
+      </details>
+    </div>
+
+  </div>
+
+  <!-- Melt-only JS (does NOT load ../app.js to avoid collisions with dashboard code) -->
+  <script>
+    (function () {
+      "use strict";
+
+      // --- Constants
+      const G_TO_OZT = 0.0321507466;
+
+      const UNIT_TO_G = {
+        g: 1,
+        ozt: 31.1034768,
+        dwt: 1.55517384,
+        kg: 1000,
+        oz: 28.349523125,   // avoirdupois
+        lb: 453.59237
+      };
+
+      // Silver ladder (as requested)
+      const SILVER_LADDER = [
+        { label: ".999", name: "Fine Silver",     desc: ".999 pure silver",                         purity: 0.999 },
+        { label: ".925", name: "Sterling Silver", desc: ".925 silver - Jewelry standard",          purity: 0.925 },
+        { label: ".958", name: "Britannia Silver",desc: ".958 silver - UK hallmark",               purity: 0.958 },
+        { label: ".950", name: "Mexican Silver",  desc: ".950 silver - Mexican standard",          purity: 0.950 },
+        { label: ".900", name: "90% Coin Silver", desc: ".900 silver - Pre-1965 US coins",         purity: 0.900 },
+        { label: ".400", name: "40% Half Dollars",desc: ".400 silver - 1965-1970 Kennedy halves",  purity: 0.400 },
+        { label: ".350", name: "35% War Nickels", desc: ".350 silver - 1942-1945 nickels",         purity: 0.350 }
+      ];
+
+      const PURITIES = {
+        gold: [
+          { label: "24K", purity: 0.999, sub: "0.999" },
+          { label: "22K", purity: 0.916, sub: "0.916" },
+          { label: "21K", purity: 0.875, sub: "0.875" },
+          { label: "18K", purity: 0.750, sub: "0.750" },
+          { label: "14K", purity: 0.583, sub: "0.583" },
+          { label: "10K", purity: 0.417, sub: "0.417" },
+          { label: "9K",  purity: 0.375, sub: "0.375" },
+          { label: "Custom", purity: null, sub: "Enter" }
+        ],
+        silver: [
+          { label: ".999", purity: 0.999, sub: "Fine Silver" },
+          { label: ".925", purity: 0.925, sub: "Sterling" },
+          { label: ".958", purity: 0.958, sub: "Britannia" },
+          { label: ".950", purity: 0.950, sub: "Mexican" },
+          { label: ".900", purity: 0.900, sub: "90% Coin" },
+          { label: ".400", purity: 0.400, sub: "40% Halves" },
+          { label: ".350", purity: 0.350, sub: "War Nickels" },
+          { label: "Custom", purity: null, sub: "Enter" }
+        ],
+        platinum: [
+          { label: ".999", purity: 0.999, sub: "Fine" },
+          { label: ".950", purity: 0.950, sub: "Jewelry" },
+          { label: ".900", purity: 0.900, sub: "Alloy" },
+          { label: ".850", purity: 0.850, sub: "Alloy" },
+          { label: "Custom", purity: null, sub: "Enter" }
+        ]
+      };
+
+      // Junk silver ASW multipliers (oz t fine per coin)
+      // 90% coin multipliers are taken from your provided chart.
+      const JUNK_ASW = [
+        { key: "dime",     label: "90% Dime",          asw: 0.0723, qtyId: "qtyDime" },
+        { key: "quarter",  label: "90% Quarter",       asw: 0.1790, qtyId: "qtyQuarter" },
+        { key: "half",     label: "90% Half Dollar",   asw: 0.3617, qtyId: "qtyHalf" },
+        { key: "dollar",   label: "90% Silver Dollar", asw: 0.7730, qtyId: "qtyDollar" },
+        { key: "half40",   label: "40% Kennedy Half",  asw: 0.1479, qtyId: "qtyHalf40" },
+        { key: "warnickel",label: "35% War Nickel",    asw: 0.0563, qtyId: "qtyWarNickel" }
+      ];
+
+      // --- Elements
+      const el = (id) => document.getElementById(id);
+
+      const segBtns = Array.from(document.querySelectorAll(".segBtn"));
+      const purityGrid = el("purityGrid");
+      const purityHint = el("purityHint");
+
+      const weightInput = el("weight");
+      const unitSelect = el("unit");
+
+      const silverModeWrap = el("silverModeWrap");
+      const btnSilverPurity = el("btnSilverPurity");
+      const btnSilverJunk = el("btnSilverJunk");
+      const purityModeInputs = el("purityModeInputs");
+      const junkModeInputs = el("junkModeInputs");
+
+      const modeAuto = el("modeAuto");
+      const modeManual = el("modeManual");
+      const manualSpot = el("manualSpot");
+
+      const btnRefresh = el("btnRefresh");
+      const btnReset = el("btnReset");
+      const btnCopy = el("btnCopy");
+
+      const statusText = el("statusText");
+
+      const chipLabel = el("chipLabel");
+      const chipSpot = el("chipSpot");
+      const chipUpdated = el("chipUpdated");
+      const meltUpdatedSmall = el("meltUpdatedSmall");
+
+      const totalValue = el("totalValue");
+      const summaryLine = el("summaryLine");
+
+      const kpiRow = el("kpiRow");
+      const kWeight = el("kWeight");
+      const kWeightSub = el("kWeightSub");
+      const kPurity = el("kPurity");
+      const kPuritySub = el("kPuritySub");
+      const kPure = el("kPure");
+      const kPureSub = el("kPureSub");
+      const kSpot = el("kSpot");
+      const kSpotSub = el("kSpotSub");
+
+      const calcMeta = el("calcMeta");
+
+      const customPurityRow = el("customPurityRow");
+      const customPurityInput = el("customPurity");
+      const btnApplyCustom = el("btnApplyCustom");
+
+      // Silver ladder + junk breakdown
+      const silverLadder = el("silverLadder");
+      const ladderList = el("ladderList");
+      const ladderWeightLabel = el("ladderWeightLabel");
+
+      const junkBreakdown = el("junkBreakdown");
+      const junkFineLabel = el("junkFineLabel");
+      const bdTable = el("bdTable");
+
+      // --- State
+      let state = {
+        metal: "gold",
+        purityLabel: "24K",
+        purity: 0.999,
+        spotMode: "auto",          // "auto" | "manual"
+        silverMode: "purity",      // "purity" | "junk"
+        spots: { gold: null, silver: null, platinum: null },
+        updatedAt: null
+      };
+
+      // --- Helpers
+      const fmt2 = (n) => isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+      const fmt4 = (n) => isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
+      const fmt6 = (n) => isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 }) : "—";
+
+      const money = (n) => {
+        if (!isFinite(n)) return "$—";
+        return n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+      function metalName(m) {
+        return m === "gold" ? "Gold" : (m === "silver" ? "Silver" : "Platinum");
+      }
+
+      function defaultPurityFor(m) {
+        // defaults: Gold 24K, Silver .925, Platinum .950
+        if (m === "silver") return { label: ".925", purity: 0.925 };
+        if (m === "platinum") return { label: ".950", purity: 0.950 };
+        return { label: "24K", purity: 0.999 };
+      }
+
+      function gramsFrom(weight, unit) {
+        const factor = UNIT_TO_G[unit] ?? 1;
+        return weight * factor;
+      }
+
+      function setStatus(msg, kind) {
+        statusText.textContent = msg;
+        statusText.classList.remove("bad", "good", "warn");
+        if (kind) statusText.classList.add(kind);
+      }
+
+      function getActiveSpot() {
+        const m = state.metal;
+        if (state.spotMode === "manual") return parseFloat(manualSpot.value);
+        return state.spots[m];
+      }
+
+      function updateHeaderSpot() {
+        const m = state.metal;
+        const s = getActiveSpot();
+
+        chipLabel.textContent = metalName(m);
+        chipSpot.textContent = isFinite(s) ? money(s) : "$—";
+        chipUpdated.textContent = state.updatedAt ? state.updatedAt : "—";
+        meltUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Melt tool • live spot";
+      }
+
+      function updatePurityHint() {
+        if (state.purityLabel === "Custom") {
+          const p = isFinite(state.purity) ? state.purity : 0;
+          purityHint.textContent = `Custom (${p.toFixed(3)})`;
+          return;
+        }
+        const p = isFinite(state.purity) ? state.purity : 0;
+        purityHint.textContent = `${state.purityLabel} (${p.toFixed(3)})`;
+      }
+
+      function renderPurityButtons() {
+        purityGrid.innerHTML = "";
+        const opts = PURITIES[state.metal];
+
+        opts.forEach((o) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "pBtn";
+          b.setAttribute("aria-pressed", (o.label === state.purityLabel) ? "true" : "false");
+
+          const top = document.createElement("div");
+          top.className = "pTop";
+          top.innerHTML = `<span class="mono">${o.label}</span><span class="mono" style="opacity:.78">${o.purity === null ? "" : (o.sub && o.sub.match(/^\d/) ? o.sub : "")}</span>`;
+
+          const sub = document.createElement("div");
+          sub.className = "pSub";
+          if (o.label === "Custom") sub.textContent = "Custom purity (0–1)";
+          else if (state.metal === "gold" && o.label.endsWith("K")) sub.textContent = "Karat";
+          else sub.textContent = o.sub || "";
+
+          b.appendChild(top);
+          b.appendChild(sub);
+
+          b.addEventListener("click", () => {
+            if (o.purity === null) {
+              state.purityLabel = "Custom";
+              customPurityRow.classList.add("isOn");
+              if (isFinite(state.purity)) customPurityInput.value = String(clamp(state.purity, 0, 1));
+              renderPurityButtons();
+              updatePurityHint();
+              compute();
+              return;
+            }
+
+            state.purityLabel = o.label;
+            state.purity = o.purity;
+            customPurityRow.classList.remove("isOn");
+            renderPurityButtons();
+            updatePurityHint();
+            compute();
+          });
+
+          purityGrid.appendChild(b);
+        });
+      }
+
+      function setMetal(m) {
+        state.metal = m;
+
+        segBtns.forEach(btn => {
+          btn.setAttribute("aria-selected", btn.dataset.metal === m ? "true" : "false");
+        });
+
+        // Silver mode visibility
+        if (m === "silver") {
+          silverModeWrap.style.display = "";
+        } else {
+          silverModeWrap.style.display = "none";
+          state.silverMode = "purity";
+          btnSilverPurity.setAttribute("aria-pressed", "true");
+          btnSilverJunk.setAttribute("aria-pressed", "false");
+        }
+
+        // Default purity per metal
+        const def = defaultPurityFor(m);
+        state.purityLabel = def.label;
+        state.purity = def.purity;
+        customPurityRow.classList.remove("isOn");
+
+        renderPurityButtons();
+        updatePurityHint();
+
+        // Ensure correct mode blocks
+        syncSilverModeUI();
+
+        updateHeaderSpot();
+        compute();
+      }
+
+      function setSilverMode(mode) {
+        state.silverMode = mode;
+        btnSilverPurity.setAttribute("aria-pressed", mode === "purity" ? "true" : "false");
+        btnSilverJunk.setAttribute("aria-pressed", mode === "junk" ? "true" : "false");
+        syncSilverModeUI();
+        compute();
+      }
+
+      function syncSilverModeUI() {
+        const isSilver = state.metal === "silver";
+        const isJunk = isSilver && state.silverMode === "junk";
+
+        purityModeInputs.style.display = isJunk ? "none" : "";
+        junkModeInputs.style.display = isJunk ? "" : "none";
+
+        // Output sections
+        silverLadder.style.display = (isSilver && !isJunk) ? "" : "none";
+        junkBreakdown.style.display = (isSilver && isJunk) ? "" : "none";
+
+        // Calc meta: show formula always; for junk, still useful but we emphasize ASW breakdown
+        calcMeta.style.display = "";
+      }
+
+      function setSpotMode(mode) {
+        state.spotMode = mode;
+        const isAuto = (mode === "auto");
+        modeAuto.setAttribute("aria-pressed", isAuto ? "true" : "false");
+        modeManual.setAttribute("aria-pressed", isAuto ? "false" : "true");
+
+        manualSpot.style.display = isAuto ? "none" : "block";
+
+        updateHeaderSpot();
+        compute();
+      }
+
+      // Attempts to extract spot values from unknown JSON shapes defensively.
+      function extractSpot(obj, metal) {
+        if (!obj || typeof obj !== "object") return null;
+
+        const keySets = {
+          gold: ["gold", "gold_usd", "xau", "xauusd", "XAU", "XAUUSD", "xau_usd", "spot_gold", "spotGold", "XAU_USD"],
+          silver: ["silver", "silver_usd", "xag", "xagusd", "XAG", "XAGUSD", "xag_usd", "spot_silver", "spotSilver", "XAG_USD"],
+          platinum: ["platinum", "platinum_usd", "xpt", "xptusd", "XPT", "XPTUSD", "xpt_usd", "spot_platinum", "spotPlatinum", "XPT_USD"]
+        };
+
+        for (const k of keySets[metal]) {
+          if (k in obj && isFinite(parseFloat(obj[k]))) return parseFloat(obj[k]);
+        }
+
+        const nests = ["spot", "data", "prices", "result", "latest"];
+        for (const n of nests) {
+          const v = obj[n];
+          if (v && typeof v === "object") {
+            for (const k of keySets[metal]) {
+              if (k in v && isFinite(parseFloat(v[k]))) return parseFloat(v[k]);
+            }
+          }
+        }
+
+        return null;
+      }
+
+      function extractUpdated(obj) {
+        if (!obj || typeof obj !== "object") return null;
+        const keys = ["updated", "updated_at", "updatedAt", "timestamp", "ts", "asof", "as_of", "date_utc", "utc"];
+        for (const k of keys) {
+          if (k in obj && obj[k]) return String(obj[k]);
+        }
+        if (obj.meta && typeof obj.meta === "object") {
+          for (const k of keys) {
+            if (k in obj.meta && obj.meta[k]) return String(obj.meta[k]);
+          }
+        }
+        return null;
+      }
+
+      async function fetchSpots() {
+        setStatus("Fetching spot…", "");
+        try {
+          let res = await fetch("/api/spot", { cache: "no-store" });
+          let data = null;
+
+          if (res.ok) {
+            data = await res.json();
+          } else {
+            res = await fetch("/api/latest", { cache: "no-store" });
+            if (res.ok) data = await res.json();
+          }
+
+          if (!data) throw new Error("No data");
+
+          const g = extractSpot(data, "gold");
+          const s = extractSpot(data, "silver");
+          const p = extractSpot(data, "platinum");
+
+          state.spots.gold = isFinite(g) ? g : state.spots.gold;
+          state.spots.silver = isFinite(s) ? s : state.spots.silver;
+          state.spots.platinum = isFinite(p) ? p : state.spots.platinum;
+
+          const upd = extractUpdated(data);
+          state.updatedAt = upd || new Date().toISOString().replace("T"," ").slice(0,19) + " UTC";
+
+          // Prefill manual spot if empty
+          if (state.spotMode === "manual" && (!manualSpot.value || !isFinite(parseFloat(manualSpot.value)))) {
+            const spt = state.spots[state.metal];
+            if (isFinite(spt)) manualSpot.value = String(spt);
+          }
+
+          updateHeaderSpot();
+
+          const haveCurrent = isFinite(state.spots[state.metal]);
+          if (haveCurrent) setStatus("Spot updated.", "good");
+          else setStatus("Spot unavailable for selected metal. Switch to Manual to enter spot.", "warn");
+
+          compute();
+        } catch (e) {
+          updateHeaderSpot();
+          setStatus("Spot fetch failed. Switch to Manual to enter spot.", "bad");
+          compute();
+        }
+      }
+
+      function computePurityMode(spot) {
+        const weight = parseFloat(weightInput.value);
+        const unit = unitSelect.value;
+
+        const weightValid = isFinite(weight) && weight > 0;
+        const purityValid = isFinite(state.purity) && state.purity > 0 && state.purity <= 1;
+        const spotValid = isFinite(spot) && spot > 0;
+
+        if (!weightValid) {
+          setStatus("Enter a valid weight greater than 0.", "bad");
+        } else if (!purityValid) {
+          setStatus("Select a valid purity (0–1).", "bad");
+        } else if (!spotValid) {
+          setStatus(state.spotMode === "auto" ? "Spot unavailable. Refresh or switch to Manual." : "Enter a valid spot price (> 0).", "warn");
+        } else {
+          setStatus("Ready.", "good");
+        }
+
+        const weightG = weightValid ? gramsFrom(weight, unit) : 0;
+        const pureG = (weightValid && purityValid) ? weightG * state.purity : 0;
+        const pureOzt = pureG * G_TO_OZT;
+        const value = (weightValid && purityValid && spotValid) ? (pureOzt * spot) : 0;
+
+        totalValue.textContent = money(Math.round(value * 100) / 100);
+
+        const metal = metalName(state.metal).toLowerCase();
+        summaryLine.textContent = `${weightValid ? fmt2(weight) : "—"} ${unit} of ${state.purityLabel.toLowerCase()} ${metal}`;
+
+        // KPI row (standard)
+        kWeight.textContent = weightValid ? `${fmt2(weight)} ${unit}` : "—";
+        kWeightSub.textContent = weightValid ? `${fmt2(weightG)} g` : "—";
+
+        kPurity.textContent = purityValid ? (state.purityLabel === "Custom" ? "Custom" : state.purityLabel) : "—";
+        kPuritySub.textContent = purityValid ? `${(state.purity * 100).toFixed(1)}%` : "—";
+
+        kPure.textContent = (weightValid && purityValid) ? `${fmt6(pureOzt)} oz t` : "—";
+        kPureSub.textContent = (weightValid && purityValid) ? `${fmt2(pureG)} g` : "—";
+
+        kSpot.textContent = spotValid ? money(spot) : "—";
+        kSpotSub.textContent = spotValid ? "$ per oz t" : "—";
+
+        // Silver ladder
+        if (state.metal === "silver") {
+          ladderWeightLabel.textContent = weightValid ? `${fmt2(weightG)} g` : "—";
+          renderSilverLadder(weightG, spot, spotValid && weightValid);
+        }
+      }
+
+      function renderSilverLadder(weightG, spot, canCalc) {
+        ladderList.innerHTML = "";
+        const activeLabel = state.purityLabel;
+
+        SILVER_LADDER.forEach((row) => {
+          const pureG = canCalc ? (weightG * row.purity) : 0;
+          const ozt = pureG * G_TO_OZT;
+          const val = canCalc ? (ozt * spot) : 0;
+
+          const r = document.createElement("div");
+          r.className = "ladderRow" + ((activeLabel === row.label) ? " isActive" : "");
+          r.setAttribute("role", "button");
+          r.tabIndex = 0;
+
+          r.innerHTML = `
+            <div class="ladderLeft">
+              <div class="ladderTop">
+                <span class="badge mono">${row.label}</span>
+                <div class="ladderName">${row.name}</div>
+              </div>
+              <div class="ladderDesc">${row.desc}</div>
+            </div>
+            <div class="ladderVal mono">${canCalc ? money(Math.round(val * 100) / 100) : "$—"}</div>
+          `;
+
+          const selectThis = () => {
+            state.purityLabel = row.label;
+            state.purity = row.purity;
+            customPurityRow.classList.remove("isOn");
+            renderPurityButtons();
+            updatePurityHint();
+            compute();
+          };
+
+          r.addEventListener("click", selectThis);
+          r.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              selectThis();
+            }
+          });
+
+          ladderList.appendChild(r);
+        });
+      }
+
+      function computeJunkMode(spot) {
+        const spotValid = isFinite(spot) && spot > 0;
+
+        // Collect quantities
+        let totalQty = 0;
+        let totalFineOzt = 0;
+        let rows = [];
+
+        for (const c of JUNK_ASW) {
+          const qtyEl = el(c.qtyId);
+          const q = qtyEl ? parseInt(qtyEl.value || "0", 10) : 0;
+          const qty = isFinite(q) && q > 0 ? q : 0;
+          const fine = qty * c.asw;
+
+          totalQty += qty;
+          totalFineOzt += fine;
+
+          rows.push({
+            label: c.label,
+            qty,
+            asw: c.asw,
+            fineOzt: fine,
+            value: spotValid ? (fine * spot) : 0
+          });
+        }
+
+        const hasCoins = totalQty > 0;
+
+        if (!spotValid) {
+          setStatus(state.spotMode === "auto" ? "Spot unavailable. Refresh or switch to Manual." : "Enter a valid spot price (> 0).", "warn");
+        } else if (!hasCoins) {
+          setStatus("Enter at least one coin quantity.", "bad");
+        } else {
+          setStatus("Ready.", "good");
+        }
+
+        const totalVal = (spotValid && hasCoins) ? (totalFineOzt * spot) : 0;
+        totalValue.textContent = money(Math.round(totalVal * 100) / 100);
+
+        summaryLine.textContent = hasCoins
+          ? `Junk Silver • ${totalQty} coins • ${fmt4(totalFineOzt)} oz t fine`
+          : `Junk Silver • enter coin quantities`;
+
+        // Repurpose KPI row for junk mode
+        kWeight.textContent = hasCoins ? `${totalQty} coins` : "—";
+        kWeightSub.textContent = hasCoins ? "Total pieces" : "—";
+
+        kPurity.textContent = hasCoins ? `${fmt4(totalFineOzt)} oz t` : "—";
+        kPuritySub.textContent = hasCoins ? "Fine silver" : "—";
+
+        kPure.textContent = hasCoins ? money((totalQty > 0 && spotValid) ? (totalVal / totalQty) : NaN) : "—";
+        kPureSub.textContent = hasCoins ? "Melt / coin" : "—";
+
+        kSpot.textContent = spotValid ? money(spot) : "—";
+        kSpotSub.textContent = spotValid ? "$ per oz t" : "—";
+
+        // Breakdown table
+        junkFineLabel.textContent = hasCoins ? `${fmt4(totalFineOzt)} oz t fine` : "—";
+        bdTable.innerHTML = "";
+
+        // header row
+        const head = document.createElement("div");
+        head.className = "bdRow bdHead";
+        head.innerHTML = `<div>Coin</div><div class="bdRight">Qty</div><div class="bdRight mono">ASW</div><div class="bdRight">Value</div>`;
+        bdTable.appendChild(head);
+
+        rows
+          .filter(r => r.qty > 0 || hasCoins) // show all if coins exist, otherwise show only header
+          .forEach(r => {
+            if (!hasCoins) return;
+            const rowEl = document.createElement("div");
+            rowEl.className = "bdRow";
+            rowEl.innerHTML = `
+              <div>${r.label}</div>
+              <div class="bdRight mono">${r.qty}</div>
+              <div class="bdRight mono">${fmt4(r.fineOzt)}</div>
+              <div class="bdRight mono">${spotValid ? money(Math.round(r.value * 100) / 100) : "$—"}</div>
+            `;
+            bdTable.appendChild(rowEl);
+          });
+
+        // In junk mode, hide silver ladder, show breakdown (handled by syncSilverModeUI)
+      }
+
+      function compute() {
+        // Prefill manual spot if empty and we have auto
+        if (state.spotMode === "manual" && (!manualSpot.value || !isFinite(parseFloat(manualSpot.value)))) {
+          const spt = state.spots[state.metal];
+          if (isFinite(spt)) manualSpot.value = String(spt);
+        }
+
+        const spot = getActiveSpot();
+        updateHeaderSpot();
+
+        const isSilverJunk = (state.metal === "silver" && state.silverMode === "junk");
+        if (isSilverJunk) {
+          computeJunkMode(spot);
+        } else {
+          computePurityMode(spot);
+        }
+      }
+
+      // --- Events
+      segBtns.forEach(btn => btn.addEventListener("click", () => setMetal(btn.dataset.metal)));
+
+      btnSilverPurity.addEventListener("click", () => setSilverMode("purity"));
+      btnSilverJunk.addEventListener("click", () => setSilverMode("junk"));
+
+      weightInput.addEventListener("input", compute);
+      unitSelect.addEventListener("change", compute);
+
+      // Junk qty listeners
+      JUNK_ASW.forEach(c => {
+        const qtyEl = el(c.qtyId);
+        if (qtyEl) qtyEl.addEventListener("input", compute);
+      });
+
+      modeAuto.addEventListener("click", () => setSpotMode("auto"));
+      modeManual.addEventListener("click", () => setSpotMode("manual"));
+      manualSpot.addEventListener("input", compute);
+
+      btnRefresh.addEventListener("click", fetchSpots);
+
+      btnReset.addEventListener("click", () => {
+        weightInput.value = "1";
+        unitSelect.value = "g";
+
+        // reset junk quantities
+        JUNK_ASW.forEach(c => {
+          const qtyEl = el(c.qtyId);
+          if (qtyEl) qtyEl.value = "0";
+        });
+
+        setSpotMode("auto");
+        setMetal("gold"); // also resets silver mode
+        manualSpot.value = "";
+        state.updatedAt = null;
+        updateHeaderSpot();
+        setStatus("Reset.", "");
+        fetchSpots();
+      });
+
+      btnApplyCustom.addEventListener("click", () => {
+        const v = clamp(parseFloat(customPurityInput.value), 0, 1);
+        if (!isFinite(v) || v <= 0) {
+          setStatus("Custom purity must be between 0.001 and 1.000.", "bad");
+          return;
+        }
+        state.purity = v;
+        state.purityLabel = "Custom";
+        updatePurityHint();
+        renderPurityButtons();
+        compute();
+      });
+
+      btnCopy.addEventListener("click", async () => {
+        try {
+          const txt = totalValue.textContent || "";
+          await navigator.clipboard.writeText(txt);
+          setStatus("Copied melt value to clipboard.", "good");
+          setTimeout(() => compute(), 900);
+        } catch {
+          setStatus("Copy failed (browser blocked clipboard).", "bad");
+        }
+      });
+
+      // --- Init
+      (function init() {
+        setMetal("gold");
+        setSpotMode("auto");
+        renderPurityButtons();
+        updatePurityHint();
+        syncSilverModeUI();
+        compute();
+        fetchSpots();
+      })();
+
+    })();
+  </script>
 </body>
 </html>
