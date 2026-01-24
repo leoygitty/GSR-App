@@ -1,7 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone
-import json
 import urllib.request
 import csv
 import io
@@ -13,10 +12,9 @@ except Exception:
 
 
 # Stooq CSV quote endpoint (no API key required)
-# Example format used broadly: https://stooq.com/q/l/?s=%1&f=sd2t2ohlcv&h&e=csv
 STOOQ_URL_TPL = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlc&h&e=csv"
 
-# Map your old Yahoo symbols to Stooq symbols (keeps ?symbols=GC=F,SI=F compatible)
+# Keep compatibility with your old interface (?symbols=GC=F,SI=F)
 SYMBOL_MAP = {
     "GC=F": "gc.f",  # Gold futures
     "SI=F": "si.f",  # Silver futures
@@ -36,56 +34,73 @@ def _http_get_text(url: str, timeout: int = 15) -> str:
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         raw = resp.read()
-    # Stooq uses UTF-8
     return raw.decode("utf-8", errors="replace")
 
 
 def _fetch_stooq_last(symbol: str):
     """
     Returns (price_float, date_str, time_str) from Stooq CSV quote.
-    Expected CSV header includes: Symbol,Date,Time,Open,High,Low,Close
+    CSV header includes: Symbol,Date,Time,Open,High,Low,Close
     """
     url = STOOQ_URL_TPL.format(symbol=symbol)
     text = _http_get_text(url, timeout=15)
 
-    # Stooq returns CSV with header + one row for quote endpoints
-    # Guard: if we accidentally got HTML (maintenance/ban), fail cleanly
     if "<html" in text.lower():
         raise RuntimeError("Stooq returned HTML instead of CSV.")
 
     f = io.StringIO(text)
     reader = csv.DictReader(f)
-
     row = next(reader, None)
     if not row:
         raise RuntimeError("Stooq CSV missing data row.")
 
-    # Normalize keys (some environments may alter casing)
-    norm = { (k or "").strip().lower(): (v or "").strip() for k, v in row.items() }
+    norm = {(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
 
     close_raw = norm.get("close") or norm.get("c")
     if not close_raw or close_raw.upper() in ("N/A", "NA", "N/D", "-"):
         raise RuntimeError("Stooq CSV missing close price.")
 
     price = float(close_raw)
-
     d = norm.get("date") or norm.get("d") or ""
     t = norm.get("time") or norm.get("t") or ""
-
     return price, d, t
+
+
+def _normalize_price(metal: str, px: float):
+    """
+    Stooq futures sometimes return different scaling.
+    We apply conservative heuristics:
+    - Silver sometimes returns in cents (e.g., 10133.3 => $101.333). If very large, divide by 100.
+    - Gold should be in dollars; only downscale if it’s absurdly large.
+    """
+    if px is None:
+        return None
+
+    px = float(px)
+
+    if metal == "silver":
+        # If silver is > 500, it is almost certainly cents-based in this feed.
+        # This keeps normal silver prices (e.g., 20-300) untouched.
+        if px > 500:
+            return px / 100.0
+        return px
+
+    if metal == "gold":
+        # Defensive: if gold is absurdly large, it's probably scaled.
+        if px > 100000:
+            return px / 100.0
+        return px
+
+    return px
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             qs = parse_qs(urlparse(self.path).query)
-
-            # Keep compatibility with your previous interface:
-            # /api/spot?symbols=GC=F,SI=F
             symbols_raw = (qs.get("symbols", ["GC=F,SI=F"])[0] or "GC=F,SI=F").strip()
             requested = [s.strip() for s in symbols_raw.split(",") if s.strip()]
 
-            # Translate symbols to Stooq equivalents (only supports gold/silver for now)
             stooq_syms = []
             unknown = []
             for s in requested:
@@ -96,26 +111,23 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     unknown.append(key)
 
-            # Ensure we fetch at least gold + silver by default
             if not stooq_syms:
                 stooq_syms = ["gc.f", "si.f"]
 
-            # Deduplicate while keeping order
             seen = set()
             stooq_syms = [x for x in stooq_syms if not (x in seen or seen.add(x))]
 
-            # Fetch prices
-            prices = {}
+            prices_raw = {}
             market_meta = {}
             for sym in stooq_syms:
                 px, d, t = _fetch_stooq_last(sym)
-                prices[sym] = px
+                prices_raw[sym] = px
                 market_meta[sym] = {"date": d, "time": t}
 
-            gold_px = prices.get("gc.f")
-            silver_px = prices.get("si.f")
+            gold_raw = prices_raw.get("gc.f")
+            silver_raw = prices_raw.get("si.f")
 
-            if gold_px is None or silver_px is None:
+            if gold_raw is None or silver_raw is None:
                 return send_json(self, 502, {
                     "ok": False,
                     "error": "Price source unavailable (missing gold or silver).",
@@ -123,10 +135,13 @@ class handler(BaseHTTPRequestHandler):
                         "requested": requested,
                         "mapped": stooq_syms,
                         "unknown": unknown,
-                        "have_gc_f": gold_px is not None,
-                        "have_si_f": silver_px is not None,
+                        "have_gc_f": gold_raw is not None,
+                        "have_si_f": silver_raw is not None,
                     }
                 })
+
+            gold_px = _normalize_price("gold", gold_raw)
+            silver_px = _normalize_price("silver", silver_raw)
 
             if silver_px == 0:
                 return send_json(self, 502, {"ok": False, "error": "Invalid silver price (0)."})
@@ -136,7 +151,6 @@ class handler(BaseHTTPRequestHandler):
             now_utc = datetime.now(timezone.utc).isoformat()
             today_utc = datetime.now(timezone.utc).date().isoformat()
 
-            # Optional: include the market timestamp Stooq returned (if present)
             market_date = market_meta.get("gc.f", {}).get("date") or market_meta.get("si.f", {}).get("date") or ""
             market_time = market_meta.get("gc.f", {}).get("time") or market_meta.get("si.f", {}).get("time") or ""
 
@@ -153,15 +167,17 @@ class handler(BaseHTTPRequestHandler):
                     "time": market_time,
                     "symbols": {"gold": "gc.f", "silver": "si.f"}
                 },
+                # Keep debug so we can verify scaling in prod
                 "debug": {
                     "requested": requested,
                     "mapped": stooq_syms,
-                    "unknown": unknown
+                    "unknown": unknown,
+                    "raw": {"gold": gold_raw, "silver": silver_raw},
+                    "normalized": {"gold": gold_px, "silver": silver_px}
                 }
             })
 
         except Exception as e:
-            # Preserve your current behavior: surface upstream HTTP errors cleanly
             return send_json(self, 502, {"ok": False, "error": str(e)})
 
     def log_message(self, format, *args):
