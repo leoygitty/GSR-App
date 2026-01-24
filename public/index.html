@@ -5,19 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MetalMetric — Gold-to-Silver Ratio (GSR)</title>
   <meta name="description" content="MetalMetric: Gold-to-Silver Ratio dashboard with historical charts, metrics, and alerts." />
-
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
-
   <style>
     /* Ensures Chart.js canvases have a stable height within your existing layout */
     .chartCanvasWrap { height: 260px; position: relative; }
     canvas.chartCanvas { width: 100% !important; height: 100% !important; display: block; }
-
     /* Pricing section anchor spacing (kept local to avoid global impact) */
     #pricing { scroll-margin-top: 18px; }
-
     /* =========================================================
        FIXED FULL-BLEED TOP TICKER (EDGE-TO-EDGE)
        - Not constrained by .shell or any max-width rules
@@ -26,10 +22,9 @@
        - Includes spacer so it sits ABOVE everything and doesn't overlap header
        ========================================================= */
     :root{
-      --tickerH: 30px;        /* skinny bar */
-      --tickerSeconds: 36s;   /* slower = easier to read (try 30s–50s) */
+      --tickerH: 30px; /* skinny bar */
+      --tickerSeconds: 36s; /* slower = easier to read (try 30s–50s) */
     }
-
     .ticker{
       position: fixed !important;
       top: 0 !important;
@@ -41,12 +36,10 @@
       padding: 0 !important;
       border-radius: 0 !important;
       z-index: 99999 !important;
-
       border-bottom: 1px solid rgba(17,17,20,.10) !important;
       background: rgba(255,255,255,.90) !important;
       backdrop-filter: blur(10px) !important;
     }
-
     /* Ensures inner never inherits a container max-width */
     .tickerInner{
       width: 100% !important;
@@ -55,7 +48,6 @@
       padding-left: env(safe-area-inset-left) !important;
       padding-right: env(safe-area-inset-right) !important;
     }
-
     .tickerViewport{
       width: 100% !important;
       height: var(--tickerH) !important;
@@ -63,23 +55,19 @@
       display: flex !important;
       align-items: center !important;
     }
-
     .tickerTrack{
       display: inline-flex !important;
       align-items: center !important;
       white-space: nowrap !important;
       will-change: transform !important;
     }
-
     .tickerTrack.isReady{
       animation: tickerScroll var(--tickerSeconds) linear infinite !important;
     }
-
     @keyframes tickerScroll{
-      0%   { transform: translateX(0); }
+      0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
-
     .tickerGroup{
       display: inline-flex !important;
       align-items: center !important;
@@ -91,23 +79,19 @@
       text-transform: uppercase !important;
       color: rgba(17,17,20,.70) !important;
     }
-
     .tickItem{ display:inline-flex !important; align-items:baseline !important; gap: 8px !important; }
     .tickLabel{ opacity: .75 !important; font-weight: 900 !important; }
     .tickValue{ font-weight: 900 !important; color: rgba(17,17,20,.90) !important; letter-spacing: .02em !important; }
     .tickSep{ opacity: .45 !important; font-weight: 900 !important; }
-
     .tickCta a{
       text-decoration: none !important;
       font-weight: 900 !important;
       color: rgba(10,132,255,.95) !important;
     }
-
     /* Spacer: pushes site content down so ticker sits above EVERYTHING */
     .tickerSpacer{
       height: var(--tickerH) !important;
     }
-
     /* Keep the rest of your Apple-level pricing styles untouched */
     .pricingPanel{
       border: 1px solid rgba(17,17,20,.10);
@@ -119,7 +103,6 @@
         rgba(255,255,255,.78);
       box-shadow: var(--shadow);
     }
-
     .pricingTop{
       display:grid;
       grid-template-columns: 1.35fr .65fr;
@@ -159,7 +142,6 @@
       font-size: 12px;
       line-height: 1.45;
     }
-
     .pricingStat{
       border: 1px solid rgba(17,17,20,.10);
       background: rgba(255,255,255,.70);
@@ -186,7 +168,6 @@
       font-size: 12px;
       color: rgba(17,17,20,.62);
     }
-
     .planRows{ background: rgba(255,255,255,.82); }
     .planRow{
       display:grid;
@@ -197,7 +178,6 @@
       border-bottom: 1px solid rgba(17,17,20,.08);
     }
     .planRow:last-child{ border-bottom: 0; }
-
     .planTopLine{
       display:flex;
       align-items:center;
@@ -234,7 +214,6 @@
       background: rgba(168,108,255,.14);
       color: #a86cff;
     }
-
     .planPrice{
       display:flex;
       align-items:baseline;
@@ -255,7 +234,6 @@
       font-size: 13px;
       line-height: 1.4;
     }
-
     .planFeatures{ display:grid; gap: 8px; }
     .feat{
       font-weight: 650;
@@ -275,7 +253,6 @@
       left: 0;
       top: 3px;
     }
-
     .planCta{
       display:flex;
       justify-content:flex-end;
@@ -283,7 +260,6 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-
     .btn2{
       border:1px solid var(--stroke);
       background:rgba(255,255,255,.75);
@@ -303,7 +279,6 @@
       background: rgba(168,108,255,.14);
       color: #a86cff;
     }
-
     .planRowPro{
       background:
         radial-gradient(900px 220px at 12% 0%, rgba(10,132,255,.10), transparent 62%),
@@ -314,7 +289,6 @@
         radial-gradient(900px 220px at 12% 0%, rgba(168,108,255,.10), transparent 62%),
         rgba(255,255,255,.86);
     }
-
     .pricingFaq{
       padding: 16px 18px 18px;
       border-top: 1px solid rgba(17,17,20,.08);
@@ -339,7 +313,6 @@
       color: rgba(17,17,20,.66);
       font-size: 13px;
     }
-
     @media (max-width: 980px){
       .pricingTop{ grid-template-columns: 1fr; }
       .planRow{ grid-template-columns: 1fr; }
@@ -349,7 +322,6 @@
     }
   </style>
 </head>
-
 <body>
   <!-- =========================================================
        FIXED FULL-WIDTH TOP TICKER (ABOVE EVERYTHING)
@@ -364,42 +336,31 @@
               <span class="tickLabel">GSR</span>
               <span class="tickValue" id="sbGsr">—</span>
             </span>
-
             <span class="tickSep">•</span>
-
             <span class="tickItem">
               <span class="tickLabel">Δ</span>
               <span class="tickValue" id="sbDelta">—</span>
             </span>
-
             <span class="tickSep">•</span>
-
             <span class="tickItem">
               <span class="tickLabel">UPDATED</span>
               <span class="tickValue" id="sbUpdated">—</span>
             </span>
-
             <span class="tickSep">•</span>
-
             <span class="tickItem">
               <span class="tickLabel">GOLD</span>
               <span class="tickValue" id="sbGold">—</span>
             </span>
-
             <span class="tickSep">•</span>
-
             <span class="tickItem">
               <span class="tickLabel">SILVER</span>
               <span class="tickValue" id="sbSilver">—</span>
             </span>
-
             <span class="tickSep">•</span>
-
             <span class="tickItem tickCta">
               <span class="tickLabel">SIGNALS</span>
               <span class="tickValue"><a href="/pro">PRO</a> / <a href="/elite">ELITE</a></span>
             </span>
-
             <span class="tickSep">•</span>
           </div>
           <!-- clones appended by JS -->
@@ -407,24 +368,19 @@
       </div>
     </div>
   </div>
-
   <!-- Spacer so ticker doesn't overlap your header/buttons -->
   <div class="tickerSpacer" aria-hidden="true"></div>
-
   <main class="shell">
    <header class="topbar">
   <div class="titleBlock">
     <div class="brandLockup">
       <div class="brandMark" aria-hidden="true">M</div>
-
       <div class="brandStack">
         <div class="brandRow">
           <h1 class="brandName">MetalMetric</h1>
           <span class="brandBadge">Premium Signals</span>
         </div>
-
         <p class="sub brandSub">Gold-to-Silver Ratio dashboard — Alerts when it matters. Not when it moves.</p>
-
         <p class="metaLine brandMeta">
           <span class="muted">Last updated:</span> <span id="lastUpdatedHuman">—</span>
           <span class="dot">•</span>
@@ -433,18 +389,16 @@
       </div>
     </div>
   </div>
-
   <div class="actions">
     <div class="navLinks" aria-label="Primary navigation">
       <a class="navLink" href="#pricing">Pricing</a>
       <a class="navLink" href="/pro">Pro</a>
       <a class="navLink navLink--primary" href="/elite">Elite</a>
+      <a href="/melt" class="navLink">Melt Calculator</a>
     </div>
-
     <button id="refreshBtn" class="btn" type="button">Refresh</button>
   </div>
 </header>
-
     <section class="kpiGrid">
       <div class="kpiCard">
         <div class="kpiLabel">GSR</div>
@@ -455,20 +409,17 @@
           <span class="muted"> (</span><span id="deltaPct">—</span><span class="muted">)</span>
         </div>
       </div>
-
       <div class="kpiCard">
         <div class="kpiLabel">GOLD (USD)</div>
         <div class="kpiValue" id="gold">—</div>
         <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="fetchedAt">—</span></div>
       </div>
-
       <div class="kpiCard">
         <div class="kpiLabel">SILVER (USD)</div>
         <div class="kpiValue" id="silver">—</div>
         <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
       </div>
     </section>
-
     <section class="controls">
       <div class="segmented" role="tablist" aria-label="Range">
         <button class="segBtn isActive" data-range="1M">1M</button>
@@ -477,25 +428,21 @@
         <button class="segBtn" data-range="1Y">1Y</button>
         <button class="segBtn" data-range="MAX">MAX</button>
       </div>
-
       <div class="toggles">
         <label class="toggle"><input type="checkbox" id="showGold" checked> <span>Gold</span></label>
         <label class="toggle"><input type="checkbox" id="showSilver" checked> <span>Silver</span></label>
         <label class="toggle"><input type="checkbox" id="showGsr" checked> <span>GSR</span></label>
       </div>
     </section>
-
     <section class="card">
       <div class="cardHead">
         <div class="cardTitle">Charts</div>
         <div class="cardMeta" id="rangeLabel">—</div>
       </div>
-
       <div id="emptyState" class="emptyState hidden">
         <div class="emptyTitle">No history yet</div>
         <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
       </div>
-
       <div id="chartsWrap" class="chartsWrap">
         <div class="chartBlock" id="chartGsr">
           <div class="chartHeader">
@@ -506,7 +453,6 @@
             <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
           </div>
         </div>
-
         <div class="chartBlock" id="chartGold">
           <div class="chartHeader">
             <div class="chartName">Gold Spot (USD)</div>
@@ -516,7 +462,6 @@
             <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
           </div>
         </div>
-
         <div class="chartBlock" id="chartSilver">
           <div class="chartHeader">
             <div class="chartName">Silver Spot (USD)</div>
@@ -527,7 +472,6 @@
           </div>
         </div>
       </div>
-
       <details class="details">
         <summary>Show history table</summary>
         <div class="tableWrap">
@@ -545,7 +489,6 @@
         </div>
       </details>
     </section>
-
     <section class="card" id="pricing" aria-label="Pricing">
   <div class="cardHead">
     <div>
@@ -553,7 +496,6 @@
       <div class="cardMeta">Upgrade for signals, alerts, and premium tools</div>
     </div>
   </div>
-
   <div class="pricingHeroSimple">
     <div class="pricingEyebrow">SUBSCRIPTIONS • COMING NEXT</div>
     <h2 class="pricingHeadline">Plans that grow with you</h2>
@@ -561,7 +503,6 @@
       Free gives you the live ratio + history. Pro and Elite add signals, alerts, and research tools built to reduce noise and speed up decisions.
     </p>
   </div>
-
   <div class="pricingGrid3" role="list">
     <!-- FREE -->
     <article class="priceCard priceCard--free" role="listitem" aria-label="Free plan">
@@ -570,23 +511,18 @@
         <div class="pricePlan">Free</div>
         <div class="priceTagline">Clean dashboard for tracking GSR.</div>
       </div>
-
       <div class="priceAmountRow">
         <div class="priceAmount">$0</div>
         <div class="pricePer">/mo</div>
       </div>
-
       <a class="priceBtn priceBtn--ghost" href="/">Use MetalMetric for free</a>
-
       <ul class="priceList">
         <li>Live refresh + stored DB history</li>
         <li>Charts + range selection</li>
         <li>History table</li>
       </ul>
-
       <div class="priceFootnote">No signup required.</div>
     </article>
-
     <!-- PRO -->
     <article class="priceCard priceCard--pro" role="listitem" aria-label="Pro plan">
       <div class="priceTop">
@@ -594,23 +530,18 @@
         <div class="pricePlan">Pro</div>
         <div class="priceTagline">Signals + tools that make metals actionable.</div>
       </div>
-
       <div class="priceAmountRow">
         <div class="priceAmount">$9</div>
         <div class="pricePer">/mo</div>
       </div>
-
       <a class="priceBtn priceBtn--dark" href="/pro">Get Pro plan</a>
-
       <ul class="priceList">
         <li>Buy/Sell Score + 10 smart alerts</li>
         <li>Smart Melt Value Calculator (jewelry/coins)</li>
         <li>Hidden Assets Vault + inflation category alerts</li>
       </ul>
-
       <div class="priceFootnote">Best for consistent weekly decision-making.</div>
     </article>
-
     <!-- ELITE -->
     <article class="priceCard priceCard--elite" role="listitem" aria-label="Elite plan">
       <div class="priceTop">
@@ -618,39 +549,30 @@
         <div class="pricePlan">Elite</div>
         <div class="priceTagline">System tools + workflows for power users.</div>
       </div>
-
       <div class="priceAmountRow">
         <div class="priceAmount">$19</div>
         <div class="pricePer">/mo</div>
       </div>
-
       <a class="priceBtn priceBtn--dark" href="/elite">Get Elite plan</a>
-
       <ul class="priceList">
         <li>50 alerts + percentiles + confidence scoring</li>
         <li>Scenario + ladder + CSV export (research suite)</li>
         <li>Inflation-proof envelopes + hedge-linked goals + jewelry scanner</li>
       </ul>
-
       <div class="priceFootnote">Built for serious allocation + timing.</div>
     </article>
   </div>
-
   <div class="pricingLegal muted">
     *Usage limits apply. Prices shown don’t include applicable tax.
   </div>
 </section>
-
-
     <footer class="footer">
       <span class="muted">Tip:</span> If numbers don’t update after a deploy, hard refresh and clear the service worker cache.
     </footer>
   </main>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
   <script defer src="/app.js"></script>
-
   <!-- =========================================================
        Ticker sync + auto-duplicate (prevents blanks)
        - Fills to >= 3x viewport (strong buffer)
@@ -659,18 +581,15 @@
   <script>
     (function(){
       const $ = (id) => document.getElementById(id);
-
       const readText = (id) => {
         const el = $(id);
         const t = (el && el.textContent || "").trim();
         return t && t !== "—" ? t : "—";
       };
-
       const setText = (id, val) => {
         const el = $(id);
         if (el) el.textContent = val;
       };
-
       const computeDeltaLine = () => {
         const abs = readText("deltaAbs");
         const pct = readText("deltaPct");
@@ -678,27 +597,20 @@
         if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
         return abs !== "—" ? abs : pct;
       };
-
       const stripCloneIds = (node) => {
         node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
       };
-
       const ensureTickerFilled = () => {
         const track = $("tickerTrack");
-        const live  = $("tickerLiveGroup");
+        const live = $("tickerLiveGroup");
         if (!track || !live) return;
-
         track.classList.remove("isReady");
-
         // Remove existing clones
         track.querySelectorAll(".tickerClone").forEach(n => n.remove());
-
         const viewport = track.closest(".tickerViewport");
         if (!viewport) return;
-
         const target = viewport.clientWidth * 3; // strong buffer = no blank half
         let guard = 0;
-
         const makeClone = () => {
           const c = live.cloneNode(true);
           c.classList.add("tickerClone");
@@ -707,18 +619,15 @@
           stripCloneIds(c);
           return c;
         };
-
         while (track.scrollWidth < target && guard < 50) {
           track.appendChild(makeClone());
           guard++;
         }
-
         // Start animation after layout settles
         requestAnimationFrame(() => requestAnimationFrame(() => {
           track.classList.add("isReady");
         }));
       };
-
       const sync = () => {
         setText("sbGold", readText("gold"));
         setText("sbSilver", readText("silver"));
@@ -726,34 +635,27 @@
         setText("sbDelta", computeDeltaLine());
         setText("sbUpdated", readText("lastUpdatedHuman"));
       };
-
       // Initial
       sync();
       ensureTickerFilled();
-
       window.addEventListener("load", () => {
         sync();
         ensureTickerFilled();
       });
-
       // Observe KPI changes
       const mo = new MutationObserver(() => {
         sync();
         ensureTickerFilled();
       });
-
       ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
         const el = $(id);
         if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
       });
-
       window.addEventListener("resize", ensureTickerFilled);
-
       // Light periodic sync
       setInterval(sync, 1200);
     })();
   </script>
-
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
