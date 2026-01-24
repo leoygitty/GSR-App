@@ -6,19 +6,15 @@
   --stroke: rgba(17,17,20,.10);
   --shadow: 0 10px 30px rgba(0,0,0,.06);
   --radius: 18px;
-
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-
   /* Accents */
   --pro: #0a84ff;
   --elite: #a86cff;
-
   /* Fixed top ticker (matches index.html variables) */
   --tickerH: 30px;
   --tickerSeconds: 36s;
 }
-
 /* =========================
    Base
    ========================= */
@@ -29,11 +25,9 @@ body{
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
-
   /* Reserve space for the fixed top ticker */
   padding-top: var(--tickerH);
 }
-
 /* =========================
    Layout
    ========================= */
@@ -42,29 +36,24 @@ body{
   margin: 0 auto;
   padding: 36px 20px 50px;
 }
-
 h1{
   margin:0 0 6px;
   font-size: 44px;
   letter-spacing: -0.02em;
 }
-
 .sub{
   margin:0 0 10px;
   color: var(--muted);
   font-size: 15px;
 }
-
 .metaLine{
   margin:0;
   color: var(--muted);
   font-size: 13px;
 }
-
 .muted{ color: var(--muted); }
 .dot{ margin: 0 8px; opacity:.5; }
 .hidden{ display:none !important; }
-
 /* =========================
    Header / Nav / Buttons
    ========================= */
@@ -75,20 +64,17 @@ h1{
   gap: 18px;
   margin-bottom: 18px;
 }
-
 .actions{
   display:flex;
   gap:10px;
   align-items:center;
   flex-wrap: wrap;
 }
-
 .navLinks{
   display:flex;
   gap:10px;
   align-items:center;
 }
-
 .navLink{
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,.75);
@@ -113,7 +99,6 @@ h1{
   border-color: rgba(10,132,255,.25);
   color: var(--pro);
 }
-
 .btn{
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,.75);
@@ -128,7 +113,6 @@ h1{
   background: rgba(255,255,255,.95);
 }
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
-
 /* =========================
    KPI cards
    ========================= */
@@ -164,7 +148,6 @@ h1{
 }
 .pos{ color: #0a7a3d; font-weight: 800; }
 .neg{ color: #b00020; font-weight: 800; }
-
 /* =========================
    Controls
    ========================= */
@@ -211,7 +194,6 @@ h1{
   gap: 8px;
   user-select:none;
 }
-
 /* =========================
    Card / Charts / Tables
    ========================= */
@@ -237,7 +219,6 @@ h1{
   font-size: 12px;
   color: var(--muted);
 }
-
 .chartsWrap{
   display:flex;
   flex-direction:column;
@@ -258,7 +239,6 @@ h1{
 }
 .chartName{ font-weight: 900; }
 .chartHint{ font-size: 12px; }
-
 .details{ margin-top: 12px; }
 .tableWrap{
   overflow:auto;
@@ -280,7 +260,6 @@ th{
   background: rgba(246,246,247,.7);
   font-weight: 900;
 }
-
 .emptyState{
   border: 1px dashed rgba(17,17,20,.18);
   border-radius: 14px;
@@ -298,18 +277,15 @@ th{
   color: var(--muted);
   font-size: 13px;
 }
-
 .footer{
   margin-top: 14px;
   color: var(--muted);
   font-size: 12px;
 }
-
 /* =========================================================
    Premium shared components (global, consistent across pages)
    ========================================================= */
 .pWrap{ max-width:1120px; margin:0 auto; padding:28px 20px 60px; }
-
 .pTop{
   display:flex;
   align-items:center;
@@ -324,7 +300,6 @@ th{
   flex-wrap:wrap;
   justify-content:flex-end;
 }
-
 .brandLink{
   display:inline-flex;
   align-items:center;
@@ -341,7 +316,6 @@ th{
   background: linear-gradient(135deg, rgba(10,132,255,1), rgba(153,69,255,1));
   box-shadow:0 10px 30px rgba(153,69,255,.22);
 }
-
 .btn2{
   border:1px solid var(--stroke);
   background:rgba(255,255,255,.75);
@@ -371,7 +345,6 @@ th{
   background: rgba(168,108,255,.14);
   color: var(--elite);
 }
-
 .heroCard{
   border:1px solid var(--stroke);
   border-radius: 22px;
@@ -389,7 +362,6 @@ th{
     radial-gradient(700px 300px at 85% 30%, rgba(10,132,255,.10), transparent 60%),
     rgba(255,255,255,.72);
 }
-
 .badgeRow{
   display:flex;
   align-items:center;
@@ -421,7 +393,6 @@ th{
   background: rgba(168,108,255,.12);
   color: var(--elite);
 }
-
 .priceTag{
   display:flex;
   align-items:baseline;
@@ -437,7 +408,6 @@ th{
   color: var(--muted);
   font-weight: 800;
 }
-
 .hTitle{
   margin:6px 0 8px;
   font-size:44px;
@@ -456,13 +426,11 @@ th{
   flex-wrap:wrap;
   margin-top: 14px;
 }
-
 .note{
   margin-top: 10px;
   color: var(--muted);
   font-size: 12px;
 }
-
 .grid2{
   display:grid;
   grid-template-columns: 1.2fr .8fr;
@@ -480,14 +448,12 @@ th{
   font-weight: 900;
   margin:0 0 8px;
 }
-
 .pBullets{
   margin:0;
   padding-left: 18px;
   color: rgba(17,17,20,.82);
 }
 .pBullets li{ margin: 8px 0; }
-
 .checkGrid{ display:grid; gap:10px; }
 .checkRow{
   display:flex;
@@ -522,7 +488,6 @@ th{
 }
 .checkRow b{ display:block; margin-bottom:2px; }
 .checkRow span{ color: var(--muted); font-size: 13px; line-height:1.35; }
-
 .section{ margin-top: 16px; }
 .secHead{
   display:flex;
@@ -533,7 +498,6 @@ th{
 }
 .secHead h2{ margin:0; font-size: 18px; letter-spacing:-0.01em; }
 .secHead .meta{ color: var(--muted); font-size: 12px; font-family: var(--mono); }
-
 .cards3{
   display:grid;
   grid-template-columns: repeat(3, 1fr);
@@ -549,7 +513,6 @@ th{
 }
 .mini .t{ font-weight: 900; margin: 0 0 6px; }
 .mini .d{ margin:0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-
 .compare{
   overflow:auto;
   border:1px solid var(--stroke);
@@ -574,7 +537,6 @@ th{
 }
 .yes{ font-weight: 900; color:#0a7a3d; }
 .no{ color: rgba(17,17,20,.55); }
-
 .faqGrid{
   display:grid;
   grid-template-columns: 1fr 1fr;
@@ -589,7 +551,6 @@ th{
 }
 .faqGrid summary{ cursor:pointer; font-weight: 900; }
 .faqGrid p{ margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height:1.5; }
-
 .finalCta{
   margin-top: 16px;
   border:1px solid rgba(17,17,20,.10);
@@ -615,26 +576,22 @@ th{
 }
 .finalCta .left b{ display:block; font-size: 16px; }
 .finalCta .left span{ color: var(--muted); font-size: 13px; }
-
 @media (max-width: 980px){
   .kpiGrid{ grid-template-columns: 1fr; }
   h1{ font-size: 34px; }
   .controls{ flex-direction: column; align-items:flex-start; }
   .actions{ width: 100%; justify-content:flex-start; }
-
   .grid2{ grid-template-columns: 1fr; }
   .cards3{ grid-template-columns: 1fr; }
   .faqGrid{ grid-template-columns: 1fr; }
   .hTitle{ font-size: 34px; }
   .priceTag .big{ font-size: 34px; }
 }
-
 /* =========================================================
    Mobile layout (single consolidated block)
    ========================================================= */
 @media (max-width: 720px){
   .shell{ padding: 18px 12px 34px; }
-
   .topbar{
     position: relative;
     flex-direction: column;
@@ -643,21 +600,17 @@ th{
     margin-bottom: 10px;
     padding-top: 54px;
   }
-
   .titleBlock{
     width: 100%;
     text-align: center;
   }
-
   h1{
     font-size: 30px;
     line-height: 1.05;
     letter-spacing: -0.02em;
   }
-
   .sub{ font-size: 14px; line-height: 1.45; margin-bottom: 8px; }
   .metaLine{ font-size: 12px; line-height: 1.4; }
-
   .titleBlock .metaLine{
     display: flex;
     justify-content: center;
@@ -665,7 +618,6 @@ th{
     gap: 6px 10px;
   }
   .titleBlock .dot{ display:none; }
-
   #refreshBtn{
     position: absolute;
     top: 14px;
@@ -675,14 +627,12 @@ th{
     white-space: nowrap;
     padding: 10px 12px;
   }
-
   .actions{
     width: 100%;
     justify-content: center;
     align-items: center;
     gap: 10px;
   }
-
   .navLinks{
     width: 100%;
     justify-content: center;
@@ -690,7 +640,6 @@ th{
     gap: 8px;
   }
   .navLink{ padding: 10px 12px; font-size: 13px; }
-
   .kpiGrid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
@@ -719,7 +668,6 @@ th{
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   #fetchedAt, #source{
     display: inline-block;
     max-width: 10.5ch;
@@ -728,7 +676,6 @@ th{
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   .controls{
     position: relative;
     margin: 10px 0 12px;
@@ -746,7 +693,6 @@ th{
     height: 1px;
     background: rgba(17,17,20,.10);
   }
-
   .segmented{
     width: 100%;
     justify-content: space-between;
@@ -759,7 +705,6 @@ th{
     padding: 10px 8px;
     font-size: 13px;
   }
-
   .toggles{
     width: 100%;
     display: grid;
@@ -776,22 +721,18 @@ th{
     justify-content: center;
     white-space: nowrap;
   }
-
   .card{ padding: 14px; border-radius: 16px; }
   .chartHeader{ padding: 9px 10px; }
-
   /* Mobile ticker: slow slightly more for readability */
   :root{
     --tickerH: 30px;
     --tickerSeconds: 44s;
   }
 }
-
 @media (max-width: 390px){
   .kpiValue{ font-size: 20px; }
   #fetchedAt, #source{ max-width: 9ch; }
 }
-
 /* ===== Final CTA: tighten button row layout (safe, used on Pro/Elite) ===== */
 .finalCta .right{
   display:flex;
@@ -799,12 +740,10 @@ th{
   flex-wrap:wrap;
   align-items:center;
 }
-
 /* =========================================================
    Fixed TOP ticker — FULL BLEED (ONLY implementation)
    Matches index.html: .ticker > .tickerInner > .tickerViewport > .tickerTrack > .tickerGroup
    ========================================================= */
-
 .ticker{
   position: fixed;
   top: 0;
@@ -819,19 +758,16 @@ th{
   background: rgba(255,255,255,.90);
   backdrop-filter: blur(10px);
 }
-
 .tickerInner{
   height: var(--tickerH);
   width: 100%;
   margin: 0;
   display:flex;
   align-items:center;
-
   /* Safe-area padding only, no visual inset */
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
-
 .tickerViewport{
   width: 100%;
   height: var(--tickerH);
@@ -839,23 +775,19 @@ th{
   display:flex;
   align-items:center;
 }
-
 .tickerTrack{
   display: inline-flex;
   align-items:center;
   white-space: nowrap;
   will-change: transform;
 }
-
 .tickerTrack.isReady{
   animation: tickerScroll var(--tickerSeconds) linear infinite;
 }
-
 @keyframes tickerScroll{
-  0%   { transform: translateX(0); }
+  0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
-
 .tickerGroup{
   display:inline-flex;
   align-items:center;
@@ -867,14 +799,11 @@ th{
   text-transform: uppercase;
   color: rgba(17,17,20,.70);
 }
-
 .tickItem{ display:inline-flex; align-items:baseline; gap:8px; }
 .tickLabel{ opacity:.75; font-weight:900; }
 .tickValue{ font-weight:900; color: rgba(17,17,20,.90); letter-spacing:.02em; }
 .tickSep{ opacity:.45; font-weight:900; }
-
 .tickCta .tickValue{ color: rgba(10,132,255,.95); }
-
 @media (prefers-reduced-motion: reduce){
   .tickerTrack.isReady{ animation: none; }
 }
@@ -882,12 +811,10 @@ th{
    Pricing (Claude-style 3 cards)
    Only targets the NEW pricing classes used in index.html
    ========================================================= */
-
 .pricingHeroSimple{
   margin: 6px 0 14px;
   padding: 14px 14px 6px;
 }
-
 .pricingEyebrow{
   font-size: 12px;
   letter-spacing: .14em;
@@ -896,20 +823,17 @@ th{
   font-weight: 900;
   margin-bottom: 8px;
 }
-
 .pricingHeadline{
   margin: 0 0 8px;
   font-size: 28px;
   letter-spacing: -0.02em;
 }
-
 .pricingLead{
   margin: 0;
   color: rgba(17,17,20,.70);
   line-height: 1.55;
   max-width: 90ch;
 }
-
 /* 3-card grid */
 .pricingGrid3{
   display: grid;
@@ -917,7 +841,6 @@ th{
   gap: 14px;
   margin-top: 10px;
 }
-
 /* Base card */
 .priceCard{
   border: 1px solid rgba(17,17,20,.10);
@@ -927,12 +850,10 @@ th{
   padding: 16px;
   overflow: hidden;
 }
-
 /* Free: clean white */
 .priceCard--free{
   background: #fff;
 }
-
 /* Pro: blue tint */
 .priceCard--pro{
   background:
@@ -940,7 +861,6 @@ th{
     rgba(255,255,255,.86);
   border-color: rgba(10,132,255,.20);
 }
-
 /* Elite: purple tint */
 .priceCard--elite{
   background:
@@ -948,13 +868,11 @@ th{
     rgba(255,255,255,.86);
   border-color: rgba(168,108,255,.22);
 }
-
 .priceTop{
   display: grid;
   gap: 6px;
   margin-bottom: 12px;
 }
-
 .priceIcon{
   width: 34px;
   height: 34px;
@@ -963,47 +881,39 @@ th{
   background: rgba(255,255,255,.75);
   box-shadow: 0 10px 30px rgba(0,0,0,.04);
 }
-
 .priceIcon--pro{
   border-color: rgba(10,132,255,.22);
   background: rgba(10,132,255,.12);
 }
-
 .priceIcon--elite{
   border-color: rgba(168,108,255,.22);
   background: rgba(168,108,255,.14);
 }
-
 .pricePlan{
   font-weight: 950;
   font-size: 20px;
   letter-spacing: -0.01em;
 }
-
 .priceTagline{
   color: rgba(17,17,20,.68);
   font-size: 14px;
   line-height: 1.45;
 }
-
 .priceAmountRow{
   display: flex;
   align-items: baseline;
   gap: 8px;
   margin: 10px 0 12px;
 }
-
 .priceAmount{
   font-size: 34px;
   font-weight: 950;
   letter-spacing: -0.03em;
 }
-
 .pricePer{
   color: rgba(17,17,20,.62);
   font-weight: 800;
 }
-
 /* Buttons */
 .priceBtn{
   display: inline-flex;
@@ -1019,26 +929,21 @@ th{
   color: rgba(17,17,20,.92);
   box-shadow: 0 10px 30px rgba(0,0,0,.04);
 }
-
 .priceBtn:hover{
   background: rgba(255,255,255,.98);
   border-color: rgba(17,17,20,.18);
 }
-
 .priceBtn--dark{
   background: rgba(17,17,20,.92);
   color: #fff;
   border-color: rgba(17,17,20,.60);
 }
-
 .priceBtn--dark:hover{
   background: rgba(17,17,20,.98);
 }
-
 .priceBtn--ghost{
   background: rgba(255,255,255,.70);
 }
-
 /* Feature list */
 .priceList{
   margin: 14px 0 0;
@@ -1048,14 +953,12 @@ th{
   gap: 10px;
   color: rgba(17,17,20,.82);
 }
-
 .priceList li{
   position: relative;
   padding-left: 22px;
   line-height: 1.35;
   font-size: 14px;
 }
-
 .priceList li::before{
   content: "✓";
   position: absolute;
@@ -1064,19 +967,16 @@ th{
   font-weight: 950;
   color: rgba(17,17,20,.70);
 }
-
 .priceFootnote{
   margin-top: 12px;
   font-size: 12px;
   color: rgba(17,17,20,.60);
 }
-
 /* tiny legal line */
 .pricingLegal{
   margin-top: 12px;
   font-size: 12px;
 }
-
 /* Responsive */
 @media (max-width: 980px){
   .pricingGrid3{
@@ -1086,3 +986,44 @@ th{
     font-size: 24px;
   }
 }
+/* Melt Calculator Styles */
+.metal-tab {
+  padding: 10px 20px;
+  background: var(--gray-800);
+  border-radius: 8px 8px 0 0;
+  margin-right: 4px;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.metal-tab.active {
+  background: var(--gold-dark);
+  color: black;
+}
+
+.purity-btn {
+  padding: 6px 12px;
+  background: var(--gray-900);
+  border: 1px solid var(--gray-700);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.purity-btn.active {
+  background: var(--gold);
+  color: black;
+  border-color: var(--gold-dark);
+}
+
+.output-hidden {
+  display: none;
+}
+
+.text-gold { color: var(--gold); }
+
+table td { color: var(--gray-300); }
+
+/* Extend for platinum/silver accents if needed */
+.metal-tab[data-metal="platinum"].active { background: #60a5fa; /* Blue-ish */ }
+.metal-tab[data-metal="silver"].active { background: #9ca3af; /* Gray */ }
