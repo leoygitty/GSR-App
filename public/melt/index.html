@@ -1186,16 +1186,24 @@
         spots: { gold: null, silver: null, platinum: null },
         updatedAt: null,
         lastCalcOk: false
-      };
+     };
 
-      const fmt2 = (n) => isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
-      const fmt4 = (n) => isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
-      const fmt6 = (n) => isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 }) : "—";
+      const isNum = (n) => typeof n === "number" && Number.isFinite(n);
+
+      const fmt2 = (n) => isNum(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+      const fmt4 = (n) => isNum(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
+      const fmt6 = (n) => isNum(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 }) : "—";
 
       const money = (n) => {
-        if (!isFinite(n)) return "$—";
-        return n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (!isNum(n)) return "$—";
+        return n.toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
       };
+
 
       const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -1414,51 +1422,53 @@
         };
       }
 
-      async function fetchSpots() {
-        setStatus("Fetching live spot…", "");
-        btnRefresh.disabled = true;
+    async function fetchSpots() {
+  setStatus("Fetching live spot…", "");
+  try {
+    const data = await fetchJson(`/api/spot?ts=${Date.now()}`);
 
-        try {
-          // Primary source: /api/spot (you confirmed it works now)
-          const spot = await fetchAny("/api/spot");
-          const parsed = pullSpotFromKnownShape(spot);
+    // Handle ok:false payloads
+    if (!data || data.ok === false) {
+      throw new Error((data && data.error) ? String(data.error) : "Spot endpoint returned ok:false");
+    }
 
-          if (!parsed.ok) {
-            setStatus(`Live spot error: ${parsed.err}. Switch to Manual if needed.`, "warn");
-            updateSpotHeaderUI();
-            compute(true);
-            return;
-          }
+    // Your /api/spot shape (confirmed):
+    // { ok:true, gold_usd:number, silver_usd:number, fetched_at_utc:string, ... }
+    const g = Number(data.gold_usd);
+    const s = Number(data.silver_usd);
+    const p = (data.platinum_usd != null) ? Number(data.platinum_usd) : NaN;
 
-          if (isFinite(parsed.g)) state.spots.gold = parsed.g;
-          if (isFinite(parsed.s)) state.spots.silver = parsed.s;
-          // platinum optional (safe no-op if missing)
-          if (isFinite(parsed.p)) state.spots.platinum = parsed.p;
+    if (Number.isFinite(g)) state.spots.gold = g;
+    if (Number.isFinite(s)) state.spots.silver = s;
+    if (Number.isFinite(p)) state.spots.platinum = p;
 
-          state.updatedAt = parsed.updated || formatUtcStamp(new Date().toISOString());
+    state.updatedAt = data.fetched_at_utc || data.date || null;
 
-          updateSpotHeaderUI();
+    updateSpotHeaderUI();
 
-          const active = getActiveSpot();
-          if (state.spotMode === "auto") {
-            if (isFinite(active) && active > 0) setStatus("Live spot loaded. Ready.", "good");
-            else if (state.metal === "platinum") setStatus("Platinum live spot not available yet. Switch to Manual.", "warn");
-            else setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
-          } else {
-            setStatus("Manual spot mode. Enter price, then Calculate.", "warn");
-          }
+    const active = getActiveSpot();
+    if (Number.isFinite(active)) {
+      setStatus("Live spot loaded. Ready.", "good");
+    } else {
+      setStatus(
+        state.spotMode === "auto"
+          ? "Live spot unavailable for this metal. Switch to Manual or add it to /api/spot."
+          : "Enter a manual spot price, then Calculate.",
+        "warn"
+      );
+    }
 
-          // refresh computed values without overwriting status aggressively
-          compute(false);
-        } catch (e) {
-          const msg = (e && e.message) ? String(e.message) : "Spot fetch failed";
-          setStatus(`Spot fetch failed: ${msg}. Switch to Manual or fix /api/spot.`, "bad");
-          updateSpotHeaderUI();
-          compute(true);
-        } finally {
-          btnRefresh.disabled = false;
-        }
-      }
+    compute(false);
+  } catch (e) {
+    updateSpotHeaderUI();
+    setStatus(
+      `Spot fetch failed: ${e?.message || e}. Switch to Manual or fix /api/spot.`,
+      "bad"
+    );
+    compute(false);
+  }
+}
+
 
       function renderSilverLadder(weightG, spot, canCalc) {
         ladderList.innerHTML = "";
