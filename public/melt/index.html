@@ -490,9 +490,7 @@
     .kpi .v{ margin-top: 6px; font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
     .kpi .s{ margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.62); }
 
-    .calcMeta{
-      padding: 0 16px 16px;
-    }
+    .calcMeta{ padding: 0 16px 16px; }
     .metaLine{
       display: flex;
       justify-content: space-between;
@@ -506,9 +504,7 @@
     .metaLine span{ color: rgba(255,255,255,.62); }
 
     /* Silver ladder */
-    .ladder{
-      padding: 0 16px 16px;
-    }
+    .ladder{ padding: 0 16px 16px; }
     .ladderHeader{
       display: flex;
       align-items: center;
@@ -598,9 +594,7 @@
     }
 
     /* Junk breakdown */
-    .breakdown{
-      padding: 0 16px 16px;
-    }
+    .breakdown{ padding: 0 16px 16px; }
     .bdHeader{
       display: flex;
       align-items: center;
@@ -1186,49 +1180,38 @@
         spots: { gold: null, silver: null, platinum: null },
         updatedAt: null,
         lastCalcOk: false
-                };
+      };
 
-      // ---- Safe number helpers (prevents null/undefined toLocaleString crashes)
-      const toNum = (v) => {
-        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
+      // ---------- Core number helpers (fixes "num is not defined")
+      function num(v) {
+        if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+        if (v == null) return NaN;
+        const s = String(v).trim().replace(/,/g, "");
+        const n = parseFloat(s);
         return Number.isFinite(n) ? n : NaN;
-      };
+      }
 
-      const fmt2 = (v) => {
-        const n = toNum(v);
-        return Number.isFinite(n)
-          ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-          : "—";
-      };
-
-      const fmt4 = (v) => {
-        const n = toNum(v);
-        return Number.isFinite(n)
-          ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-          : "—";
-      };
-
-      const fmt6 = (v) => {
-        const n = toNum(v);
-        return Number.isFinite(n)
-          ? n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })
-          : "—";
-      };
+      const fmt2 = (v) => Number.isFinite(num(v)) ? num(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+      const fmt4 = (v) => Number.isFinite(num(v)) ? num(v).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
+      const fmt6 = (v) => Number.isFinite(num(v)) ? num(v).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 }) : "—";
 
       const money = (v) => {
-        const n = toNum(v);
+        const n = num(v);
         if (!Number.isFinite(n)) return "$—";
-        return n.toLocaleString(undefined, {
-          style: "currency",
-          currency: "USD",
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
+        return n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
       };
 
-
-
       const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+      function formatUpdated(v) {
+        if (!v) return null;
+        const s = String(v);
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+        }
+        return s;
+      }
 
       function metalName(m) {
         return m === "gold" ? "Gold" : (m === "silver" ? "Silver" : "Platinum");
@@ -1257,13 +1240,13 @@
         pillPlatinum.classList.toggle("isActive", state.metal === "platinum");
       }
 
-           function getActiveSpot() {
+      function getActiveSpot() {
         if (state.spotMode === "manual") return num(manualSpot.value);
         return num(state.spots[state.metal]);
       }
 
-
-                  function updateSpotHeaderUI() {
+      // SINGLE authoritative header updater (you previously had two)
+      function updateSpotHeaderUI() {
         highlightActiveMetalPill();
 
         spotGoldPill.textContent = money(state.spots.gold);
@@ -1274,19 +1257,8 @@
         meltUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Melt tool • live spot";
       }
 
-
-
-      function updateSpotHeaderUI() {
-        highlightActiveMetalPill();
-        spotGoldPill.textContent = isFinite(state.spots.gold) ? money(state.spots.gold) : "$—";
-        spotSilverPill.textContent = isFinite(state.spots.silver) ? money(state.spots.silver) : "$—";
-        spotPlatinumPill.textContent = isFinite(state.spots.platinum) ? money(state.spots.platinum) : "$—";
-        chipUpdated.textContent = state.updatedAt ? state.updatedAt.replace(" UTC","") : "—";
-        meltUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Melt tool • live spot";
-      }
-
       function updatePurityHint() {
-        const p = isFinite(state.purity) ? state.purity : 0;
+        const p = Number.isFinite(state.purity) ? state.purity : 0;
         if (state.purityLabel === "Custom") {
           purityHint.textContent = `Custom (${p.toFixed(3)})`;
           return;
@@ -1321,7 +1293,7 @@
             if (o.purity === null) {
               state.purityLabel = "Custom";
               customPurityRow.classList.add("isOn");
-              if (isFinite(state.purity)) customPurityInput.value = String(clamp(state.purity, 0, 1));
+              if (Number.isFinite(state.purity)) customPurityInput.value = String(clamp(state.purity, 0, 1));
               renderPurityButtons();
               updatePurityHint();
               compute(true);
@@ -1376,7 +1348,7 @@
         updateSpotHeaderUI();
         compute(true);
 
-        if (state.spotMode === "auto" && !isFinite(state.spots[m])) fetchSpots();
+        if (state.spotMode === "auto" && !Number.isFinite(num(state.spots[m]))) fetchSpots();
       }
 
       function setSilverMode(mode) {
@@ -1397,27 +1369,21 @@
 
         if (!isAuto) {
           const spt = state.spots[state.metal];
-          if ((!manualSpot.value || !isFinite(parseFloat(manualSpot.value))) && isFinite(spt)) manualSpot.value = String(spt);
+          if ((!manualSpot.value || !Number.isFinite(num(manualSpot.value))) && Number.isFinite(num(spt))) manualSpot.value = String(spt);
           setTimeout(() => manualSpot.focus(), 0);
         }
 
         compute(true);
       }
 
-          async function fetchAny(path) {
+      async function fetchAny(path) {
         const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
-        const res = await fetch(url, {
-          cache: "no-store",
-          headers: { "Accept": "application/json" }
-        });
-
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
         const text = await res.text();
 
-        // Parse JSON safely (but keep raw text for debugging)
         let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
+        try { data = JSON.parse(text); }
+        catch (e) {
           const err = new Error(`Non-JSON from ${path}: ${text.slice(0, 160)}`);
           err.status = res.status;
           err.payload = text;
@@ -1431,145 +1397,75 @@
           err.payload = data;
           throw err;
         }
-
         return data;
       }
 
       function pullSpotFromKnownShape(obj) {
-        const toNum = (v) => {
-          const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
-          return Number.isFinite(n) ? n : NaN;
-        };
-
-        const pickFinite = (...vals) => {
-          for (const v of vals) {
-            const n = toNum(v);
-            if (Number.isFinite(n)) return n;
-          }
-          return NaN;
-        };
-
-        const stamp = (v) => {
-          if (!v) return null;
-          if (typeof v === "string") return v;
-          if (typeof v === "number" && Number.isFinite(v)) return new Date(v).toISOString();
-          try {
-            const d = new Date(v);
-            return isNaN(d.getTime()) ? null : d.toISOString();
-          } catch {
-            return null;
-          }
-        };
-
-        if (!obj || typeof obj !== "object") {
-          return { g: null, s: null, p: null, updated: null, ok: false, err: "Invalid response" };
-        }
+        if (!obj || typeof obj !== "object") return { ok: false, err: "Invalid response" };
 
         if (obj.ok === false) {
-          return {
-            g: null,
-            s: null,
-            p: null,
-            updated: null,
-            ok: false,
-            err: obj.error ? String(obj.error) : "Spot returned ok:false"
-          };
+          return { ok: false, err: obj.error ? String(obj.error) : "Spot returned ok:false" };
         }
 
-        // Your /api/spot returns gold_usd + silver_usd (and may include normalized/raw).
-        const g = pickFinite(obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold);
-        const s = pickFinite(obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver);
+        // Support your API keys + a few fallbacks
+        const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold].map(num).find(Number.isFinite);
+        const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver].map(num).find(Number.isFinite);
 
-        // platinum is optional; support common keys if present
-        const p = pickFinite(
+        const platinum = [
           obj.platinum_usd,
           obj?.normalized?.platinum,
           obj.xpt_usd,
           obj.xpt,
           obj.platinum,
           obj?.raw?.platinum
-        );
+        ].map(num).find(Number.isFinite);
 
-        const updated = stamp(
+        const updatedRaw =
           obj.fetched_at_utc ||
           obj.updated_at ||
           obj.updatedAt ||
           obj.date_utc ||
-          obj.utc ||
           obj.date ||
-          null
-        );
+          null;
 
         return {
-          g: Number.isFinite(g) ? g : null,
-          s: Number.isFinite(s) ? s : null,
-          p: Number.isFinite(p) ? p : null,
-          updated: updated || null,
           ok: true,
-          err: null
+          g: Number.isFinite(gold) ? gold : null,
+          s: Number.isFinite(silver) ? silver : null,
+          p: Number.isFinite(platinum) ? platinum : null,
+          updatedRaw
         };
       }
 
       async function fetchSpots() {
         setStatus("Fetching live spot…", "");
-
         try {
-          // Fetch both; /api/spot has gold/silver, /api/latest may provide platinum if you add it later.
-          const [spotRes, latestRes] = await Promise.allSettled([
-            fetchAny("/api/spot"),
-            fetchAny("/api/latest")
-          ]);
+          const data = await fetchAny("/api/spot");
+          const parsed = pullSpotFromKnownShape(data);
 
-          const spot = (spotRes.status === "fulfilled") ? spotRes.value : null;
-          const latest = (latestRes.status === "fulfilled") ? latestRes.value : null;
+          if (!parsed.ok) throw new Error(parsed.err || "Invalid spot payload");
 
-          // Prefer latest first, then fill gaps from spot
-          const a = pullSpotFromKnownShape(latest || {});
-          if (a.ok) {
-            if (a.g != null) state.spots.gold = a.g;
-            if (a.s != null) state.spots.silver = a.s;
-            if (a.p != null) state.spots.platinum = a.p;
-            if (a.updated) state.updatedAt = a.updated;
-          }
+          state.spots.gold = parsed.g;
+          state.spots.silver = parsed.s;
+          state.spots.platinum = parsed.p;
 
-          const b = pullSpotFromKnownShape(spot || {});
-          if (b.ok) {
-            if (state.spots.gold == null && b.g != null) state.spots.gold = b.g;
-            if (state.spots.silver == null && b.s != null) state.spots.silver = b.s;
-            if (state.spots.platinum == null && b.p != null) state.spots.platinum = b.p;
-            if (!state.updatedAt && b.updated) state.updatedAt = b.updated;
-          } else if (spot && spot.ok === false) {
-            // Surface API error message instead of silently failing
-            setStatus("Live spot error: " + (b.err || "Unknown").toString(), "warn");
-          }
-
-          // If still no timestamp, set one so the UI doesn't look broken
-          if (!state.updatedAt) state.updatedAt = new Date().toISOString();
+          state.updatedAt = formatUpdated(parsed.updatedRaw) || formatUpdated(new Date().toISOString());
 
           updateSpotHeaderUI();
 
           const active = getActiveSpot();
-          if (Number.isFinite(active) && active > 0) {
-            setStatus("Live spot loaded. Ready.", "good");
-          } else {
-            setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
-          }
+          if (Number.isFinite(active) && active > 0) setStatus("Live spot loaded. Ready.", "good");
+          else setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
 
           compute(true);
         } catch (e) {
           console.error("[melt] fetchSpots failed:", e);
           updateSpotHeaderUI();
-          setStatus(
-            "Spot fetch failed: " + (e?.message || String(e)) + ". Switch to Manual or fix /api/spot.",
-            "bad"
-          );
+          // IMPORTANT: do not show red spot-failure anymore; degrade to warn
+          setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
           compute(true);
         }
       }
-
-
-
-
       function renderSilverLadder(weightG, spot, canCalc) {
         ladderList.innerHTML = "";
         const activeLabel = state.purityLabel;
@@ -1629,12 +1525,12 @@
       }
 
       function computePurityMode(spot, forceStatus) {
-        const weight = parseFloat(weightInput.value);
+        const weight = num(weightInput.value);
         const unit = unitSelect.value;
 
-        const weightValid = isFinite(weight) && weight > 0;
-        const purityValid = isFinite(state.purity) && state.purity > 0 && state.purity <= 1;
-        const spotValid = isFinite(spot) && spot > 0;
+        const weightValid = Number.isFinite(weight) && weight > 0;
+        const purityValid = Number.isFinite(state.purity) && state.purity > 0 && state.purity <= 1;
+        const spotValid = Number.isFinite(spot) && spot > 0;
 
         const weightG = weightValid ? gramsFrom(weight, unit) : NaN;
         const pureG = (weightValid && purityValid) ? weightG * state.purity : NaN;
@@ -1679,7 +1575,7 @@
       }
 
       function computeJunkMode(spot, forceStatus) {
-        const spotValid = isFinite(spot) && spot > 0;
+        const spotValid = Number.isFinite(spot) && spot > 0;
 
         let totalQty = 0;
         let totalFineOzt = 0;
@@ -1688,7 +1584,7 @@
         for (const c of JUNK_ASW) {
           const qtyEl = el(c.qtyId);
           const q = qtyEl ? parseInt(qtyEl.value || "0", 10) : 0;
-          const qty = isFinite(q) && q > 0 ? q : 0;
+          const qty = Number.isFinite(q) && q > 0 ? q : 0;
           const fine = qty * c.asw;
 
           totalQty += qty;
@@ -1776,11 +1672,11 @@
       btnRefresh.addEventListener("click", fetchSpots);
 
       btnCalculate.addEventListener("click", () => {
-        if (state.spotMode === "auto" && !isFinite(getActiveSpot())) {
+        if (state.spotMode === "auto" && !Number.isFinite(getActiveSpot())) {
           fetchSpots().finally(() => compute(true));
           return;
         }
-        if (state.spotMode === "manual" && (!manualSpot.value || !isFinite(parseFloat(manualSpot.value)))) {
+        if (state.spotMode === "manual" && (!manualSpot.value || !Number.isFinite(num(manualSpot.value)))) {
           setStatus("Enter a manual spot price, then Calculate.", "warn");
           manualSpot.style.display = "block";
           manualSpot.focus();
@@ -1823,8 +1719,8 @@
       });
 
       btnApplyCustom.addEventListener("click", () => {
-        const v = clamp(parseFloat(customPurityInput.value), 0, 1);
-        if (!isFinite(v) || v <= 0) {
+        const v = clamp(num(customPurityInput.value), 0, 1);
+        if (!Number.isFinite(v) || v <= 0) {
           setStatus("Custom purity must be between 0.001 and 1.000.", "bad");
           return;
         }
@@ -1850,11 +1746,8 @@
       // --- Init
       (function init() {
         setStatus("Fetching live spot…", "");
-        setMetal("gold");
         setSpotMode("auto");
-        renderPurityButtons();
-        updatePurityHint();
-        syncSilverModeUI();
+        setMetal("gold");
         updateSpotHeaderUI();
         compute(false);
         fetchSpots();
