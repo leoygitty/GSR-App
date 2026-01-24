@@ -1437,35 +1437,62 @@
         };
       }
 
-      async function fetchSpots() {
-        setStatus("Fetching live spot…", "");
-        try {
-          const data = await fetchAny("/api/spot");
-          const parsed = pullSpotFromKnownShape(data);
+     async function fetchSpots() {
+  setStatus("Fetching live spot…", "");
 
-          if (!parsed.ok) throw new Error(parsed.err || "Invalid spot payload");
+  try {
+    const [spotRes, latestRes] = await Promise.allSettled([
+      fetchAny("/api/spot"),
+      fetchAny("/api/latest")
+    ]);
 
-          state.spots.gold = parsed.g;
-          state.spots.silver = parsed.s;
-          state.spots.platinum = parsed.p;
+    const spotRaw = (spotRes.status === "fulfilled") ? spotRes.value : null;
+    const latestRaw = (latestRes.status === "fulfilled") ? latestRes.value : null;
 
-          state.updatedAt = formatUpdated(parsed.updatedRaw) || formatUpdated(new Date().toISOString());
+    const spot = pullSpotFromKnownShape(spotRaw || {});
+    const latest = pullSpotFromKnownShape(latestRaw || {});
 
-          updateSpotHeaderUI();
+    // 1) Apply /api/spot FIRST (authoritative for live pricing)
+    if (spot.ok) {
+      if (spot.g != null) state.spots.gold = spot.g;
+      if (spot.s != null) state.spots.silver = spot.s;
+      if (spot.p != null) state.spots.platinum = spot.p;
+      if (spot.updated) state.updatedAt = spot.updated;
+    } else if (spotRaw && spotRaw.ok === false) {
+      setStatus("Live spot error: " + (spot.err || "Unknown").toString(), "warn");
+    }
 
-          const active = getActiveSpot();
-          if (Number.isFinite(active) && active > 0) setStatus("Live spot loaded. Ready.", "good");
-          else setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
+    // 2) Use /api/latest ONLY as a fallback to fill missing values (no overwrites)
+    if (latest.ok) {
+      if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
+      if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
+      if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+      if (!state.updatedAt && latest.updated) state.updatedAt = latest.updated;
+    }
 
-          compute(true);
-        } catch (e) {
-          console.error("[melt] fetchSpots failed:", e);
-          updateSpotHeaderUI();
-          // IMPORTANT: do not show red spot-failure anymore; degrade to warn
-          setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
-          compute(true);
-        }
-      }
+    if (!state.updatedAt) state.updatedAt = new Date().toISOString();
+
+    updateSpotHeaderUI();
+
+    const active = getActiveSpot();
+    if (Number.isFinite(active) && active > 0) {
+      setStatus("Live spot loaded. Ready.", "good");
+    } else {
+      setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
+    }
+
+    compute(true);
+  } catch (e) {
+    console.error("[melt] fetchSpots failed:", e);
+    updateSpotHeaderUI();
+    setStatus(
+      "Spot fetch failed: " + (e?.message || String(e)) + ". Switch to Manual or fix /api/spot.",
+      "bad"
+    );
+    compute(true);
+  }
+}
+
       function renderSilverLadder(weightG, spot, canCalc) {
         ladderList.innerHTML = "";
         const activeLabel = state.purityLabel;
