@@ -1239,17 +1239,26 @@
         return state.spots[state.metal];
       }
 
-      function formatUtcStamp(input) {
-        if (!input) return null;
-        const d = new Date(input);
-        if (!isFinite(d.getTime())) return String(input);
-        const yyyy = d.getUTCFullYear();
-        const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-        const dd = String(d.getUTCDate()).padStart(2, "0");
-        const hh = String(d.getUTCHours()).padStart(2, "0");
-        const mi = String(d.getUTCMinutes()).padStart(2, "0");
-        return `${yyyy}-${mm}-${dd} ${hh}:${mi} UTC`;
+            function updateSpotHeaderUI() {
+        highlightActiveMetalPill();
+
+        // Use strict numeric checks (avoid isFinite(null) === true)
+        spotGoldPill.textContent = (typeof state.spots.gold === "number" && Number.isFinite(state.spots.gold))
+          ? money(state.spots.gold)
+          : "$—";
+
+        spotSilverPill.textContent = (typeof state.spots.silver === "number" && Number.isFinite(state.spots.silver))
+          ? money(state.spots.silver)
+          : "$—";
+
+        spotPlatinumPill.textContent = (typeof state.spots.platinum === "number" && Number.isFinite(state.spots.platinum))
+          ? money(state.spots.platinum)
+          : "$—";
+
+        chipUpdated.textContent = state.updatedAt || "—";
+        meltUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Melt tool • live spot";
       }
+
 
       function updateSpotHeaderUI() {
         highlightActiveMetalPill();
@@ -1422,52 +1431,78 @@
         };
       }
 
-    async function fetchSpots() {
-  setStatus("Fetching live spot…", "");
-  try {
-    const data = await fetchJson(`/api/spot?ts=${Date.now()}`);
+          async function fetchSpots() {
+        setStatus("Fetching live spot…", "");
+        try {
+          const url = "/api/spot?ts=" + Date.now(); // cache-bust
+          const data = await fetchJson(url);
 
-    // Handle ok:false payloads
-    if (!data || data.ok === false) {
-      throw new Error((data && data.error) ? String(data.error) : "Spot endpoint returned ok:false");
-    }
+          if (!data || typeof data !== "object") {
+            throw new Error("Spot payload missing/invalid.");
+          }
+          if (data.ok === false) {
+            throw new Error(data.error || "Spot endpoint returned ok:false");
+          }
 
-    // Your /api/spot shape (confirmed):
-    // { ok:true, gold_usd:number, silver_usd:number, fetched_at_utc:string, ... }
-    const g = Number(data.gold_usd);
-    const s = Number(data.silver_usd);
-    const p = (data.platinum_usd != null) ? Number(data.platinum_usd) : NaN;
+          // Prefer normalized + *_usd fields (your /api/spot shows these)
+          const toNum = (v) => {
+            const n = parseFloat(v);
+            return Number.isFinite(n) ? n : null;
+          };
 
-    if (Number.isFinite(g)) state.spots.gold = g;
-    if (Number.isFinite(s)) state.spots.silver = s;
-    if (Number.isFinite(p)) state.spots.platinum = p;
+          const gold =
+            toNum(data.gold_usd) ??
+            toNum(data?.normalized?.gold) ??
+            toNum(data.gold) ??
+            toNum(data?.raw?.gold) ??
+            null;
 
-    state.updatedAt = data.fetched_at_utc || data.date || null;
+          const silver =
+            toNum(data.silver_usd) ??
+            toNum(data?.normalized?.silver) ??
+            toNum(data.silver) ??
+            toNum(data?.raw?.silver) ??
+            null;
 
-    updateSpotHeaderUI();
+          // Platinum is fine to remain null for now until you add it server-side
+          const platinum =
+            toNum(data.platinum_usd) ??
+            toNum(data?.normalized?.platinum) ??
+            toNum(data.platinum) ??
+            toNum(data?.raw?.platinum) ??
+            null;
 
-    const active = getActiveSpot();
-    if (Number.isFinite(active)) {
-      setStatus("Live spot loaded. Ready.", "good");
-    } else {
-      setStatus(
-        state.spotMode === "auto"
-          ? "Live spot unavailable for this metal. Switch to Manual or add it to /api/spot."
-          : "Enter a manual spot price, then Calculate.",
-        "warn"
-      );
-    }
+          state.spots.gold = gold;
+          state.spots.silver = silver;
+          state.spots.platinum = platinum;
 
-    compute(false);
-  } catch (e) {
-    updateSpotHeaderUI();
-    setStatus(
-      `Spot fetch failed: ${e?.message || e}. Switch to Manual or fix /api/spot.`,
-      "bad"
-    );
-    compute(false);
-  }
-}
+          // Timestamp / updated label
+          state.updatedAt =
+            (data.fetched_at_utc ? String(data.fetched_at_utc) : null) ||
+            (data.date ? String(data.date) : null) ||
+            new Date().toISOString();
+
+          updateSpotHeaderUI();
+
+          // Status message based on whether we got *anything*
+          const haveGold = typeof gold === "number" && Number.isFinite(gold);
+          const haveSilver = typeof silver === "number" && Number.isFinite(silver);
+
+          if (haveGold || haveSilver) {
+            setStatus("Live spot loaded. Ready.", "good");
+          } else {
+            setStatus("Live spot unavailable. Switch to Manual or check /api/spot.", "warn");
+          }
+
+          compute(true);
+        } catch (e) {
+          updateSpotHeaderUI();
+          const msg = (e && e.message) ? e.message : String(e);
+          setStatus(`Spot fetch failed: ${msg}. Switch to Manual or fix /api/spot.`, "bad");
+          compute(true);
+        }
+      }
+
 
 
       function renderSilverLadder(weightG, spot, canCalc) {
