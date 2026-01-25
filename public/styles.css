@@ -1335,3 +1335,78 @@ html[data-theme="dark"] .priceBtn--dark{
     line-height: 1.25 !important;
   }
 }
+/* =========================================================
+   MOBILE KPI ULTRA-COMPACT (ADD AT VERY BOTTOM)
+   Goal: shrink KPI cards so Charts peeks on initial load.
+   ========================================================= */
+@media (max-width: 720px){
+
+  /* Reduce top padding so content starts higher */
+  .shell{ padding-top: 12px !important; }
+
+  /* Make BOTH KPI sections 2 columns (more compact than 1-col slabs) */
+  .kpiGrid{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin: 10px 0 10px !important;
+  }
+
+  /* Smaller card surface */
+  .kpiCard{
+    padding: 10px 10px 9px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 22px rgba(0,0,0,.20) !important; /* optional: keeps depth while smaller */
+  }
+
+  /* Labels tighter */
+  .kpiLabel{
+    font-size: 10px !important;
+    letter-spacing: .12em !important;
+    margin-bottom: 5px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Big number smaller */
+  .kpiValue{
+    font-size: 18px !important;
+    line-height: 1.05 !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Subline smaller + clamps to 1 line */
+  .kpiSub{
+    font-size: 10.5px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Prevent long timestamps from forcing tall cards */
+  #fetchedAt, #source,
+  #futFetchedAt, #futSource,
+  #platinumSource, #futPlatinumSource,
+  #futMarketTime{
+    display: inline-block;
+    max-width: 14ch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+}
+
+/* Even tighter on very small phones */
+@media (max-width: 390px){
+  .kpiGrid{
+    gap: 7px !important;
+  }
+  .kpiCard{
+    padding: 9px 9px 8px !important;
+  }
+  .kpiValue{
+    font-size: 17px !important;
+  }
+}
