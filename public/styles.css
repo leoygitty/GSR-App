@@ -1438,3 +1438,102 @@ html[data-theme="dark"] .priceBtn--dark{
 .priceCard--pro .priceIcon{ background-size: 70%; }
 .priceCard--elite .priceIcon{ background-size: 70%; }
 */
+/* =========================================================
+   Premium KPI ornaments (coins + futures graph)
+   Add to VERY BOTTOM of styles.css
+   ========================================================= */
+
+.kpiCard .kpiLabel{
+  position: relative;
+}
+
+/* Space on the left for the coin */
+.kpiCard--coinGold .kpiLabel,
+.kpiCard--coinSilver .kpiLabel,
+.kpiCard--coinPlatinum .kpiLabel{
+  padding-left: 44px;
+}
+
+/* Base coin placement */
+.kpiCard--coinGold .kpiLabel::before,
+.kpiCard--coinSilver .kpiLabel::before,
+.kpiCard--coinPlatinum .kpiLabel::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+
+  /* premium depth */
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 -2px 6px rgba(0,0,0,.35);
+}
+
+/* GOLD coin (premium gradient SVG) */
+.kpiCard--coinGold .kpiLabel::before{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='30%25' cy='28%25' r='75%25'%3E%3Cstop offset='0%25' stop-color='%23FFF2B3'/%3E%3Cstop offset='38%25' stop-color='%23F7D46A'/%3E%3Cstop offset='72%25' stop-color='%23D7A72D'/%3E%3Cstop offset='100%25' stop-color='%237C5510'/%3E%3C/radialGradient%3E%3ClinearGradient id='rim' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23FFF0A6'/%3E%3Cstop offset='50%25' stop-color='%23B78112'/%3E%3Cstop offset='100%25' stop-color='%23FFF2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='32' r='28' fill='none' stroke='url(%23rim)' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='rgba(255,255,255,.35)' stroke-width='2'/%3E%3Cpath d='M18 24c8-10 20-12 28-6' stroke='rgba(255,255,255,.55)' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+}
+
+/* SILVER coin */
+.kpiCard--coinSilver .kpiLabel::before{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='s' cx='30%25' cy='28%25' r='78%25'%3E%3Cstop offset='0%25' stop-color='%23FFFFFF'/%3E%3Cstop offset='40%25' stop-color='%23DCE3EA'/%3E%3Cstop offset='75%25' stop-color='%239AA6B3'/%3E%3Cstop offset='100%25' stop-color='%234B5563'/%3E%3C/radialGradient%3E%3ClinearGradient id='rim' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23FFFFFF'/%3E%3Cstop offset='55%25' stop-color='%23798592'/%3E%3Cstop offset='100%25' stop-color='%23FFFFFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23s)'/%3E%3Ccircle cx='32' cy='32' r='28' fill='none' stroke='url(%23rim)' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='rgba(255,255,255,.30)' stroke-width='2'/%3E%3Cpath d='M18 24c8-10 20-12 28-6' stroke='rgba(255,255,255,.50)' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+}
+
+/* PLATINUM coin (cooler, slightly violet-tinted metal) */
+.kpiCard--coinPlatinum .kpiLabel::before{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='p' cx='30%25' cy='28%25' r='78%25'%3E%3Cstop offset='0%25' stop-color='%23F7F4FF'/%3E%3Cstop offset='40%25' stop-color='%23DAD6E8'/%3E%3Cstop offset='75%25' stop-color='%238E93A8'/%3E%3Cstop offset='100%25' stop-color='%233A3F55'/%3E%3C/radialGradient%3E%3ClinearGradient id='rim' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23FFFFFF'/%3E%3Cstop offset='55%25' stop-color='%236B6F86'/%3E%3Cstop offset='100%25' stop-color='%23FFFFFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23p)'/%3E%3Ccircle cx='32' cy='32' r='28' fill='none' stroke='url(%23rim)' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='rgba(255,255,255,.28)' stroke-width='2'/%3E%3Cpath d='M18 24c8-10 20-12 28-6' stroke='rgba(255,255,255,.48)' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+}
+
+/* Futures: add a small graph glyph on the right of the label */
+.kpiCard--futures .kpiLabel{
+  padding-right: 28px; /* room for graph icon */
+}
+
+.kpiCard--futures .kpiLabel::after{
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: .95;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.25));
+}
+
+/* Color-match the futures graph icon per metal */
+.kpiCard--futures.kpiCard--coinGold   .kpiLabel::after{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 19V5' stroke='%23E0B84A' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M4 19H20' stroke='%23E0B84A' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M6.5 15l4-4 3 3 4-6' stroke='%23E0B84A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.kpiCard--futures.kpiCard--coinSilver .kpiLabel::after{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 19V5' stroke='%23C7D0DA' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M4 19H20' stroke='%23C7D0DA' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M6.5 15l4-4 3 3 4-6' stroke='%23C7D0DA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.kpiCard--futures.kpiCard--coinPlatinum .kpiLabel::after{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 19V5' stroke='%23B9A7FF' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M4 19H20' stroke='%23B9A7FF' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M6.5 15l4-4 3 3 4-6' stroke='%23B9A7FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Mobile: slightly smaller ornaments so it stays clean */
+@media (max-width: 520px){
+  .kpiCard--coinGold .kpiLabel,
+  .kpiCard--coinSilver .kpiLabel,
+  .kpiCard--coinPlatinum .kpiLabel{
+    padding-left: 40px;
+  }
+  .kpiCard--coinGold .kpiLabel::before,
+  .kpiCard--coinSilver .kpiLabel::before,
+  .kpiCard--coinPlatinum .kpiLabel::before{
+    width: 30px;
+    height: 30px;
+  }
+}
