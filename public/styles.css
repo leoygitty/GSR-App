@@ -1537,3 +1537,187 @@ html[data-theme="dark"] .priceBtn--dark{
     height: 30px;
   }
 }
+/* ============================
+   MetalMetric — Premium Charts
+   ============================ */
+
+.cardHead--charts{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.chartTools{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.iconBtn{
+  appearance:none;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  color: inherit;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  user-select:none;
+}
+
+.iconBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+}
+
+.iconBtn:active{
+  transform: translateY(0px) scale(0.98);
+}
+
+.hidden{ display:none !important; }
+
+/* Locked teaser overlay (Free tier) */
+.chartsLockOverlay{
+  position:absolute;
+  inset: 56px 14px 14px 14px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding: 18px;
+  gap: 10px;
+  z-index: 5;
+}
+
+.chartsLockOverlay .lockTitle{
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.chartsLockOverlay .lockSub{
+  font-size: 13px;
+  opacity: 0.85;
+  max-width: 320px;
+}
+
+.lockActions{
+  display:flex;
+  gap:10px;
+  margin-top: 6px;
+}
+
+.lockBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.10);
+  color: inherit;
+  text-decoration:none;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.lockBtn:hover{ transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0,0,0,0.24); }
+.lockBtn:active{ transform: translateY(0px) scale(0.99); }
+
+.lockBtn--ghost{
+  background: rgba(255,255,255,0.05);
+}
+
+/* Point details popover */
+.pointDetails{
+  position:absolute;
+  left: 14px;
+  right: 14px;
+  top: 56px;
+  z-index: 6;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+  font-size: 13px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+/* Subtle holographic sheen over charts area (premium vibe) */
+#chartsWrap,
+#chartsWrapExpanded,
+.chartsWrap{
+  position: relative;
+}
+
+.chartsWrap::before{
+  content:"";
+  position:absolute;
+  inset: -1px;
+  pointer-events:none;
+  border-radius: 16px;
+  background: radial-gradient(600px 220px at 10% 10%, rgba(160,120,255,0.14), transparent 55%),
+              radial-gradient(520px 200px at 90% 10%, rgba(220,220,255,0.10), transparent 60%),
+              radial-gradient(560px 240px at 50% 100%, rgba(120,200,255,0.06), transparent 60%);
+  opacity: 0.9;
+  z-index: 0;
+}
+
+/* Make canvases sit above sheen */
+.chartsWrap canvas{
+  position: relative;
+  z-index: 1;
+}
+
+/* Expand mode (desktop overlay + mobile fullscreen-friendly) */
+body.mmChartsExpanded #chartsCard{
+  position: fixed;
+  inset: 5vh 5vw;
+  z-index: 9999;
+  max-width: none !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: hidden;
+  border-radius: 22px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+}
+
+body.mmChartsExpanded #chartsWrap{
+  height: calc(100% - 140px);
+}
+
+body.mmChartsExpanded .chartBlock{
+  min-height: 220px;
+}
+
+@media (max-width: 820px){
+  body.mmChartsExpanded #chartsCard{
+    inset: 0;
+    border-radius: 0;
+  }
+}
+
+/* Mobile: stack charts vertically, touch-friendly spacing */
+@media (max-width: 640px){
+  .chartsWrap{
+    display:grid;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .chartBlock{
+    min-height: 170px;
+  }
+}
