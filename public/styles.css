@@ -8,13 +8,34 @@
   --radius: 18px;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+
   /* Accents */
   --pro: #0a84ff;
   --elite: #a86cff;
-  /* Fixed top ticker (matches index.html variables) */
+
+  /* Fixed top ticker */
   --tickerH: 30px;
-  --tickerSeconds: 36s;
+  --tickerSeconds: 44s; /* slowed slightly */
+
+  /* Nav banner (tabs strip under ticker) */
+  --nb-border: rgba(17,17,20,.10);
+  --nb-bg: rgba(255,255,255,.70);
+  --nb-shadow: 0 12px 34px rgba(0,0,0,.06);
+  --nb-focus: 0 0 0 4px rgba(10,132,255,.18);
+
+  --nb-item-bg: rgba(255,255,255,.72);
+  --nb-item-border: rgba(17,17,20,.10);
+  --nb-item-text: rgba(17,17,20,.88);
+
+  --nb-pro-border: rgba(10,132,255,.28);
+  --nb-pro-bg: rgba(10,132,255,.12);
+  --nb-pro-text: #0a84ff;
+
+  --nb-elite-border: rgba(168,108,255,.30);
+  --nb-elite-bg: rgba(168,108,255,.14);
+  --nb-elite-text: #a86cff;
 }
+
 /* =========================
    Base
    ========================= */
@@ -28,6 +49,7 @@ body{
   /* Reserve space for the fixed top ticker */
   padding-top: var(--tickerH);
 }
+
 /* =========================
    Layout
    ========================= */
@@ -54,6 +76,7 @@ h1{
 .muted{ color: var(--muted); }
 .dot{ margin: 0 8px; opacity:.5; }
 .hidden{ display:none !important; }
+
 /* =========================
    Header / Nav / Buttons
    ========================= */
@@ -113,6 +136,171 @@ h1{
   background: rgba(255,255,255,.95);
 }
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+/* =========================================================
+   NAV BANNER (sticky tabs strip below ticker)
+   - Uses your nav banner classes
+   ========================================================= */
+.navBannerSticky{
+  position: sticky;
+  top: var(--tickerH);
+  z-index: 99998;
+  padding: 10px 0 12px;
+}
+.navBannerSurface{
+  width: 100%;
+  border-bottom: 1px solid rgba(17,17,20,.06);
+  background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.28));
+  backdrop-filter: blur(12px);
+}
+.navBanner{
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 10px 18px 12px;
+}
+.navTabs{
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  border: 1px solid var(--nb-border);
+  background: var(--nb-bg);
+  border-radius: 18px;
+  box-shadow: var(--nb-shadow);
+  padding: 10px;
+  overflow: hidden;
+}
+@media (max-width: 980px){
+  .navTabs{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 560px){
+  .navTabs{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.navTab{
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--nb-item-border);
+  background: var(--nb-item-bg);
+  color: var(--nb-item-text);
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 900;
+  letter-spacing: .01em;
+  text-decoration: none;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.navTab:hover{
+  transform: translateY(-1px);
+  border-color: rgba(17,17,20,.18);
+  background: rgba(255,255,255,.92);
+}
+.navTab:active{ transform: translateY(0); }
+.navTab:focus-visible{
+  outline: none;
+  box-shadow: var(--nb-focus), 0 18px 60px rgba(0,0,0,.12);
+  border-color: rgba(10,132,255,.45);
+}
+
+.ttIcon{
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.ttIcon svg{
+  width: 16px;
+  height: 16px;
+  display:block;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* =========================================================
+   Pro/Elite: slow diagonal shimmer + subtle glow
+   - Implemented as animated background layers (no text washout)
+   ========================================================= */
+@keyframes mmShimmerBg {
+  0%   { background-position: 0% 0%, 0 0; }
+  100% { background-position: 220% 0%, 0 0; }
+}
+@keyframes mmGlow {
+  0%, 100% { filter: saturate(1) brightness(1); }
+  50%      { filter: saturate(1.05) brightness(1.03); }
+}
+
+.navTab--pro{
+  border-color: var(--nb-pro-border);
+  color: var(--nb-pro-text);
+  box-shadow: 0 10px 30px rgba(10,132,255,.10);
+
+  background-image:
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255,255,255,0) 38%,
+      rgba(10,132,255,.26) 48%,
+      rgba(255,255,255,.14) 50%,
+      rgba(10,132,255,.22) 52%,
+      rgba(255,255,255,0) 62%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, rgba(10,132,255,.14), rgba(10,132,255,.10));
+  background-size: 220% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+
+  animation: mmShimmerBg 9s linear infinite, mmGlow 6s ease-in-out infinite;
+}
+.navTab--pro:hover{
+  border-color: rgba(10,132,255,.40);
+  box-shadow: 0 10px 30px rgba(10,132,255,.16), 0 0 0 4px rgba(10,132,255,.08);
+}
+
+.navTab--elite{
+  border-color: var(--nb-elite-border);
+  color: var(--nb-elite-text);
+  box-shadow: 0 10px 30px rgba(168,108,255,.10);
+
+  background-image:
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255,255,255,0) 38%,
+      rgba(168,108,255,.24) 48%,
+      rgba(255,255,255,.14) 50%,
+      rgba(168,108,255,.20) 52%,
+      rgba(255,255,255,0) 62%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, rgba(168,108,255,.16), rgba(168,108,255,.12));
+  background-size: 220% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+
+  animation: mmShimmerBg 10s linear infinite, mmGlow 6.5s ease-in-out infinite;
+}
+.navTab--elite:hover{
+  border-color: rgba(168,108,255,.44);
+  box-shadow: 0 10px 30px rgba(168,108,255,.16), 0 0 0 4px rgba(168,108,255,.08);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .navTab--pro,
+  .navTab--elite{
+    animation: none;
+  }
+}
+
 /* =========================
    KPI cards
    ========================= */
@@ -148,6 +336,7 @@ h1{
 }
 .pos{ color: #0a7a3d; font-weight: 800; }
 .neg{ color: #b00020; font-weight: 800; }
+
 /* =========================
    Controls
    ========================= */
@@ -194,6 +383,7 @@ h1{
   gap: 8px;
   user-select:none;
 }
+
 /* =========================
    Card / Charts / Tables
    ========================= */
@@ -282,6 +472,7 @@ th{
   color: var(--muted);
   font-size: 12px;
 }
+
 /* =========================================================
    Premium shared components (global, consistent across pages)
    ========================================================= */
@@ -576,6 +767,7 @@ th{
 }
 .finalCta .left b{ display:block; font-size: 16px; }
 .finalCta .left span{ color: var(--muted); font-size: 13px; }
+
 @media (max-width: 980px){
   .kpiGrid{ grid-template-columns: 1fr; }
   h1{ font-size: 34px; }
@@ -587,6 +779,7 @@ th{
   .hTitle{ font-size: 34px; }
   .priceTag .big{ font-size: 34px; }
 }
+
 /* =========================================================
    Mobile layout (single consolidated block)
    ========================================================= */
@@ -723,16 +916,13 @@ th{
   }
   .card{ padding: 14px; border-radius: 16px; }
   .chartHeader{ padding: 9px 10px; }
-  /* Mobile ticker: slow slightly more for readability */
-  :root{
-    --tickerH: 30px;
-    --tickerSeconds: 44s;
-  }
 }
+
 @media (max-width: 390px){
   .kpiValue{ font-size: 20px; }
   #fetchedAt, #source{ max-width: 9ch; }
 }
+
 /* ===== Final CTA: tighten button row layout (safe, used on Pro/Elite) ===== */
 .finalCta .right{
   display:flex;
@@ -740,6 +930,7 @@ th{
   flex-wrap:wrap;
   align-items:center;
 }
+
 /* =========================================================
    Fixed TOP ticker — FULL BLEED (ONLY implementation)
    Matches index.html: .ticker > .tickerInner > .tickerViewport > .tickerTrack > .tickerGroup
@@ -764,7 +955,6 @@ th{
   margin: 0;
   display:flex;
   align-items:center;
-  /* Safe-area padding only, no visual inset */
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
@@ -807,6 +997,7 @@ th{
 @media (prefers-reduced-motion: reduce){
   .tickerTrack.isReady{ animation: none; }
 }
+
 /* =========================================================
    Pricing (Claude-style 3 cards)
    Only targets the NEW pricing classes used in index.html
@@ -834,14 +1025,12 @@ th{
   line-height: 1.55;
   max-width: 90ch;
 }
-/* 3-card grid */
 .pricingGrid3{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 10px;
 }
-/* Base card */
 .priceCard{
   border: 1px solid rgba(17,17,20,.10);
   border-radius: 18px;
@@ -850,18 +1039,13 @@ th{
   padding: 16px;
   overflow: hidden;
 }
-/* Free: clean white */
-.priceCard--free{
-  background: #fff;
-}
-/* Pro: blue tint */
+.priceCard--free{ background: #fff; }
 .priceCard--pro{
   background:
     radial-gradient(900px 320px at 18% 10%, rgba(10,132,255,.16), transparent 55%),
     rgba(255,255,255,.86);
   border-color: rgba(10,132,255,.20);
 }
-/* Elite: purple tint */
 .priceCard--elite{
   background:
     radial-gradient(900px 320px at 18% 10%, rgba(168,108,255,.18), transparent 55%),
@@ -914,7 +1098,6 @@ th{
   color: rgba(17,17,20,.62);
   font-weight: 800;
 }
-/* Buttons */
 .priceBtn{
   display: inline-flex;
   width: 100%;
@@ -938,13 +1121,9 @@ th{
   color: #fff;
   border-color: rgba(17,17,20,.60);
 }
-.priceBtn--dark:hover{
-  background: rgba(17,17,20,.98);
-}
-.priceBtn--ghost{
-  background: rgba(255,255,255,.70);
-}
-/* Feature list */
+.priceBtn--dark:hover{ background: rgba(17,17,20,.98); }
+.priceBtn--ghost{ background: rgba(255,255,255,.70); }
+
 .priceList{
   margin: 14px 0 0;
   padding: 0;
@@ -972,20 +1151,13 @@ th{
   font-size: 12px;
   color: rgba(17,17,20,.60);
 }
-/* tiny legal line */
-.pricingLegal{
-  margin-top: 12px;
-  font-size: 12px;
-}
-/* Responsive */
+.pricingLegal{ margin-top: 12px; font-size: 12px; }
+
 @media (max-width: 980px){
-  .pricingGrid3{
-    grid-template-columns: 1fr;
-  }
-  .pricingHeadline{
-    font-size: 24px;
-  }
+  .pricingGrid3{ grid-template-columns: 1fr; }
+  .pricingHeadline{ font-size: 24px; }
 }
+
 /* Melt Calculator Styles */
 .metal-tab {
   padding: 10px 20px;
@@ -1016,14 +1188,10 @@ th{
   border-color: var(--gold-dark);
 }
 
-.output-hidden {
-  display: none;
-}
-
+.output-hidden { display: none; }
 .text-gold { color: var(--gold); }
-
 table td { color: var(--gray-300); }
 
 /* Extend for platinum/silver accents if needed */
-.metal-tab[data-metal="platinum"].active { background: #60a5fa; /* Blue-ish */ }
-.metal-tab[data-metal="silver"].active { background: #9ca3af; /* Gray */ }
+.metal-tab[data-metal="platinum"].active { background: #60a5fa; }
+.metal-tab[data-metal="silver"].active { background: #9ca3af; }
