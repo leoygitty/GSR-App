@@ -354,47 +354,112 @@ function wireChartInteractions(key, chart, getSnapshotRowByDate) {
     canvas.removeEventListener("click", onClick);
   };
 }
+function mmIsDark() {
+  return (document.documentElement.getAttribute("data-theme") || "light").toLowerCase() === "dark";
+}
 
-function makeLineChart(canvasId, label, series, yFmtFn, unit, key, getSnapshotRowByDate) {
+function mmChartKindFromId(canvasId) {
+  if (canvasId === "chartGsrCanvas") return "gsr";
+  if (canvasId === "chartGoldCanvas") return "gold";
+  if (canvasId === "chartSilverCanvas") return "silver";
+  return "gsr";
+}
+
+function mmPalette(kind) {
+  const dark = mmIsDark();
+
+  // Premium but not neon/cheesy. Adjust later if you want.
+  const P = {
+    gsr:   { line: dark ? "rgba(139,92,246,0.95)" : "rgba(109,40,217,0.92)" }, // violet
+    gold:  { line: dark ? "rgba(245,158,11,0.92)" : "rgba(180,83,9,0.92)" },  // gold
+    silver:{ line: dark ? "rgba(226,232,240,0.92)" : "rgba(71,85,105,0.92)" } // silver
+  };
+
+  return P[kind] || P.gsr;
+}
+
+function mmAreaFill(ctx, kind) {
+  const dark = mmIsDark();
+  const { line } = mmPalette(kind);
+
+  const g = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height || 260);
+  // Soft “luxury” fill; keeps line as the hero.
+  g.addColorStop(0, line.replace("0.92", dark ? "0.18" : "0.14").replace("0.95", dark ? "0.18" : "0.14"));
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  return g;
+}
+
+// Re-apply dataset colors (useful on theme toggle)
+function mmRestyleChart(chart, kind) {
+  if (!chart?.data?.datasets?.[0]) return;
+  const ds = chart.data.datasets[0];
+  const { line } = mmPalette(kind);
+
+  ds.borderColor = line;
+  ds.pointHoverBorderColor = line;
+  ds.pointHoverBackgroundColor = "rgba(0,0,0,0)";
+
+  // Rebuild gradient fill for current canvas size/theme
+  try {
+    const ctx = chart.ctx;
+    ds.backgroundColor = mmAreaFill(ctx, kind);
+  } catch {}
+
+  chart.update("none");
+}
+
+window.mmRestyleChartsNow = function () {
+  try { if (CHART_GSR) mmRestyleChart(CHART_GSR, "gsr"); } catch {}
+  try { if (CHART_GOLD) mmRestyleChart(CHART_GOLD, "gold"); } catch {}
+  try { if (CHART_SILVER) mmRestyleChart(CHART_SILVER, "silver"); } catch {}
+};
+
+function makeLineChart(canvasId, label, series, yFmtFn, unit) {
   const el = $(canvasId);
   if (!el) return null;
 
   const ctx = el.getContext("2d");
-  const pal = getChartPalette();
+  const kind = mmChartKindFromId(canvasId);
+  const { line } = mmPalette(kind);
 
-  // Note: We intentionally keep dataset styling conservative to avoid breaking rendering.
-  const chart = new Chart(ctx, {
+  return new Chart(ctx, {
     type: "line",
     data: {
       datasets: [{
         label,
         data: series,
-        borderWidth: 2,
+
+        // IMPORTANT: explicit colors so lines never “disappear”
+        borderColor: line,
+        backgroundColor: mmAreaFill(ctx, kind),
+        fill: true,
+
+        borderWidth: 2.25,
         pointRadius: 0,
         pointHoverRadius: 4,
         pointHitRadius: 14,
+        pointHoverBorderWidth: 2,
         tension: 0.18
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      normalized: true,
-      parsing: false,
-      interaction: { mode: "index", intersect: false },
+
+      // Slightly more “premium” motion without being heavy
       animation: {
-        duration: 520,
+        duration: 650,
         easing: "easeInOutQuart"
       },
+      transitions: {
+        active: { animation: { duration: 180, easing: "easeOutQuart" } }
+      },
+
+      interaction: { mode: "index", intersect: false },
+
       plugins: {
         legend: { display: false },
         tooltip: {
-          enabled: true,
-          backgroundColor: pal.tooltipBg,
-          borderColor: pal.tooltipBorder,
-          borderWidth: 1,
-          titleColor: pal.text,
-          bodyColor: pal.text,
           callbacks: {
             title: (items) => {
               const d = items?.[0]?.raw?.x;
@@ -402,26 +467,9 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit, key, getSnapshotRo
             },
             label: (item) => `${label}: ${yFmtFn(item?.raw?.y)}`
           }
-        },
-
-        // Zoom / pan (plugin ignores if not loaded)
-        zoom: {
-          pan: {
-            enabled: ENTITLEMENT_TIER !== "free",
-            mode: "x",
-            modifierKey: "shift"
-          },
-          zoom: {
-            wheel: { enabled: ENTITLEMENT_TIER !== "free", modifierKey: "ctrl" },
-            pinch: { enabled: ENTITLEMENT_TIER !== "free" },
-            drag: { enabled: ENTITLEMENT_TIER !== "free" },
-            mode: "x"
-          }
-        },
-
-        // Annotation (only used in expanded mode if you later enable it)
-        annotation: { annotations: {} }
+        }
       },
+
       scales: {
         x: {
           type: "time",
@@ -437,23 +485,33 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit, key, getSnapshotRo
           },
           ticks: {
             maxTicksLimit: 8,
-            autoSkip: true,
-            color: pal.tick
+            autoSkip: true
           },
-          grid: { color: pal.grid }
+          grid: { color: "rgba(0,0,0,0.06)" }
         },
         y: {
-          ticks: {
-            callback: (v) => yFmtFn(v),
-            color: pal.tick
-          },
-          grid: { color: pal.grid }
+          ticks: { callback: (v) => yFmtFn(v) },
+          grid: { color: "rgba(0,0,0,0.06)" }
         }
       }
     }
   });
+}
 
-  MM_CHARTS.push({ key, chart });
+// Chain into your existing index.html Chart theme helper (if present)
+(function () {
+  const prev = window.mmApplyChartTheme;
+  if (typeof prev === "function") {
+    window.mmApplyChartTheme = function () {
+      let ok = false;
+      try { ok = prev(); } catch {}
+      try { window.mmRestyleChartsNow && window.mmRestyleChartsNow(); } catch {}
+      return ok;
+    };
+  }
+})();
+
+MM_CHARTS.push({ key, chart });
 
   // Interactions: synced hover + click details
   wireChartInteractions(key, chart, getSnapshotRowByDate);
