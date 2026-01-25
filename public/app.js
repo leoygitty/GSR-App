@@ -329,22 +329,88 @@ document.querySelectorAll(".segBtn").forEach((b) => {
     renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
   });
 });
+
 setActiveRange(CURRENT_RANGE);
+
+/* =========================================================
+   FIX: Chart tick/axis text color updates immediately on
+   light/dark toggle WITHOUT requiring manual Refresh.
+   - No refetch
+   - No history changes
+   - Simply rebuild charts from in-memory FULL_HISTORY
+   ========================================================= */
+(function setupImmediateChartThemeRefresh(){
+  // Only activate on the dashboard page that has charts
+  const hasCharts =
+    !!$("chartGsrCanvas") || !!$("chartGoldCanvas") || !!$("chartSilverCanvas");
+  if (!hasCharts) return;
+
+  const root = document.documentElement;
+
+  const getTheme = () => {
+    const t = (root.getAttribute("data-theme") || "light").toLowerCase();
+    return (t === "dark" || t === "light") ? t : "light";
+  };
+
+  let lastTheme = getTheme();
+  let timer = null;
+
+  const softRebuild = () => {
+    // Rebuild charts from existing FULL_HISTORY so Chart.js resolves new theme colors
+    if (Array.isArray(FULL_HISTORY) && FULL_HISTORY.length >= 2) {
+      renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+    } else {
+      // If charts exist but history isn't loaded yet, at least try to re-style existing charts
+      try { CHART_GSR?.update("none"); } catch {}
+      try { CHART_GOLD?.update("none"); } catch {}
+      try { CHART_SILVER?.update("none"); } catch {}
+    }
+
+    // If your index.html exposes a helper, run it after rebuild (safe no-op if missing)
+    try { window.mmApplyChartTheme && window.mmApplyChartTheme(); } catch (e) {}
+  };
+
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      softRebuild();
+    }, 0);
+  };
+
+  // Watch for <html data-theme="..."> changes
+  const mo = new MutationObserver(() => {
+    const now = getTheme();
+    if (now === lastTheme) return;
+    lastTheme = now;
+    schedule();
+  });
+  mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // Extra safety: if the toggle button is clicked, schedule a rebuild as well
+  const btn = $("themeToggle");
+  if (btn) btn.addEventListener("click", schedule);
+})();
+
 // Initial load: no force (fast path)
 load(CURRENT_RANGE, { force: false });
+
 // Existing: update "time ago"
 setInterval(() => {
   const txt = $("fetchedAt").textContent;
   if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
 }, 10000);
+
 // Auto-refresh hourly while the page is open (non-forced)
 setInterval(() => {
   load(CURRENT_RANGE, { force: false });
 }, 60 * 60 * 1000);
+
 // When user returns to the tab, refresh once (forced)
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) load(CURRENT_RANGE, { force: true });
 });
+
 // Melt Calculator Logic
 document.addEventListener('DOMContentLoaded', () => {
   if (!document.querySelector('.metal-tab')) return;  // Only run on melt page
