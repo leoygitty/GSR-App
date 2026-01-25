@@ -370,38 +370,43 @@
   </div>
   <!-- Spacer so ticker doesn't overlap your header/buttons -->
   <div class="tickerSpacer" aria-hidden="true"></div>
+
   <main class="shell">
-   <header class="topbar">
-  <div class="titleBlock">
-    <div class="brandLockup">
-      <div class="brandMark" aria-hidden="true">M</div>
-      <div class="brandStack">
-        <div class="brandRow">
-          <h1 class="brandName">MetalMetric</h1>
-          <span class="brandBadge">Premium Signals</span>
+    <header class="topbar">
+      <div class="titleBlock">
+        <div class="brandLockup">
+          <div class="brandMark" aria-hidden="true">M</div>
+          <div class="brandStack">
+            <div class="brandRow">
+              <h1 class="brandName">MetalMetric</h1>
+              <span class="brandBadge">Premium Signals</span>
+            </div>
+            <p class="sub brandSub">Gold-to-Silver Ratio dashboard — Alerts when it matters. Not when it moves.</p>
+            <p class="metaLine brandMeta">
+              <span class="muted">Last updated:</span> <span id="lastUpdatedHuman">—</span>
+              <span class="dot">•</span>
+              <span class="muted">UTC date:</span> <span id="utcDate">—</span>
+            </p>
+          </div>
         </div>
-        <p class="sub brandSub">Gold-to-Silver Ratio dashboard — Alerts when it matters. Not when it moves.</p>
-        <p class="metaLine brandMeta">
-          <span class="muted">Last updated:</span> <span id="lastUpdatedHuman">—</span>
-          <span class="dot">•</span>
-          <span class="muted">UTC date:</span> <span id="utcDate">—</span>
-        </p>
       </div>
-    </div>
-  </div>
-  <div class="actions">
-    <div class="navLinks" aria-label="Primary navigation">
-      <a class="navLink" href="#pricing">Pricing</a>
-      <a class="navLink" href="/pro">Pro</a>
-      <a class="navLink navLink--primary" href="/elite">Elite</a>
-      <a href="/melt" class="navLink">Melt Calculator</a>
-    </div>
-    <button id="refreshBtn" class="btn" type="button">Refresh</button>
-  </div>
-</header>
-    <section class="kpiGrid">
+      <div class="actions">
+        <div class="navLinks" aria-label="Primary navigation">
+          <a class="navLink" href="#pricing">Pricing</a>
+          <a class="navLink" href="/pro">Pro</a>
+          <a class="navLink navLink--primary" href="/elite">Elite</a>
+          <a href="/melt" class="navLink">Melt Calculator</a>
+        </div>
+        <button id="refreshBtn" class="btn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <!-- ===========================
+         SPOT (Spot price /api/spot)
+         =========================== -->
+    <section class="kpiGrid" aria-label="Spot prices">
       <div class="kpiCard">
-        <div class="kpiLabel">GSR</div>
+        <div class="kpiLabel">GSR (SPOT)</div>
         <div class="kpiValue" id="gsr">—</div>
         <div class="kpiSub">
           <span class="muted">Δ vs prev:</span>
@@ -410,16 +415,40 @@
         </div>
       </div>
       <div class="kpiCard">
-        <div class="kpiLabel">GOLD (USD)</div>
+        <div class="kpiLabel">GOLD (SPOT USD)</div>
         <div class="kpiValue" id="gold">—</div>
         <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="fetchedAt">—</span></div>
       </div>
       <div class="kpiCard">
-        <div class="kpiLabel">SILVER (USD)</div>
+        <div class="kpiLabel">SILVER (SPOT USD)</div>
         <div class="kpiValue" id="silver">—</div>
         <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
       </div>
     </section>
+
+    <!-- ======================================
+         FUTURES-DERIVED (Futures /api/futures)
+         - Adds a second row, same KPI styling
+         - Does NOT affect Melt Calculator page
+         ====================================== -->
+    <section class="kpiGrid" aria-label="Futures-derived prices">
+      <div class="kpiCard">
+        <div class="kpiLabel">GSR (FUTURES)</div>
+        <div class="kpiValue" id="futGsr">—</div>
+        <div class="kpiSub"><span class="muted">Market time:</span> <span id="futMarketTime">—</span></div>
+      </div>
+      <div class="kpiCard">
+        <div class="kpiLabel">GOLD (FUTURES USD)</div>
+        <div class="kpiValue" id="futGold">—</div>
+        <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
+      </div>
+      <div class="kpiCard">
+        <div class="kpiLabel">SILVER (FUTURES USD)</div>
+        <div class="kpiValue" id="futSilver">—</div>
+        <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
+      </div>
+    </section>
+
     <section class="controls">
       <div class="segmented" role="tablist" aria-label="Range">
         <button class="segBtn isActive" data-range="1M">1M</button>
@@ -434,6 +463,7 @@
         <label class="toggle"><input type="checkbox" id="showGsr" checked> <span>GSR</span></label>
       </div>
     </section>
+
     <section class="card">
       <div class="cardHead">
         <div class="cardTitle">Charts</div>
@@ -489,90 +519,179 @@
         </div>
       </details>
     </section>
+
     <section class="card" id="pricing" aria-label="Pricing">
-  <div class="cardHead">
-    <div>
-      <div class="cardTitle">Pricing</div>
-      <div class="cardMeta">Upgrade for signals, alerts, and premium tools</div>
-    </div>
-  </div>
-  <div class="pricingHeroSimple">
-    <div class="pricingEyebrow">SUBSCRIPTIONS • COMING NEXT</div>
-    <h2 class="pricingHeadline">Plans that grow with you</h2>
-    <p class="pricingLead">
-      Free gives you the live ratio + history. Pro and Elite add signals, alerts, and research tools built to reduce noise and speed up decisions.
-    </p>
-  </div>
-  <div class="pricingGrid3" role="list">
-    <!-- FREE -->
-    <article class="priceCard priceCard--free" role="listitem" aria-label="Free plan">
-      <div class="priceTop">
-        <div class="priceIcon" aria-hidden="true"></div>
-        <div class="pricePlan">Free</div>
-        <div class="priceTagline">Clean dashboard for tracking GSR.</div>
+      <div class="cardHead">
+        <div>
+          <div class="cardTitle">Pricing</div>
+          <div class="cardMeta">Upgrade for signals, alerts, and premium tools</div>
+        </div>
       </div>
-      <div class="priceAmountRow">
-        <div class="priceAmount">$0</div>
-        <div class="pricePer">/mo</div>
+      <div class="pricingHeroSimple">
+        <div class="pricingEyebrow">SUBSCRIPTIONS • COMING NEXT</div>
+        <h2 class="pricingHeadline">Plans that grow with you</h2>
+        <p class="pricingLead">
+          Free gives you the live ratio + history. Pro and Elite add signals, alerts, and research tools built to reduce noise and speed up decisions.
+        </p>
       </div>
-      <a class="priceBtn priceBtn--ghost" href="/">Use MetalMetric for free</a>
-      <ul class="priceList">
-        <li>Live refresh + stored DB history</li>
-        <li>Charts + range selection</li>
-        <li>History table</li>
-      </ul>
-      <div class="priceFootnote">No signup required.</div>
-    </article>
-    <!-- PRO -->
-    <article class="priceCard priceCard--pro" role="listitem" aria-label="Pro plan">
-      <div class="priceTop">
-        <div class="priceIcon priceIcon--pro" aria-hidden="true"></div>
-        <div class="pricePlan">Pro</div>
-        <div class="priceTagline">Signals + tools that make metals actionable.</div>
+      <div class="pricingGrid3" role="list">
+        <!-- FREE -->
+        <article class="priceCard priceCard--free" role="listitem" aria-label="Free plan">
+          <div class="priceTop">
+            <div class="priceIcon" aria-hidden="true"></div>
+            <div class="pricePlan">Free</div>
+            <div class="priceTagline">Clean dashboard for tracking GSR.</div>
+          </div>
+          <div class="priceAmountRow">
+            <div class="priceAmount">$0</div>
+            <div class="pricePer">/mo</div>
+          </div>
+          <a class="priceBtn priceBtn--ghost" href="/">Use MetalMetric for free</a>
+          <ul class="priceList">
+            <li>Live refresh + stored DB history</li>
+            <li>Charts + range selection</li>
+            <li>History table</li>
+          </ul>
+          <div class="priceFootnote">No signup required.</div>
+        </article>
+        <!-- PRO -->
+        <article class="priceCard priceCard--pro" role="listitem" aria-label="Pro plan">
+          <div class="priceTop">
+            <div class="priceIcon priceIcon--pro" aria-hidden="true"></div>
+            <div class="pricePlan">Pro</div>
+            <div class="priceTagline">Signals + tools that make metals actionable.</div>
+          </div>
+          <div class="priceAmountRow">
+            <div class="priceAmount">$9</div>
+            <div class="pricePer">/mo</div>
+          </div>
+          <a class="priceBtn priceBtn--dark" href="/pro">Get Pro plan</a>
+          <ul class="priceList">
+            <li>Buy/Sell Score + 10 smart alerts</li>
+            <li>Smart Melt Value Calculator (jewelry/coins)</li>
+            <li>Hidden Assets Vault + inflation category alerts</li>
+          </ul>
+          <div class="priceFootnote">Best for consistent weekly decision-making.</div>
+        </article>
+        <!-- ELITE -->
+        <article class="priceCard priceCard--elite" role="listitem" aria-label="Elite plan">
+          <div class="priceTop">
+            <div class="priceIcon priceIcon--elite" aria-hidden="true"></div>
+            <div class="pricePlan">Elite</div>
+            <div class="priceTagline">System tools + workflows for power users.</div>
+          </div>
+          <div class="priceAmountRow">
+            <div class="priceAmount">$19</div>
+            <div class="pricePer">/mo</div>
+          </div>
+          <a class="priceBtn priceBtn--dark" href="/elite">Get Elite plan</a>
+          <ul class="priceList">
+            <li>50 alerts + percentiles + confidence scoring</li>
+            <li>Scenario + ladder + CSV export (research suite)</li>
+            <li>Inflation-proof envelopes + hedge-linked goals + jewelry scanner</li>
+          </ul>
+          <div class="priceFootnote">Built for serious allocation + timing.</div>
+        </article>
       </div>
-      <div class="priceAmountRow">
-        <div class="priceAmount">$9</div>
-        <div class="pricePer">/mo</div>
+      <div class="pricingLegal muted">
+        *Usage limits apply. Prices shown don’t include applicable tax.
       </div>
-      <a class="priceBtn priceBtn--dark" href="/pro">Get Pro plan</a>
-      <ul class="priceList">
-        <li>Buy/Sell Score + 10 smart alerts</li>
-        <li>Smart Melt Value Calculator (jewelry/coins)</li>
-        <li>Hidden Assets Vault + inflation category alerts</li>
-      </ul>
-      <div class="priceFootnote">Best for consistent weekly decision-making.</div>
-    </article>
-    <!-- ELITE -->
-    <article class="priceCard priceCard--elite" role="listitem" aria-label="Elite plan">
-      <div class="priceTop">
-        <div class="priceIcon priceIcon--elite" aria-hidden="true"></div>
-        <div class="pricePlan">Elite</div>
-        <div class="priceTagline">System tools + workflows for power users.</div>
-      </div>
-      <div class="priceAmountRow">
-        <div class="priceAmount">$19</div>
-        <div class="pricePer">/mo</div>
-      </div>
-      <a class="priceBtn priceBtn--dark" href="/elite">Get Elite plan</a>
-      <ul class="priceList">
-        <li>50 alerts + percentiles + confidence scoring</li>
-        <li>Scenario + ladder + CSV export (research suite)</li>
-        <li>Inflation-proof envelopes + hedge-linked goals + jewelry scanner</li>
-      </ul>
-      <div class="priceFootnote">Built for serious allocation + timing.</div>
-    </article>
-  </div>
-  <div class="pricingLegal muted">
-    *Usage limits apply. Prices shown don’t include applicable tax.
-  </div>
-</section>
+    </section>
+
     <footer class="footer">
       <span class="muted">Tip:</span> If numbers don’t update after a deploy, hard refresh and clear the service worker cache.
     </footer>
   </main>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
   <script defer src="/app.js"></script>
+
+  <!-- =========================================================
+       FUTURES-DERIVED KPI UPDATER (Home page only)
+       - Pulls /api/futures and fills fut* IDs
+       - Runs on load + Refresh button
+       ========================================================= -->
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+
+      const toNum = (v) => {
+        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
+        return Number.isFinite(n) ? n : NaN;
+      };
+
+      const money = (v) => {
+        const n = toNum(v);
+        if (!Number.isFinite(n)) return "—";
+        return n.toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
+
+      const fmtGsr = (v) => {
+        const n = toNum(v);
+        return Number.isFinite(n) ? n.toFixed(2) : "—";
+      };
+
+      const fmtIsoUtc = (iso) => {
+        if (!iso) return "—";
+        try{
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) return String(iso);
+          return d.toISOString().replace("T"," ").replace("Z"," UTC");
+        }catch{
+          return String(iso);
+        }
+      };
+
+      async function fetchJsonNoStore(path){
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { throw new Error(`Non-JSON from ${path}`); }
+        if (!res.ok || data?.ok === false) throw new Error(data?.error ? String(data.error) : `HTTP ${res.status}`);
+        return data;
+      }
+
+      function setText(id, val){
+        const el = $(id);
+        if (el) el.textContent = val;
+      }
+
+      async function refreshFutures(){
+        const data = await fetchJsonNoStore("/api/futures");
+        // Expected: { ok, gold_usd, silver_usd, gsr, fetched_at_utc, source, market?:{date,time} }
+        setText("futGold", money(data.gold_usd));
+        setText("futSilver", money(data.silver_usd));
+        setText("futGsr", fmtGsr(data.gsr));
+        setText("futFetchedAt", fmtIsoUtc(data.fetched_at_utc));
+        setText("futSource", data.source ? String(data.source) : "—");
+
+        const mDate = data?.market?.date ? String(data.market.date) : "";
+        const mTime = data?.market?.time ? String(data.market.time) : "";
+        setText("futMarketTime", (mDate || mTime) ? `${mDate} ${mTime}`.trim() : "—");
+      }
+
+      async function refreshFuturesSafe(){
+        try { await refreshFutures(); }
+        catch(e){ console.warn("[index] futures refresh failed:", e); }
+      }
+
+      window.addEventListener("load", refreshFuturesSafe);
+
+      const btn = $("refreshBtn");
+      if (btn) btn.addEventListener("click", refreshFuturesSafe);
+
+      // Optional auto-refresh cadence (kept conservative)
+      setInterval(refreshFuturesSafe, 60000);
+    })();
+  </script>
+
   <!-- =========================================================
        Ticker sync + auto-duplicate (prevents blanks)
        - Fills to >= 3x viewport (strong buffer)
@@ -629,6 +748,7 @@
         }));
       };
       const sync = () => {
+        // ticker remains SPOT (reads #gold/#silver/#gsr)
         setText("sbGold", readText("gold"));
         setText("sbSilver", readText("silver"));
         setText("sbGsr", readText("gsr"));
@@ -656,6 +776,7 @@
       setInterval(sync, 1200);
     })();
   </script>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
