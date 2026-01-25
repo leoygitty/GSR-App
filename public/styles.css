@@ -297,14 +297,15 @@ h1{
     box-shadow: 0 10px 30px rgba(168,108,255,.12), 0 0 0 0 rgba(168,108,255,.00);
   }
   50%{
-    box-shadow: 0 14px 40px rgba(168,108,255,.18), 0 0 0 6px rgba(168,108,255,.10);
+    box-shadow: 0 14px 40px rgba(168,108,255,.18), 0 0 0 6px rgba(168,108,255,.18);
   }
 }
 
 .navTab--pro:hover{
   border-color: rgba(10,132,255,.40);
   background: rgba(10,132,255,.16);
-  box-shadow: 0 14px (40px) rgba(10,132,255,.18), 0 0 0 4px rgba(10,132,255,.08);
+  /* FIXED: removed invalid "(40px)" */
+  box-shadow: 0 14px 40px rgba(10,132,255,.18), 0 0 0 4px rgba(10,132,255,.08);
 }
 .navTab--elite:hover{
   border-color: rgba(168,108,255,.44);
@@ -1147,9 +1148,23 @@ th{
 }
 
 /* =========================================================
-   Melt Calculator Styles (kept as-is)
+   MELT PAGE READABILITY FIX (scoped; no impact on home)
+   Requires: <body class="meltPage"> on /melt
    ========================================================= */
-.metal-tab {
+body.meltPage{
+  /* Make inherited text readable on the melt dark UI, even if the page is in light theme */
+  --text: rgba(255,255,255,.92);
+  color: var(--text);
+  color-scheme: dark;
+}
+
+/* If melt reuses KPI typography for the big value, keep it readable */
+body.meltPage .kpiValue{ color: var(--text); }
+
+/* =========================================================
+   Melt Calculator Styles (SCOPED to /melt)
+   ========================================================= */
+body.meltPage .metal-tab {
   padding: 10px 20px;
   background: var(--gray-800);
   border-radius: 8px 8px 0 0;
@@ -1157,9 +1172,9 @@ th{
   font-weight: bold;
   transition: all 0.3s;
 }
-.metal-tab.active { background: var(--gold-dark); color: black; }
+body.meltPage .metal-tab.active { background: var(--gold-dark); color: black; }
 
-.purity-btn {
+body.meltPage .purity-btn {
   padding: 6px 12px;
   background: var(--gray-900);
   border: 1px solid var(--gray-700);
@@ -1167,13 +1182,16 @@ th{
   cursor: pointer;
   transition: all 0.3s;
 }
-.purity-btn.active { background: var(--gold); color: black; border-color: var(--gold-dark); }
+body.meltPage .purity-btn.active { background: var(--gold); color: black; border-color: var(--gold-dark); }
 
-.output-hidden { display: none; }
-.text-gold { color: var(--gold); }
-table td { color: var(--gray-300); }
-.metal-tab[data-metal="platinum"].active { background: #60a5fa; }
-.metal-tab[data-metal="silver"].active { background: #9ca3af; }
+body.meltPage .output-hidden { display: none; }
+body.meltPage .text-gold { color: var(--gold); }
+
+/* IMPORTANT: previously global. Now scoped so it can’t affect home tables */
+body.meltPage table td { color: var(--gray-300); }
+
+body.meltPage .metal-tab[data-metal="platinum"].active { background: #60a5fa; }
+body.meltPage .metal-tab[data-metal="silver"].active { background: #9ca3af; }
 
 /* =========================================================
    DARK THEME (Fixes KPI numbers disappearing)
@@ -1186,8 +1204,8 @@ html[data-theme="dark"]{
   --card: rgba(255,255,255,.04);
   --text: rgba(255,255,255,.92);
   --muted: rgba(255,255,255,.62);
-  --stroke: rgba(255,255,255,.10);
-  --shadow: 0 18px 60px rgba(0,0,0,.50);
+  --stroke: rgba(255,255,255,.12);
+  --shadow: 0 18px 60px rgba(0,0,0,.55);
 
   /* Nav banner tokens (Dark) */
   --nb-bg: rgba(0,0,0,.22);
@@ -1312,82 +1330,4 @@ html[data-theme="dark"] .priceBtn--dark{
   background: rgba(255,255,255,.92);
   color: rgba(17,17,20,.92);
   border-color: rgba(255,255,255,.40);
-}
-/* =========================================================
-   Melt Calculator — force the BIG total value to stay white
-   (fixes black $93.50 on dark UI)
-   Add this at the END of styles.css
-   ========================================================= */
-
-/* Common IDs (safe if some don't exist) */
-#totalMeltValue,
-#totalMelt,
-#meltTotal,
-#meltValueTotal,
-#meltValueAmount{
-  color: rgba(255,255,255,.92) !important;
-  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
-}
-
-/* Common class patterns (covers most implementations) */
-.meltValue .total,
-.meltValue .totalValue,
-.meltValue .value,
-.meltValue .valueBig,
-.meltValue .valueAmount,
-.meltValue .meltTotalValue,
-.meltValue .meltTotal,
-.meltValue .meltAmount,
-.meltValue .meltNumber,
-.meltValue .meltCurrency{
-  color: rgba(255,255,255,.92) !important;
-  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
-}
-
-/* If the total sits inside the right "Melt Value" panel/card */
-.meltValue h1,
-.meltValue h2,
-.meltValue h3,
-.meltValue .big,
-.meltValue .amount{
-  color: rgba(255,255,255,.92) !important;
-  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
-}
-/* =========================================================
-   DARK THEME VARIABLE OVERRIDES (prevents black text in dark mode)
-   Put at VERY BOTTOM of styles.css
-   ========================================================= */
-html[data-theme="dark"]{
-  --bg: #0b0f14;
-  --card: rgba(255,255,255,.04);
-  --text: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.62);
-  --stroke: rgba(255,255,255,.12);
-  --shadow: 0 18px 60px rgba(0,0,0,.55);
-}
-
-/* =========================================================
-   MELT CALCULATOR: FORCE TOTAL MELT VALUE TO ALWAYS BE WHITE
-   (high-specificity + !important to beat any black/gray rule)
-   ========================================================= */
-
-/* common ids/classes people use for that big number */
-html[data-theme="dark"] #totalMeltValue,
-html[data-theme="dark"] #meltTotalValue,
-html[data-theme="dark"] #meltValue,
-html[data-theme="dark"] #meltValueOut,
-html[data-theme="dark"] .total-melt-value,
-html[data-theme="dark"] .totalMeltValue,
-html[data-theme="dark"] .melt-total,
-html[data-theme="dark"] .meltTotal,
-html[data-theme="dark"] .melt-value-total{
-  color: rgba(255,255,255,.96) !important;
-}
-
-/* fallback: if the total is inside the Melt Value panel, force the first big $ number white */
-html[data-theme="dark"] .meltValuePanel .big,
-html[data-theme="dark"] .meltValuePanel .value,
-html[data-theme="dark"] .melt-value-panel .big,
-html[data-theme="dark"] .melt-value-panel .value{
-  color: rgba(255,255,255,.96) !important;
 }
