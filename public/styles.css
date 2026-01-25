@@ -1814,3 +1814,147 @@ body.mmChartsExpanded .chartBlock{
   .kpiRow{ gap: 8px; padding: 12px; }
   .kpi{ padding: 10px; }
 }
+/* ================================
+   Melt page — Mobile "Apple-like" compact layout
+   Paste at the VERY END of <style> (right above </style>)
+   ================================ */
+
+@media (max-width: 560px) {
+  body.meltPage .meltWrap{ padding: 14px 12px 32px; }
+
+  /* Top area becomes compact */
+  body.meltPage .meltTop{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  body.meltPage .meltBrand{ min-width: 0; }
+  body.meltPage .meltBrandText b{ font-size: 13px; }
+  body.meltPage .meltBrandText span{ font-size: 11px; }
+
+  /* Nav becomes 2 buttons + a swipe row of spot pills */
+  body.meltPage .meltNav{
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    justify-items: stretch;
+    align-items: center;
+  }
+  body.meltPage .pillRow{
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+
+    /* premium “snap” feel */
+    scroll-snap-type: x mandatory;
+  }
+  body.meltPage .pillRow .pill{ scroll-snap-align: start; }
+
+  body.meltPage .pill{
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+  body.meltPage .pill small{ display:none; } /* removes "/ oz t" to save vertical space */
+  body.meltPage .pill[title="Data freshness"]{ display:none; } /* timestamp already shown near brand */
+
+  body.meltPage .meltNav .btn{
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 10px;
+  }
+
+  /* Hero tighter */
+  body.meltPage .meltHero{ margin: 4px 0 12px; padding: 0; }
+  body.meltPage .meltHero h1{ font-size: 22px; line-height: 1.1; }
+  body.meltPage .meltHero p{ font-size: 12px; line-height: 1.35; }
+
+  /* KEY CHANGE: 2-up calculator on mobile */
+  body.meltPage .meltGrid{
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  /* Cards more compact */
+  body.meltPage .card{ border-radius: 16px; }
+  body.meltPage .cardHeader{ padding: 10px 12px; }
+  body.meltPage .cardBody{ padding: 12px; }
+  body.meltPage .cardHeader h2{ font-size: 12px; }
+
+  /* Tabs + inputs scale down for half-width */
+  body.meltPage .seg{ padding: 4px; gap: 4px; border-radius: 12px; }
+  body.meltPage .seg button{ padding: 8px 8px; font-size: 11px; border-radius: 10px; }
+  body.meltPage .segIcon{ display:none; } /* keeps labels readable in narrow cards */
+
+  body.meltPage .row{
+    grid-template-columns: 1fr; /* avoid tiny side-by-side fields in half-width */
+    gap: 8px;
+    margin-top: 10px;
+  }
+  body.meltPage .control{
+    padding: 10px 10px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+
+  body.meltPage .purityHeader{ margin-bottom: 6px; }
+  body.meltPage .purityHeader .hint{ display:none; } /* reduces clutter */
+  body.meltPage .purityGrid{ gap: 6px; }
+  body.meltPage .pBtn{
+    padding: 8px 8px;
+    min-height: 40px;
+    text-align: center;
+    border-radius: 12px;
+  }
+  body.meltPage .pTop{ justify-content: center; font-size: 12px; }
+  body.meltPage .pSub{ display:none; } /* removes “Karat / Fine / etc” to save height */
+
+  /* Spot block: keep actions usable without taking a full row */
+  body.meltPage .spotBlock{ margin-top: 12px; padding-top: 10px; }
+  body.meltPage .spotMode{ margin-bottom: 8px; }
+  body.meltPage .chip{ padding: 7px 9px; font-size: 11px; }
+  body.meltPage .statusBar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  body.meltPage .actionRow{
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  body.meltPage .actionRow .btn{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Output card: shrink headline number + KPIs */
+  body.meltPage .resultHero{ padding: 12px 12px 10px; }
+  body.meltPage .resultHero .label{ font-size: 10px; }
+  body.meltPage .resultHero .value{ font-size: 30px; }
+  body.meltPage .resultHero .sub{ font-size: 12px; }
+
+  body.meltPage .kpiRow{
+    padding: 10px 12px 12px;
+    gap: 8px;
+    grid-template-columns: 1fr 1fr;
+  }
+  body.meltPage .kpi{ padding: 10px; border-radius: 12px; }
+  body.meltPage .kpi .k{ font-size: 9px; letter-spacing: .18em; }
+  body.meltPage .kpi .v{ font-size: 14px; }
+  body.meltPage .kpi .s{ display:none; } /* saves height */
+
+  body.meltPage .calcMeta{ padding: 0 12px 12px; }
+  body.meltPage .metaLine{ font-size: 12px; }
+}
+
+/* If the device is extremely narrow, revert to stacked layout (prevents unusable tiny cards) */
+@media (max-width: 360px) {
+  body.meltPage .meltGrid{ grid-template-columns: 1fr; }
+}
