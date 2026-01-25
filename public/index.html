@@ -239,61 +239,87 @@
       </div>
     </section>
 
-    <section class="card">
-      <div class="cardHead">
-        <div class="cardTitle">Charts</div>
-        <div class="cardMeta" id="rangeLabel">—</div>
+   <section class="card" id="chartsCard">
+  <div class="cardHead cardHead--charts">
+    <div class="cardTitle">Charts</div>
+    <div class="cardMeta" id="rangeLabel">—</div>
+
+    <!-- Premium controls (safe: app.js checks for existence) -->
+    <div class="chartTools">
+      <button id="chartsResetZoomBtn" class="iconBtn" type="button" title="Reset zoom" aria-label="Reset zoom">⟲</button>
+      <button id="chartsExpandBtn" class="iconBtn" type="button" title="Expand charts" aria-label="Expand charts">⤢</button>
+      <button id="chartsCloseBtn" class="iconBtn hidden" type="button" title="Close" aria-label="Close charts">✕</button>
+    </div>
+  </div>
+
+  <!-- Optional lock/teaser overlay (only shows if your JS enables it) -->
+  <div id="chartsLockOverlay" class="chartsLockOverlay hidden" aria-hidden="true">
+    <div class="lockTitle">Interactive charts are Pro+</div>
+    <div class="lockSub">Zoom, pan, synced crosshair, and insights.</div>
+    <div class="lockActions">
+      <a class="lockBtn" href="#pricing">Upgrade</a>
+      <button id="lockDismissBtn" class="lockBtn lockBtn--ghost" type="button">Not now</button>
+    </div>
+  </div>
+
+  <!-- Clicked-point details popover (JS fills this) -->
+  <div id="pointDetails" class="pointDetails hidden" role="status" aria-live="polite"></div>
+
+  <div id="emptyState" class="emptyState hidden">
+    <div class="emptyTitle">No history yet</div>
+    <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
+  </div>
+
+  <div id="chartsWrap" class="chartsWrap">
+    <div class="chartBlock" id="chartGsr">
+      <div class="chartHeader">
+        <div class="chartName">GSR</div>
+        <div class="chartHint muted">ratio</div>
       </div>
-      <div id="emptyState" class="emptyState hidden">
-        <div class="emptyTitle">No history yet</div>
-        <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
+      <div class="chartCanvasWrap">
+        <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
       </div>
-      <div id="chartsWrap" class="chartsWrap">
-        <div class="chartBlock" id="chartGsr">
-          <div class="chartHeader">
-            <div class="chartName">GSR</div>
-            <div class="chartHint muted">ratio</div>
-          </div>
-          <div class="chartCanvasWrap">
-            <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
-          </div>
-        </div>
-        <div class="chartBlock" id="chartGold">
-          <div class="chartHeader">
-            <div class="chartName">Gold Spot (USD)</div>
-            <div class="chartHint muted">close</div>
-          </div>
-          <div class="chartCanvasWrap">
-            <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
-          </div>
-        </div>
-        <div class="chartBlock" id="chartSilver">
-          <div class="chartHeader">
-            <div class="chartName">Silver Spot (USD)</div>
-            <div class="chartHint muted">close</div>
-          </div>
-          <div class="chartCanvasWrap">
-            <canvas id="chartSilverCanvas" class="chartCanvas"></canvas>
-          </div>
-        </div>
+    </div>
+
+    <div class="chartBlock" id="chartGold">
+      <div class="chartHeader">
+        <div class="chartName">Gold Spot (USD)</div>
+        <div class="chartHint muted">close</div>
       </div>
-      <details class="details">
-        <summary>Show history table</summary>
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date (UTC)</th>
-                <th>GSR</th>
-                <th>Gold</th>
-                <th>Silver</th>
-              </tr>
-            </thead>
-            <tbody id="historyTable"></tbody>
-          </table>
-        </div>
-      </details>
-    </section>
+      <div class="chartCanvasWrap">
+        <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="chartBlock" id="chartSilver">
+      <div class="chartHeader">
+        <div class="chartName">Silver Spot (USD)</div>
+        <div class="chartHint muted">close</div>
+      </div>
+      <div class="chartCanvasWrap">
+        <canvas id="chartSilverCanvas" class="chartCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <details class="details">
+    <summary>Show history table</summary>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date (UTC)</th>
+            <th>GSR</th>
+            <th>Gold</th>
+            <th>Silver</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable"></tbody>
+      </table>
+    </div>
+  </details>
+</section>
+
 
     <section class="card" id="pricing" aria-label="Pricing">
       <div class="cardHead">
