@@ -1815,97 +1815,95 @@ body.mmChartsExpanded .chartBlock{
   .kpi{ padding: 10px; }
 }
 /* =========================================================
-   Melt page MOBILE fix: stack cards (Input on top, Value below)
-   Paste at the BOTTOM of styles.css
+   MOBILE: melt page stacking + smaller hero + bottom spot strip
+   Paste at very bottom of styles.css
    ========================================================= */
 
 @media (max-width: 720px) {
 
-  /* Make sure the main grid is one column */
+  /* Ensure stacked cards on mobile */
   .meltGrid{
-    display: grid !important;
     grid-template-columns: 1fr !important;
     gap: 12px !important;
     align-items: stretch !important;
   }
-
-  /* Ensure both cards take full width */
   .meltGrid > .card{
     width: 100% !important;
     max-width: 100% !important;
   }
 
-  /* Remove any forced "two-up" layouts that might still be applied */
-  .meltGrid{
-    grid-auto-flow: row !important;
-  }
-
-  /* Reduce padding slightly for a cleaner mobile density */
-  .meltWrap{
-    padding: 18px 14px 44px !important;
-  }
-
-  /* Top bar: prevent pills/buttons from creating clutter */
+  /* Top bar layout: keep clean */
   .meltTop{
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 10px !important;
   }
+  .meltBrand{ min-width: 0 !important; }
+  .meltNav{ justify-content: flex-start !important; gap: 8px !important; }
 
-  .meltBrand{
-    min-width: 0 !important;
+  /* Keep heading, but smaller/tighter */
+  .meltHero{
+    margin: 8px 0 14px !important;
+    padding: 10px 2px 0 !important;
+  }
+  .meltHero h1{
+    font-size: 22px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.02em !important;
+    margin: 0 0 6px !important;
+  }
+  .meltHero p{
+    font-size: 13px !important;
+    line-height: 1.35 !important;
   }
 
-  .meltNav{
-    justify-content: flex-start !important;
-    gap: 8px !important;
+  /* Make room so fixed bottom strip doesn't cover calculator */
+  .meltWrap{
+    padding-bottom: 140px !important;
   }
 
-  /* Pills row: allow wrapping without oversized gaps */
+  /* Bottom “spot strip” (uses existing pillRow) */
   .pillRow{
-    justify-content: flex-start !important;
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    z-index: 9999 !important;
+
+    display: flex !important;
     gap: 8px !important;
+    align-items: center !important;
+
+    padding: 10px 10px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    background: rgba(10,14,20,.72) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    box-shadow: 0 18px 60px rgba(0,0,0,.55) !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
   }
 
-  .pill{
-    padding: 7px 9px !important;
-    font-size: 12px !important;
+  .pillRow .pill{
+    flex: 0 0 auto !important;
+    scroll-snap-align: start !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+  .pillRow .pill strong{ font-size: 11px !important; }
+  .pillRow .pill small{ font-size: 10px !important; }
+
+  /* Optional: hide the Updated pill to reduce clutter */
+  .pillRow .pill:last-child{
+    display: none !important;
   }
 
-  /* Keep action buttons from becoming huge blocks */
-  .btn{
-    width: 100% !important;
-    text-align: center !important;
-  }
-
-  /* Input segmented metal tabs: keep compact */
-  .seg button{
-    padding: 9px 8px !important;
-    font-size: 12px !important;
-  }
-
-  /* Prevent the bottom action area from feeling like it overlaps */
-  .statusBar{
-    gap: 10px !important;
-    justify-content: flex-start !important;
-  }
-
-  .actionRow{
-    width: 100% !important;
-    justify-content: space-between !important;
-  }
-
-  .actionRow .btn{
-    width: calc(50% - 6px) !important;
-  }
-
-  /* Melt Value KPI cards: keep 2x2 grid, not cramped */
-  .kpiRow{
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-  }
-
-  /* Make the big value slightly smaller so it breathes */
+  /* Optional: slightly smaller big value so it breathes */
   .resultHero .value{
     font-size: 38px !important;
   }
