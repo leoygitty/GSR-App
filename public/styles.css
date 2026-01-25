@@ -1245,3 +1245,93 @@ html[data-theme="dark"] .priceBtn--dark{
   color: rgba(17,17,20,.92);
   border-color: rgba(255,255,255,.40);
 }
+/* =========================================================
+   MOBILE NAV + KPI COMPACT OVERRIDES (ADD AT VERY BOTTOM)
+   Fixes:
+   - Nav buttons too tall / stacking into big blocks
+   - Refresh button overlaying header
+   - KPI cards too large on mobile
+   ========================================================= */
+@media (max-width: 720px){
+
+  /* 1) Undo legacy mobile header assumptions */
+  .topbar{
+    padding-top: 0 !important; /* remove space reserved for old absolute refresh button */
+  }
+
+  /* This is the big one: stop the refresh button from floating over the page */
+  #refreshBtn{
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+    margin: 0 !important;
+    white-space: nowrap;
+  }
+
+  /* 2) Make nav banner compact + one-line row */
+  .navBannerSticky{
+    padding: 6px 0 8px;
+  }
+  .navBanner{
+    padding: 8px 10px 10px;
+  }
+
+  /*
+    Your current navTabs switches to a 2-col grid at small widths,
+    which makes those big “tiles”.
+    Force a single horizontal row instead.
+  */
+  .navTabs{
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding: 8px !important;
+
+    overflow-x: auto;                 /* keeps it on ONE line */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;            /* Firefox hide */
+  }
+  .navTabs::-webkit-scrollbar{ display:none; } /* Safari/Chrome hide */
+
+  .navTab{
+    flex: 0 0 auto;                   /* prevents stretching into giant blocks */
+    min-height: 36px !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+    border-radius: 14px !important;
+    letter-spacing: 0 !important;
+    gap: 6px !important;
+  }
+
+  /* Slightly smaller icons inside the toggle button */
+  .ttIcon,
+  .ttIcon svg{
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* 3) Compact KPI cards so they don’t feel like huge slabs */
+  .kpiGrid{
+    gap: 10px !important;
+    margin: 10px 0 12px !important;
+  }
+  .kpiCard{
+    padding: 12px 12px 11px !important;
+    border-radius: 16px !important;
+  }
+  .kpiLabel{
+    font-size: 10.5px !important;
+    letter-spacing: .12em !important;
+    margin-bottom: 6px !important;
+  }
+  .kpiValue{
+    font-size: 22px !important;
+    line-height: 1.05 !important;
+    margin-bottom: 6px !important;
+  }
+  .kpiSub{
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+}
