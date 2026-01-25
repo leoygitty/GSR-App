@@ -12,8 +12,27 @@
     /* Ensures Chart.js canvases have a stable height within your existing layout */
     .chartCanvasWrap { height: 260px; position: relative; }
     canvas.chartCanvas { width: 100% !important; height: 100% !important; display: block; }
+
     /* Pricing section anchor spacing (kept local to avoid global impact) */
     #pricing { scroll-margin-top: 18px; }
+
+    /* =========================================================
+       KPI GRID: 4-UP (index only)
+       - Keeps KPI cards evenly spaced when adding Platinum
+       - Responsive collapse: 4 -> 2 -> 1
+       ========================================================= */
+    .kpiGrid.kpiGrid--4{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 1100px){
+      .kpiGrid.kpiGrid--4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px){
+      .kpiGrid.kpiGrid--4{ grid-template-columns: 1fr; }
+    }
+
     /* =========================================================
        FIXED FULL-BLEED TOP TICKER (EDGE-TO-EDGE)
        - Not constrained by .shell or any max-width rules
@@ -92,6 +111,7 @@
     .tickerSpacer{
       height: var(--tickerH) !important;
     }
+
     /* Keep the rest of your Apple-level pricing styles untouched */
     .pricingPanel{
       border: 1px solid rgba(17,17,20,.10);
@@ -404,7 +424,7 @@
     <!-- ===========================
          SPOT (Spot price /api/spot)
          =========================== -->
-    <section class="kpiGrid" aria-label="Spot prices">
+    <section class="kpiGrid kpiGrid--4" aria-label="Spot prices">
       <div class="kpiCard">
         <div class="kpiLabel">GSR (SPOT)</div>
         <div class="kpiValue" id="gsr">—</div>
@@ -424,6 +444,11 @@
         <div class="kpiValue" id="silver">—</div>
         <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
       </div>
+      <div class="kpiCard">
+        <div class="kpiLabel">PLATINUM (SPOT USD)</div>
+        <div class="kpiValue" id="platinum">—</div>
+        <div class="kpiSub"><span class="muted">Source:</span> <span id="platinumSource">—</span></div>
+      </div>
     </section>
 
     <!-- ======================================
@@ -431,7 +456,7 @@
          - Adds a second row, same KPI styling
          - Does NOT affect Melt Calculator page
          ====================================== -->
-    <section class="kpiGrid" aria-label="Futures-derived prices">
+    <section class="kpiGrid kpiGrid--4" aria-label="Futures-derived prices">
       <div class="kpiCard">
         <div class="kpiLabel">GSR (FUTURES)</div>
         <div class="kpiValue" id="futGsr">—</div>
@@ -446,6 +471,11 @@
         <div class="kpiLabel">SILVER (FUTURES USD)</div>
         <div class="kpiValue" id="futSilver">—</div>
         <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
+      </div>
+      <div class="kpiCard">
+        <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
+        <div class="kpiValue" id="futPlatinum">—</div>
+        <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
       </div>
     </section>
 
@@ -609,8 +639,8 @@
 
   <!-- =========================================================
        FUTURES-DERIVED KPI UPDATER (Home page only)
-       - Pulls /api/futures and fills fut* IDs
-       - Runs on load + Refresh button
+       - Pulls /api/futures and fills fut* IDs (including Platinum)
+       - Runs on load + Refresh button + light interval
        ========================================================= -->
   <script>
     (function(){
@@ -664,13 +694,17 @@
       }
 
       async function refreshFutures(){
-        const data = await fetchJsonNoStore("/api/futures");
-        // Expected: { ok, gold_usd, silver_usd, gsr, fetched_at_utc, source, market?:{date,time} }
+        // Explicitly request platinum too (safe even if your API defaults already include it)
+        const data = await fetchJsonNoStore("/api/futures?symbols=GC=F,SI=F,PL=F");
+
         setText("futGold", money(data.gold_usd));
         setText("futSilver", money(data.silver_usd));
+        setText("futPlatinum", money(data.platinum_usd));
         setText("futGsr", fmtGsr(data.gsr));
+
         setText("futFetchedAt", fmtIsoUtc(data.fetched_at_utc));
         setText("futSource", data.source ? String(data.source) : "—");
+        setText("futPlatinumSource", data.source ? String(data.source) : "—");
 
         const mDate = data?.market?.date ? String(data.market.date) : "";
         const mTime = data?.market?.time ? String(data.market.time) : "";
@@ -687,8 +721,72 @@
       const btn = $("refreshBtn");
       if (btn) btn.addEventListener("click", refreshFuturesSafe);
 
-      // Optional auto-refresh cadence (kept conservative)
+      // Light periodic refresh for futures (no paid quota)
       setInterval(refreshFuturesSafe, 60000);
+    })();
+  </script>
+
+  <!-- =========================================================
+       SPOT PLATINUM KPI UPDATER (Home page only)
+       - Pulls /api/spot and fills Platinum IDs only
+       - IMPORTANT: No interval (protects limited paid quotas)
+       - Runs on load + Refresh button
+       ========================================================= -->
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+
+      const toNum = (v) => {
+        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
+        return Number.isFinite(n) ? n : NaN;
+      };
+
+      const money = (v) => {
+        const n = toNum(v);
+        if (!Number.isFinite(n)) return "—";
+        return n.toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
+
+      async function fetchJsonNoStore(path){
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { throw new Error(`Non-JSON from ${path}`); }
+        if (!res.ok || data?.ok === false) throw new Error(data?.error ? String(data.error) : `HTTP ${res.status}`);
+        return data;
+      }
+
+      function setText(id, val){
+        const el = $(id);
+        if (el) el.textContent = val;
+      }
+
+      async function refreshSpotPlatinum(){
+        const data = await fetchJsonNoStore("/api/spot");
+
+        // Expecting your updated spot endpoint to return platinum_usd.
+        // If your provider uses a different field later, add fallbacks here.
+        const pt = (data && (data.platinum_usd ?? data.platinum ?? data.xpt_usd)) ?? null;
+
+        setText("platinum", money(pt));
+        setText("platinumSource", data?.source ? String(data.source) : "—");
+      }
+
+      async function refreshSpotPlatinumSafe(){
+        try { await refreshSpotPlatinum(); }
+        catch(e){ console.warn("[index] spot platinum refresh failed:", e); }
+      }
+
+      window.addEventListener("load", refreshSpotPlatinumSafe);
+
+      const btn = $("refreshBtn");
+      if (btn) btn.addEventListener("click", refreshSpotPlatinumSafe);
     })();
   </script>
 
