@@ -374,190 +374,103 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 
-  <!-- =========================================================
-       Chart theme helper (FIXED: instant retheme on toggle + on any chart rebuild)
-       - Uses MutationObserver on html[data-theme]
-       - Applies theme to ALL Chart.js instances (Chart.instances) not just 3 canvases
-       - Registers a lightweight plugin so NEW charts inherit correct theme immediately
-       ========================================================= -->
+  <!-- Chart theme helper (keeps axis/legend readable in dark mode) -->
   <script>
     (function(){
-      function getTheme(){
-        const t = (document.documentElement.getAttribute("data-theme") || "light").toLowerCase();
-        return (t === "dark" || t === "light") ? t : "light";
+      function isDark(){
+        return (document.documentElement.getAttribute("data-theme") || "light").toLowerCase() === "dark";
       }
 
-      function cssVar(name, fallback){
-        try{
-          const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-          return v || fallback;
-        }catch{
-          return fallback;
-        }
-      }
-
-      function palette(){
-        const dark = getTheme() === "dark";
-
-        // Prefer your existing CSS tokens so the "source of truth" stays in styles.css
-        const text = cssVar("--text",  dark ? "rgba(255,255,255,.92)" : "rgba(17,17,20,.92)");
-        const muted = cssVar("--muted", dark ? "rgba(255,255,255,.62)" : "rgba(17,17,20,.62)");
-        const stroke = cssVar("--stroke",dark ? "rgba(255,255,255,.10)" : "rgba(17,17,20,.10)");
-
-        // Chart-specific derived colors (keeps your existing structure)
-        const tick  = dark ? "rgba(255,255,255,.78)" : "rgba(17,17,20,.72)";
-        const grid  = dark ? "rgba(255,255,255,.08)" : stroke;
-        const title = dark ? "rgba(255,255,255,.88)" : "rgba(17,17,20,.86)";
-
-        return {
-          dark,
-          tick,
-          grid,
-          title,
-          tooltipTitle: dark ? "rgba(255,255,255,.92)" : "rgba(17,17,20,.92)",
-          tooltipBody:  dark ? "rgba(255,255,255,.86)" : "rgba(17,17,20,.86)",
-          tooltipBg:    dark ? "rgba(0,0,0,.78)"       : "rgba(255,255,255,.92)",
-          tooltipBorder:dark ? "rgba(255,255,255,.12)" : "rgba(17,17,20,.10)",
-          text,
-          muted
-        };
-      }
-
-      function getAllCharts(){
-        if (!window.Chart) return [];
-        // Chart.js v4 stores instances in Chart.instances (object)
-        const inst = Chart.instances;
-        if (inst) {
-          if (inst instanceof Map) return Array.from(inst.values());
-          return Object.values(inst).filter(Boolean);
-        }
-        return [];
-      }
-
-      function applyThemeToChart(chart, pal){
-        if (!chart || chart.destroyed) return;
-
-        // scales
-        if (chart.options && chart.options.scales){
-          Object.values(chart.options.scales).forEach(sc => {
-            if (!sc) return;
-            sc.ticks = sc.ticks || {};
-            sc.grid  = sc.grid  || {};
-            sc.border = sc.border || {};
-            sc.ticks.color = pal.tick;
-            sc.grid.color  = pal.grid;
-            sc.border.color = pal.grid;
-
-            sc.title = sc.title || {};
-            sc.title.color = pal.title;
-          });
-        }
-
-        // legend / tooltip
-        chart.options.plugins = chart.options.plugins || {};
-        chart.options.plugins.legend = chart.options.plugins.legend || {};
-        chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-        chart.options.plugins.legend.labels.color = pal.tick;
-
-        chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
-        chart.options.plugins.tooltip.titleColor = pal.tooltipTitle;
-        chart.options.plugins.tooltip.bodyColor  = pal.tooltipBody;
-        chart.options.plugins.tooltip.backgroundColor = pal.tooltipBg;
-        chart.options.plugins.tooltip.borderColor = pal.tooltipBorder;
-        chart.options.plugins.tooltip.borderWidth = 1;
-
-        // ChartDataLabels (if present in your app.js build later)
-        if (chart.options.plugins.datalabels) {
-          chart.options.plugins.datalabels.color = pal.tick;
-        }
-      }
-
-      function ensureThemePlugin(){
-        if (!window.Chart || !Chart.register) return false;
-        if (window.__mmThemePluginRegistered) return true;
-
-        try{
-          Chart.register({
-            id: "mmThemeSync",
-            beforeInit(chart){
-              const pal = palette();
-              // keep defaults aligned too
-              Chart.defaults.color = pal.tick;
-              Chart.defaults.borderColor = pal.grid;
-              applyThemeToChart(chart, pal);
-            },
-            beforeUpdate(chart){
-              const pal = palette();
-              Chart.defaults.color = pal.tick;
-              Chart.defaults.borderColor = pal.grid;
-              applyThemeToChart(chart, pal);
-            }
-          });
-          window.__mmThemePluginRegistered = true;
-          return true;
-        }catch(e){
-          // if double-registered or blocked, don't crash
-          window.__mmThemePluginRegistered = true;
-          return false;
-        }
-      }
-
-      function applyChartThemeOnce(){
+      function applyChartTheme(){
         if (!window.Chart || !Chart.getChart) return false;
 
-        ensureThemePlugin();
-
-        const pal = palette();
+        const dark = isDark();
+        const tick = dark ? "rgba(255,255,255,.78)" : "rgba(17,17,20,.72)";
+        const grid = dark ? "rgba(255,255,255,.08)" : "rgba(17,17,20,.10)";
+        const title = dark ? "rgba(255,255,255,.88)" : "rgba(17,17,20,.86)";
 
         // defaults
-        Chart.defaults.color = pal.tick;
-        Chart.defaults.borderColor = pal.grid;
+        Chart.defaults.color = tick;
+        Chart.defaults.borderColor = grid;
 
-        const charts = getAllCharts();
-        if (!charts.length) return false;
+        const ids = ["chartGsrCanvas","chartGoldCanvas","chartSilverCanvas"];
+        let found = 0;
 
-        for (const ch of charts){
-          applyThemeToChart(ch, pal);
-          // Force an immediate redraw; some configs only repaint on render
-          ch.update("none");
-          if (typeof ch.render === "function") ch.render();
-        }
-        return true;
+        ids.forEach(id => {
+          const c = document.getElementById(id);
+          if (!c) return;
+          const chart = Chart.getChart(c);
+          if (!chart) return;
+          found++;
+
+          // scales
+          if (chart.options && chart.options.scales){
+            Object.values(chart.options.scales).forEach(sc => {
+              sc.ticks = sc.ticks || {};
+              sc.grid = sc.grid || {};
+              sc.border = sc.border || {};
+              sc.ticks.color = tick;
+              sc.grid.color = grid;
+              sc.border.color = grid;
+              sc.title = sc.title || {};
+              sc.title.color = title;
+            });
+          }
+
+          // legend / tooltip
+          chart.options.plugins = chart.options.plugins || {};
+          chart.options.plugins.legend = chart.options.plugins.legend || {};
+          chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+          chart.options.plugins.legend.labels.color = tick;
+
+          chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
+          chart.options.plugins.tooltip.titleColor = dark ? "rgba(255,255,255,.92)" : "rgba(17,17,20,.92)";
+          chart.options.plugins.tooltip.bodyColor  = dark ? "rgba(255,255,255,.86)" : "rgba(17,17,20,.86)";
+          chart.options.plugins.tooltip.backgroundColor = dark ? "rgba(0,0,0,.78)" : "rgba(255,255,255,.92)";
+          chart.options.plugins.tooltip.borderColor = dark ? "rgba(255,255,255,.12)" : "rgba(17,17,20,.10)";
+          chart.options.plugins.tooltip.borderWidth = 1;
+
+          // Force immediate repaint
+          chart.update("none");
+          try { if (chart.draw) chart.draw(); } catch(e) {}
+        });
+
+        return found > 0;
       }
 
-      function scheduleThemeApply(){
-        // Run multiple times to cover: CSS update frame, and any async chart rebuild in app.js
-        requestAnimationFrame(() => { try { applyChartThemeOnce(); } catch(e) {} });
-        setTimeout(() => { try { applyChartThemeOnce(); } catch(e) {} }, 80);
-        setTimeout(() => { try { applyChartThemeOnce(); } catch(e) {} }, 300);
+      // NEW: schedule a couple quick re-applies so ticks repaint immediately after theme flips
+      function scheduleApply(){
+        try { applyChartTheme(); } catch(e) {}
+        try { requestAnimationFrame(() => { try { applyChartTheme(); } catch(e) {} }); } catch(e) {}
+        setTimeout(() => { try { applyChartTheme(); } catch(e) {} }, 120);
+        setTimeout(() => { try { applyChartTheme(); } catch(e) {} }, 350);
       }
 
-      // Expose for theme toggle to call immediately
-      window.mmApplyChartTheme = function(){
-        scheduleThemeApply();
-        return applyChartThemeOnce();
-      };
-
-      // Apply after load; keep trying briefly because app.js may create charts after fetch
+      // Run after everything is loaded (app.js builds charts after fetch)
       window.addEventListener("load", () => {
         let tries = 0;
         const t = setInterval(() => {
           tries++;
-          const ok = applyChartThemeOnce();
-          if (ok || tries > 60) clearInterval(t);
-        }, 150);
+          const ok = applyChartTheme();
+          if (ok || tries > 20) clearInterval(t);
+        }, 250);
       });
 
-      // IMPORTANT FIX: observe theme attribute changes and retheme immediately
-      const mo = new MutationObserver((muts) => {
-        for (const m of muts){
-          if (m.type === "attributes" && m.attributeName === "data-theme") {
-            scheduleThemeApply();
-            break;
+      // NEW: auto-apply whenever data-theme changes (no refresh button needed)
+      try{
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts){
+            if (m.type === "attributes" && m.attributeName === "data-theme"){
+              scheduleApply();
+              break;
+            }
           }
-        }
-      });
-      mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        });
+        mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      }catch(e){}
+
+      // Expose so theme toggle can call it immediately
+      window.mmApplyChartTheme = scheduleApply;
     })();
   </script>
 
@@ -585,8 +498,12 @@
         root.setAttribute("data-theme", theme);
         const isDark = theme === "dark";
 
+        // aria-pressed reflects current state
         if (btn) btn.setAttribute("aria-pressed", isDark ? "true" : "false");
 
+        // Show ACTION label/icons:
+        // If currently dark => show "Light" (sun) to switch to light
+        // If currently light => show "Dark" (moon) to switch to dark
         if (label) label.textContent = isDark ? "Light" : "Dark";
         if (moon) moon.style.display = isDark ? "none" : "inline-flex";
         if (sun)  sun.style.display  = isDark ? "inline-flex" : "none";
@@ -594,7 +511,7 @@
 
         try { localStorage.setItem(KEY, theme); } catch(e) {}
 
-        // Immediate + scheduled chart retheme (covers async rebuilds)
+        // Update Chart.js colors (if charts already exist)
         try {
           if (window.mmApplyChartTheme) window.mmApplyChartTheme();
         } catch(e) {}
@@ -606,6 +523,9 @@
         btn.addEventListener("click", () => {
           const next = (getTheme() === "dark") ? "light" : "dark";
           apply(next);
+
+          // run again shortly in case charts update after toggle
+          setTimeout(() => { try { window.mmApplyChartTheme && window.mmApplyChartTheme(); } catch(e) {} }, 250);
         });
       }
     })();
