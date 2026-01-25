@@ -8,6 +8,17 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
+
+  <!-- Apply saved theme ASAP to avoid flash -->
+  <script>
+    (function(){
+      try{
+        const t = localStorage.getItem("mm_theme");
+        if (t === "dark") document.documentElement.setAttribute("data-theme","dark");
+      }catch{}
+    })();
+  </script>
+
   <style>
     /* Ensures Chart.js canvases have a stable height within your existing layout */
     .chartCanvasWrap { height: 260px; position: relative; }
@@ -35,10 +46,6 @@
 
     /* =========================================================
        FIXED FULL-BLEED TOP TICKER (EDGE-TO-EDGE)
-       - Not constrained by .shell or any max-width rules
-       - Uses !important to override styles.css safely
-       - Slower scroll (adjust --tickerSeconds)
-       - Includes spacer so it sits ABOVE everything and doesn't overlap header
        ========================================================= */
     :root{
       --tickerH: 30px; /* skinny bar */
@@ -59,7 +66,6 @@
       background: rgba(255,255,255,.90) !important;
       backdrop-filter: blur(10px) !important;
     }
-    /* Ensures inner never inherits a container max-width */
     .tickerInner{
       width: 100% !important;
       max-width: none !important;
@@ -107,241 +113,210 @@
       font-weight: 900 !important;
       color: rgba(10,132,255,.95) !important;
     }
-    /* Spacer: pushes site content down so ticker sits above EVERYTHING */
     .tickerSpacer{
       height: var(--tickerH) !important;
     }
 
-    /* Keep the rest of your Apple-level pricing styles untouched */
-    .pricingPanel{
-      border: 1px solid rgba(17,17,20,.10);
-      border-radius: 22px;
-      overflow: hidden;
-      background:
-        radial-gradient(900px 320px at 14% 0%, rgba(10,132,255,.12), transparent 58%),
-        radial-gradient(900px 320px at 78% 0%, rgba(153,69,255,.10), transparent 62%),
-        rgba(255,255,255,.78);
-      box-shadow: var(--shadow);
-    }
-    .pricingTop{
-      display:grid;
-      grid-template-columns: 1.35fr .65fr;
-      gap: 12px;
-      padding: 18px;
-      border-bottom: 1px solid rgba(17,17,20,.08);
-      background: rgba(255,255,255,.55);
-      backdrop-filter: blur(10px);
-    }
-    .pricingKicker{
-      font-size: 12px;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: rgba(17,17,20,.62);
-      font-weight: 900;
-      margin-bottom: 8px;
-    }
-    .pricingTitle{
-      margin: 0 0 8px;
-      font-size: 28px;
-      letter-spacing: -0.02em;
-    }
-    .pricingSub{
-      margin: 0 0 12px;
-      color: rgba(17,17,20,.70);
-      line-height: 1.55;
-      max-width: 86ch;
-    }
-    .pricingCtas{
-      display:flex;
-      flex-wrap:wrap;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .pricingNote{
-      color: rgba(17,17,20,.62);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-    .pricingStat{
-      border: 1px solid rgba(17,17,20,.10);
-      background: rgba(255,255,255,.70);
-      border-radius: 18px;
-      padding: 14px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      box-shadow: 0 10px 30px rgba(0,0,0,.04);
-    }
-    .pricingStatLabel{
-      font-size: 12px;
-      color: rgba(17,17,20,.62);
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-    .pricingStatValue{
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: -0.01em;
-      margin-bottom: 4px;
-    }
-    .pricingStatSub{
-      font-size: 12px;
-      color: rgba(17,17,20,.62);
-    }
-    .planRows{ background: rgba(255,255,255,.82); }
-    .planRow{
-      display:grid;
-      grid-template-columns: 1fr 1.35fr .6fr;
-      gap: 12px;
-      padding: 14px 18px;
-      align-items:center;
-      border-bottom: 1px solid rgba(17,17,20,.08);
-    }
-    .planRow:last-child{ border-bottom: 0; }
-    .planTopLine{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-    .planName{
-      font-weight: 900;
-      font-size: 16px;
-      letter-spacing: -0.01em;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      border: 1px solid rgba(17,17,20,.12);
-      background: rgba(255,255,255,.65);
-      color: rgba(17,17,20,.70);
+    /* --- Theme toggle button tweaks (index only) --- */
+    #themeToggle{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       white-space: nowrap;
     }
-    .pillPro{
-      border-color: rgba(10,132,255,.28);
-      background: rgba(10,132,255,.12);
-      color: #0a84ff;
+    #themeToggle .themeIcon{
+      width: 14px;
+      height: 14px;
+      display: inline-block;
     }
-    .pillElite{
-      border-color: rgba(168,108,255,.30);
-      background: rgba(168,108,255,.14);
-      color: #a86cff;
+    #themeToggle .themeIcon svg{
+      width: 14px;
+      height: 14px;
+      display: block;
     }
-    .planPrice{
-      display:flex;
-      align-items:baseline;
-      gap: 6px;
+
+    /* =========================================================
+       DARK MODE (match Melt Calculator aesthetic)
+       - Scoped to index only via html[data-theme="dark"]
+       - Overrides variables commonly used by styles.css + app.js
+       ========================================================= */
+    html[data-theme="dark"]{
+      color-scheme: dark;
+
+      /* Mirror melt palette */
+      --m-bg: #0b0f14;
+      --m-panel: rgba(255,255,255,.04);
+      --m-panel2: rgba(255,255,255,.06);
+      --m-border: rgba(255,255,255,.10);
+      --m-border2: rgba(255,255,255,.14);
+      --m-text: rgba(255,255,255,.92);
+      --m-subtext: rgba(255,255,255,.64);
+      --m-muted: rgba(255,255,255,.50);
+      --m-shadow: 0 18px 60px rgba(0,0,0,.50);
+      --m-accent: rgba(142, 200, 255, 1);
+
+      /* Override your global vars if present in styles.css */
+      --text: var(--m-text);
+      --muted: var(--m-subtext);
+      --stroke: var(--m-border);
+      --shadow: var(--m-shadow);
     }
-    .planDollars{
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-    }
-    .planPer{
-      font-weight: 800;
-      color: rgba(17,17,20,.62);
-    }
-    .planDesc{
-      margin-top: 6px;
-      color: rgba(17,17,20,.66);
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .planFeatures{ display:grid; gap: 8px; }
-    .feat{
-      font-weight: 650;
-      color: rgba(17,17,20,.78);
-      font-size: 13px;
-      line-height: 1.35;
-      padding-left: 18px;
-      position: relative;
-    }
-    .feat::before{
-      content:"";
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(17,17,20,.22);
-      position:absolute;
-      left: 0;
-      top: 3px;
-    }
-    .planCta{
-      display:flex;
-      justify-content:flex-end;
-      align-items:center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .btn2{
-      border:1px solid var(--stroke);
-      background:rgba(255,255,255,.75);
-      backdrop-filter: blur(10px);
-      padding:10px 14px; border-radius:999px;
-      font-weight:800; cursor:pointer; text-decoration:none; color:var(--text);
-      display:inline-flex; align-items:center; gap:8px;
-    }
-    .btn2:hover{ border-color: rgba(17,17,20,.18); background: rgba(255,255,255,.95); }
-    .btn2.pro{
-      border-color: rgba(10,132,255,.28);
-      background: rgba(10,132,255,.12);
-      color: #0a84ff;
-    }
-    .btn2.elite{
-      border-color: rgba(168,108,255,.30);
-      background: rgba(168,108,255,.14);
-      color: #a86cff;
-    }
-    .planRowPro{
+
+    html[data-theme="dark"] body{
       background:
-        radial-gradient(900px 220px at 12% 0%, rgba(10,132,255,.10), transparent 62%),
-        rgba(255,255,255,.86);
+        radial-gradient(900px 520px at 20% 0%, rgba(142,200,255,.12), transparent 60%),
+        radial-gradient(900px 520px at 80% 0%, rgba(245,200,90,.10), transparent 60%),
+        var(--m-bg) !important;
+      color: var(--m-text) !important;
     }
-    .planRowElite{
-      background:
-        radial-gradient(900px 220px at 12% 0%, rgba(168,108,255,.10), transparent 62%),
-        rgba(255,255,255,.86);
+
+    /* Topbar / nav / buttons */
+    html[data-theme="dark"] .topbar{
+      background: transparent !important;
     }
-    .pricingFaq{
-      padding: 16px 18px 18px;
-      border-top: 1px solid rgba(17,17,20,.08);
-      background: rgba(255,255,255,.70);
+    html[data-theme="dark"] .brandMark{
+      background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.04)) !important;
+      border-color: var(--m-border) !important;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35) !important;
     }
-    .faqGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
+    html[data-theme="dark"] .brandName,
+    html[data-theme="dark"] .cardTitle,
+    html[data-theme="dark"] .chartName{
+      color: rgba(255,255,255,.92) !important;
     }
-    .faqGrid details{
-      border: 1px solid rgba(17,17,20,.10);
-      border-radius: 14px;
-      padding: 10px 12px;
-      background: rgba(255,255,255,.72);
+    html[data-theme="dark"] .sub,
+    html[data-theme="dark"] .muted,
+    html[data-theme="dark"] .cardMeta,
+    html[data-theme="dark"] .chartHint{
+      color: var(--m-subtext) !important;
     }
-    .faqGrid summary{ cursor: pointer; font-weight: 900; }
-    .faqGrid p{
-      margin: 8px 0 0;
-      line-height: 1.55;
-      color: rgba(17,17,20,.66);
-      font-size: 13px;
+
+    html[data-theme="dark"] .navLink{
+      color: rgba(255,255,255,.84) !important;
     }
-    @media (max-width: 980px){
-      .pricingTop{ grid-template-columns: 1fr; }
-      .planRow{ grid-template-columns: 1fr; }
-      .planCta{ justify-content:flex-start; }
-      .faqGrid{ grid-template-columns: 1fr; }
-      .pricingTitle{ font-size: 24px; }
+    html[data-theme="dark"] .navLink:hover{
+      background: rgba(255,255,255,.04) !important;
+    }
+    html[data-theme="dark"] .navLink--primary{
+      border-color: rgba(142,200,255,.35) !important;
+      background: rgba(142,200,255,.10) !important;
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    html[data-theme="dark"] .btn{
+      border-color: var(--m-border) !important;
+      background: rgba(255,255,255,.06) !important;
+      color: rgba(255,255,255,.90) !important;
+      box-shadow: 0 12px 30px rgba(0,0,0,.28) !important;
+    }
+    html[data-theme="dark"] .btn:hover{
+      background: rgba(255,255,255,.09) !important;
+      border-color: var(--m-border2) !important;
+    }
+    html[data-theme="dark"] .btn:focus-visible{
+      outline: none !important;
+      box-shadow: 0 0 0 4px rgba(142,200,255,.18), 0 18px 60px rgba(0,0,0,.35) !important;
+      border-color: rgba(142,200,255,.45) !important;
+    }
+
+    /* Cards / KPI cards / chart blocks */
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .kpiCard,
+    html[data-theme="dark"] .chartBlock,
+    html[data-theme="dark"] details{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)) !important;
+      border-color: var(--m-border) !important;
+      box-shadow: var(--m-shadow) !important;
+    }
+    html[data-theme="dark"] .cardHead,
+    html[data-theme="dark"] .chartHeader{
+      border-color: rgba(255,255,255,.08) !important;
+    }
+    html[data-theme="dark"] .kpiLabel{
+      color: rgba(255,255,255,.62) !important;
+    }
+    html[data-theme="dark"] .kpiValue{
+      color: rgba(255,255,255,.92) !important;
+    }
+    html[data-theme="dark"] .kpiSub{
+      color: rgba(255,255,255,.64) !important;
+    }
+
+    /* Segmented / toggles */
+    html[data-theme="dark"] .segmented{
+      border-color: rgba(255,255,255,.10) !important;
+      background: rgba(0,0,0,.22) !important;
+    }
+    html[data-theme="dark"] .segBtn{
+      color: rgba(255,255,255,.72) !important;
+    }
+    html[data-theme="dark"] .segBtn:hover{
+      background: rgba(255,255,255,.04) !important;
+    }
+    html[data-theme="dark"] .segBtn.isActive{
+      background: rgba(255,255,255,.08) !important;
+      border-color: rgba(255,255,255,.14) !important;
+      color: rgba(255,255,255,.92) !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25) !important;
+    }
+    html[data-theme="dark"] .toggle span{
+      color: rgba(255,255,255,.78) !important;
+    }
+
+    /* Tables */
+    html[data-theme="dark"] table{
+      color: rgba(255,255,255,.90) !important;
+    }
+    html[data-theme="dark"] thead th{
+      color: rgba(255,255,255,.62) !important;
+      border-color: rgba(255,255,255,.10) !important;
+      background: rgba(0,0,0,.18) !important;
+    }
+    html[data-theme="dark"] td{
+      border-color: rgba(255,255,255,.08) !important;
+    }
+
+    /* Pricing cards (keep your structure but shift to dark palette) */
+    html[data-theme="dark"] .priceCard{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)) !important;
+      border-color: var(--m-border) !important;
+      box-shadow: var(--m-shadow) !important;
+    }
+    html[data-theme="dark"] .priceTagline,
+    html[data-theme="dark"] .priceList,
+    html[data-theme="dark"] .priceFootnote,
+    html[data-theme="dark"] .pricingLead,
+    html[data-theme="dark"] .pricingLegal{
+      color: rgba(255,255,255,.64) !important;
+    }
+    html[data-theme="dark"] .pricePlan,
+    html[data-theme="dark"] .priceAmount{
+      color: rgba(255,255,255,.92) !important;
+    }
+
+    /* Ticker in dark mode */
+    html[data-theme="dark"] .ticker{
+      border-bottom: 1px solid rgba(255,255,255,.10) !important;
+      background: rgba(11,15,20,.72) !important;
+      backdrop-filter: blur(12px) !important;
+    }
+    html[data-theme="dark"] .tickerGroup{
+      color: rgba(255,255,255,.70) !important;
+    }
+    html[data-theme="dark"] .tickValue{
+      color: rgba(255,255,255,.92) !important;
+    }
+    html[data-theme="dark"] .tickCta a{
+      color: rgba(142,200,255,1) !important;
+    }
+
+    /* Footer */
+    html[data-theme="dark"] .footer{
+      color: rgba(255,255,255,.70) !important;
     }
   </style>
 </head>
+
 <body>
   <!-- =========================================================
        FIXED FULL-WIDTH TOP TICKER (ABOVE EVERYTHING)
@@ -388,6 +363,7 @@
       </div>
     </div>
   </div>
+
   <!-- Spacer so ticker doesn't overlap your header/buttons -->
   <div class="tickerSpacer" aria-hidden="true"></div>
 
@@ -410,17 +386,23 @@
           </div>
         </div>
       </div>
+
       <div class="actions">
         <div class="navLinks" aria-label="Primary navigation">
           <a class="navLink" href="#pricing">Pricing</a>
           <a class="navLink" href="/pro">Pro</a>
           <a class="navLink navLink--primary" href="/elite">Elite</a>
-          <a href="/melt" class="navLink">Melt Calculator</a>
-        <div style="display:flex; gap:10px; align-items:center;">
-  <button id="themeToggle" class="btn" type="button" aria-pressed="false">Dark</button>
-  <button id="refreshBtn" class="btn" type="button">Refresh</button>
-</div>
+          <a class="navLink" href="/melt">Melt Calculator</a>
+        </div>
 
+        <div style="display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+          <button id="themeToggle" class="btn" type="button" aria-pressed="false">
+            <span class="themeIcon" aria-hidden="true"></span>
+            <span class="themeLabel">Light</span>
+          </button>
+          <button id="refreshBtn" class="btn" type="button">Refresh</button>
+        </div>
+      </div>
     </header>
 
     <!-- ===========================
@@ -455,8 +437,6 @@
 
     <!-- ======================================
          FUTURES-DERIVED (Futures /api/futures)
-         - Adds a second row, same KPI styling
-         - Does NOT affect Melt Calculator page
          ====================================== -->
     <section class="kpiGrid kpiGrid--4" aria-label="Futures-derived prices">
       <div class="kpiCard">
@@ -586,6 +566,7 @@
           </ul>
           <div class="priceFootnote">No signup required.</div>
         </article>
+
         <!-- PRO -->
         <article class="priceCard priceCard--pro" role="listitem" aria-label="Pro plan">
           <div class="priceTop">
@@ -605,6 +586,7 @@
           </ul>
           <div class="priceFootnote">Best for consistent weekly decision-making.</div>
         </article>
+
         <!-- ELITE -->
         <article class="priceCard priceCard--elite" role="listitem" aria-label="Elite plan">
           <div class="priceTop">
@@ -638,6 +620,71 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
   <script defer src="/app.js"></script>
+
+  <!-- =========================================================
+       THEME TOGGLE (single button)
+       - Shows ☀️ Light when in light mode
+       - Shows 🌙 Dark when in dark mode
+       - Persists to localStorage ("mm_theme")
+       ========================================================= -->
+  <script>
+    (function(){
+      const btn = document.getElementById("themeToggle");
+      if (!btn) return;
+
+      const iconWrap = btn.querySelector(".themeIcon");
+      const labelEl  = btn.querySelector(".themeLabel");
+
+      const SUN = `
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.64 5.64 4.22 4.22M19.78 19.78l-1.42-1.42M18.36 5.64l1.42-1.42M4.22 19.78l1.42-1.42"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+      const MOON = `
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M21 14.5A8 8 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+
+      function isDark(){
+        return document.documentElement.getAttribute("data-theme") === "dark";
+      }
+
+      function render(){
+        const dark = isDark();
+        btn.setAttribute("aria-pressed", dark ? "true" : "false");
+        if (iconWrap) iconWrap.innerHTML = dark ? MOON : SUN;
+        if (labelEl) labelEl.textContent = dark ? "Dark" : "Light";
+      }
+
+      function setTheme(next){
+        if (next === "dark") document.documentElement.setAttribute("data-theme","dark");
+        else document.documentElement.removeAttribute("data-theme");
+        try{ localStorage.setItem("mm_theme", next); }catch{}
+        render();
+      }
+
+      // Init from saved pref or OS preference (only if not saved)
+      (function init(){
+        let saved = null;
+        try{ saved = localStorage.getItem("mm_theme"); }catch{}
+        if (saved === "dark" || saved === "light"){
+          setTheme(saved);
+          return;
+        }
+        // Optional: default to OS preference
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        setTheme(prefersDark ? "dark" : "light");
+      })();
+
+      btn.addEventListener("click", () => {
+        setTheme(isDark() ? "light" : "dark");
+      });
+    })();
+  </script>
 
   <!-- =========================================================
        FUTURES-DERIVED KPI UPDATER (Home page only)
@@ -696,7 +743,6 @@
       }
 
       async function refreshFutures(){
-        // Explicitly request platinum too (safe even if your API defaults already include it)
         const data = await fetchJsonNoStore("/api/futures?symbols=GC=F,SI=F,PL=F");
 
         setText("futGold", money(data.gold_usd));
@@ -771,11 +817,7 @@
 
       async function refreshSpotPlatinum(){
         const data = await fetchJsonNoStore("/api/spot");
-
-        // Expecting your updated spot endpoint to return platinum_usd.
-        // If your provider uses a different field later, add fallbacks here.
         const pt = (data && (data.platinum_usd ?? data.platinum ?? data.xpt_usd)) ?? null;
-
         setText("platinum", money(pt));
         setText("platinumSource", data?.source ? String(data.source) : "—");
       }
@@ -794,8 +836,6 @@
 
   <!-- =========================================================
        Ticker sync + auto-duplicate (prevents blanks)
-       - Fills to >= 3x viewport (strong buffer)
-       - Starts animation only after fill + layout settles
        ========================================================= -->
   <script>
     (function(){
@@ -824,11 +864,10 @@
         const live = $("tickerLiveGroup");
         if (!track || !live) return;
         track.classList.remove("isReady");
-        // Remove existing clones
         track.querySelectorAll(".tickerClone").forEach(n => n.remove());
         const viewport = track.closest(".tickerViewport");
         if (!viewport) return;
-        const target = viewport.clientWidth * 3; // strong buffer = no blank half
+        const target = viewport.clientWidth * 3;
         let guard = 0;
         const makeClone = () => {
           const c = live.cloneNode(true);
@@ -842,27 +881,23 @@
           track.appendChild(makeClone());
           guard++;
         }
-        // Start animation after layout settles
         requestAnimationFrame(() => requestAnimationFrame(() => {
           track.classList.add("isReady");
         }));
       };
       const sync = () => {
-        // ticker remains SPOT (reads #gold/#silver/#gsr)
         setText("sbGold", readText("gold"));
         setText("sbSilver", readText("silver"));
         setText("sbGsr", readText("gsr"));
         setText("sbDelta", computeDeltaLine());
         setText("sbUpdated", readText("lastUpdatedHuman"));
       };
-      // Initial
       sync();
       ensureTickerFilled();
       window.addEventListener("load", () => {
         sync();
         ensureTickerFilled();
       });
-      // Observe KPI changes
       const mo = new MutationObserver(() => {
         sync();
         ensureTickerFilled();
@@ -872,7 +907,6 @@
         if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
       });
       window.addEventListener("resize", ensureTickerFilled);
-      // Light periodic sync
       setInterval(sync, 1200);
     })();
   </script>
