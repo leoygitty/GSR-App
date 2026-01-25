@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -9,13 +9,16 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
 
-  <!-- Apply saved theme ASAP to avoid flash -->
+  <!-- Prevent flash: apply saved/system theme ASAP -->
   <script>
-    (function(){
-      try{
-        const t = localStorage.getItem("mm_theme");
-        if (t === "dark") document.documentElement.setAttribute("data-theme","dark");
-      }catch{}
+    (function () {
+      try {
+        const KEY = "mm_theme";
+        const saved = localStorage.getItem(KEY);
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
     })();
   </script>
 
@@ -48,9 +51,29 @@
        FIXED FULL-BLEED TOP TICKER (EDGE-TO-EDGE)
        ========================================================= */
     :root{
-      --tickerH: 30px; /* skinny bar */
-      --tickerSeconds: 36s; /* slower = easier to read (try 30s–50s) */
+      --tickerH: 30px;
+      --tickerSeconds: 36s;
+
+      /* Nav banner vars (light default) */
+      --nb-bg: rgba(255,255,255,.72);
+      --nb-border: rgba(17,17,20,.10);
+      --nb-shadow: 0 18px 60px rgba(0,0,0,.10);
+      --nb-item-bg: rgba(255,255,255,.72);
+      --nb-item-border: rgba(17,17,20,.12);
+      --nb-item-text: rgba(17,17,20,.86);
+      --nb-item-sub: rgba(17,17,20,.62);
+
+      --nb-pro-bg: rgba(10,132,255,.12);
+      --nb-pro-border: rgba(10,132,255,.28);
+      --nb-pro-text: #0a84ff;
+
+      --nb-elite-bg: rgba(168,108,255,.14);
+      --nb-elite-border: rgba(168,108,255,.30);
+      --nb-elite-text: #a86cff;
+
+      --nb-focus: 0 0 0 4px rgba(10,132,255,.18);
     }
+
     .ticker{
       position: fixed !important;
       top: 0 !important;
@@ -113,206 +136,390 @@
       font-weight: 900 !important;
       color: rgba(10,132,255,.95) !important;
     }
-    .tickerSpacer{
-      height: var(--tickerH) !important;
-    }
-
-    /* --- Theme toggle button tweaks (index only) --- */
-    #themeToggle{
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-    #themeToggle .themeIcon{
-      width: 14px;
-      height: 14px;
-      display: inline-block;
-    }
-    #themeToggle .themeIcon svg{
-      width: 14px;
-      height: 14px;
-      display: block;
-    }
+    .tickerSpacer{ height: var(--tickerH) !important; }
 
     /* =========================================================
-       DARK MODE (match Melt Calculator aesthetic)
-       - Scoped to index only via html[data-theme="dark"]
-       - Overrides variables commonly used by styles.css + app.js
+       NEW: CLEAN NAV BANNER (below ticker)
+       - Fixed layout across light/dark
+       - Even spacing
+       - Pro/Elite visually distinct
+       ========================================================= */
+    .navBannerSticky{
+      position: sticky;
+      top: var(--tickerH);
+      z-index: 99998;
+      padding: 10px 0 12px;
+    }
+    .navBannerSurface{
+      width: 100%;
+      border-bottom: 1px solid rgba(17,17,20,.06);
+      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.28));
+      backdrop-filter: blur(12px);
+    }
+    .navBanner{
+      padding: 10px 18px 12px;
+    }
+    .navTabs{
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      border: 1px solid var(--nb-border);
+      background: var(--nb-bg);
+      border-radius: 18px;
+      box-shadow: var(--nb-shadow);
+      padding: 10px;
+      overflow: hidden;
+    }
+    @media (max-width: 980px){
+      .navTabs{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px){
+      .navTabs{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .navTab{
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--nb-item-border);
+      background: var(--nb-item-bg);
+      color: var(--nb-item-text);
+      min-height: 44px;
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-weight: 900;
+      letter-spacing: .01em;
+      text-decoration: none;
+      cursor: pointer;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .navTab:hover{
+      transform: translateY(-1px);
+      border-color: rgba(17,17,20,.18);
+      background: rgba(255,255,255,.92);
+    }
+    .navTab:active{ transform: translateY(0); }
+    .navTab:focus-visible{
+      outline: none;
+      box-shadow: var(--nb-focus), 0 18px 60px rgba(0,0,0,.12);
+      border-color: rgba(10,132,255,.45);
+    }
+
+    .navTab--pro{
+      border-color: var(--nb-pro-border);
+      background: var(--nb-pro-bg);
+      color: var(--nb-pro-text);
+      box-shadow: 0 10px 30px rgba(10,132,255,.10);
+    }
+    .navTab--pro:hover{
+      border-color: rgba(10,132,255,.40);
+      background: rgba(10,132,255,.16);
+      box-shadow: 0 10px 30px rgba(10,132,255,.16), 0 0 0 4px rgba(10,132,255,.08);
+    }
+
+    .navTab--elite{
+      border-color: var(--nb-elite-border);
+      background: var(--nb-elite-bg);
+      color: var(--nb-elite-text);
+      box-shadow: 0 10px 30px rgba(168,108,255,.10);
+    }
+    .navTab--elite:hover{
+      border-color: rgba(168,108,255,.44);
+      background: rgba(168,108,255,.20);
+      box-shadow: 0 10px 30px rgba(168,108,255,.16), 0 0 0 4px rgba(168,108,255,.08);
+    }
+
+    .ttIcon{
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .ttIcon svg{ width: 16px; height: 16px; display:block; }
+
+    /* =========================================================
+       Dark mode: match Melt Calculator vibe (scoped + safe)
        ========================================================= */
     html[data-theme="dark"]{
       color-scheme: dark;
+      --nb-bg: rgba(255,255,255,.04);
+      --nb-border: rgba(255,255,255,.12);
+      --nb-shadow: 0 18px 60px rgba(0,0,0,.55);
+      --nb-item-bg: rgba(255,255,255,.05);
+      --nb-item-border: rgba(255,255,255,.10);
+      --nb-item-text: rgba(255,255,255,.90);
+      --nb-item-sub: rgba(255,255,255,.60);
 
-      /* Mirror melt palette */
-      --m-bg: #0b0f14;
-      --m-panel: rgba(255,255,255,.04);
-      --m-panel2: rgba(255,255,255,.06);
-      --m-border: rgba(255,255,255,.10);
-      --m-border2: rgba(255,255,255,.14);
-      --m-text: rgba(255,255,255,.92);
-      --m-subtext: rgba(255,255,255,.64);
-      --m-muted: rgba(255,255,255,.50);
-      --m-shadow: 0 18px 60px rgba(0,0,0,.50);
-      --m-accent: rgba(142, 200, 255, 1);
+      --nb-pro-bg: rgba(142,200,255,.10);
+      --nb-pro-border: rgba(142,200,255,.28);
+      --nb-pro-text: rgba(142,200,255,1);
 
-      /* Override your global vars if present in styles.css */
-      --text: var(--m-text);
-      --muted: var(--m-subtext);
-      --stroke: var(--m-border);
-      --shadow: var(--m-shadow);
+      --nb-elite-bg: rgba(180,195,255,.10);
+      --nb-elite-border: rgba(180,195,255,.26);
+      --nb-elite-text: rgba(180,195,255,1);
+
+      --nb-focus: 0 0 0 4px rgba(142,200,255,.18);
     }
 
     html[data-theme="dark"] body{
       background:
         radial-gradient(900px 520px at 20% 0%, rgba(142,200,255,.12), transparent 60%),
         radial-gradient(900px 520px at 80% 0%, rgba(245,200,90,.10), transparent 60%),
-        var(--m-bg) !important;
-      color: var(--m-text) !important;
+        #0b0f14;
+      color: rgba(255,255,255,.92);
     }
 
-    /* Topbar / nav / buttons */
-    html[data-theme="dark"] .topbar{
-      background: transparent !important;
-    }
-    html[data-theme="dark"] .brandMark{
-      background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.04)) !important;
-      border-color: var(--m-border) !important;
-      box-shadow: 0 12px 30px rgba(0,0,0,.35) !important;
-    }
-    html[data-theme="dark"] .brandName,
-    html[data-theme="dark"] .cardTitle,
-    html[data-theme="dark"] .chartName{
-      color: rgba(255,255,255,.92) !important;
-    }
-    html[data-theme="dark"] .sub,
-    html[data-theme="dark"] .muted,
-    html[data-theme="dark"] .cardMeta,
-    html[data-theme="dark"] .chartHint{
-      color: var(--m-subtext) !important;
-    }
-
-    html[data-theme="dark"] .navLink{
-      color: rgba(255,255,255,.84) !important;
-    }
-    html[data-theme="dark"] .navLink:hover{
-      background: rgba(255,255,255,.04) !important;
-    }
-    html[data-theme="dark"] .navLink--primary{
-      border-color: rgba(142,200,255,.35) !important;
-      background: rgba(142,200,255,.10) !important;
-      color: rgba(255,255,255,.92) !important;
-    }
-
-    html[data-theme="dark"] .btn{
-      border-color: var(--m-border) !important;
-      background: rgba(255,255,255,.06) !important;
-      color: rgba(255,255,255,.90) !important;
-      box-shadow: 0 12px 30px rgba(0,0,0,.28) !important;
-    }
-    html[data-theme="dark"] .btn:hover{
-      background: rgba(255,255,255,.09) !important;
-      border-color: var(--m-border2) !important;
-    }
-    html[data-theme="dark"] .btn:focus-visible{
-      outline: none !important;
-      box-shadow: 0 0 0 4px rgba(142,200,255,.18), 0 18px 60px rgba(0,0,0,.35) !important;
-      border-color: rgba(142,200,255,.45) !important;
-    }
-
-    /* Cards / KPI cards / chart blocks */
-    html[data-theme="dark"] .card,
-    html[data-theme="dark"] .kpiCard,
-    html[data-theme="dark"] .chartBlock,
-    html[data-theme="dark"] details{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)) !important;
-      border-color: var(--m-border) !important;
-      box-shadow: var(--m-shadow) !important;
-    }
-    html[data-theme="dark"] .cardHead,
-    html[data-theme="dark"] .chartHeader{
-      border-color: rgba(255,255,255,.08) !important;
-    }
-    html[data-theme="dark"] .kpiLabel{
-      color: rgba(255,255,255,.62) !important;
-    }
-    html[data-theme="dark"] .kpiValue{
-      color: rgba(255,255,255,.92) !important;
-    }
-    html[data-theme="dark"] .kpiSub{
-      color: rgba(255,255,255,.64) !important;
-    }
-
-    /* Segmented / toggles */
-    html[data-theme="dark"] .segmented{
-      border-color: rgba(255,255,255,.10) !important;
-      background: rgba(0,0,0,.22) !important;
-    }
-    html[data-theme="dark"] .segBtn{
-      color: rgba(255,255,255,.72) !important;
-    }
-    html[data-theme="dark"] .segBtn:hover{
-      background: rgba(255,255,255,.04) !important;
-    }
-    html[data-theme="dark"] .segBtn.isActive{
-      background: rgba(255,255,255,.08) !important;
-      border-color: rgba(255,255,255,.14) !important;
-      color: rgba(255,255,255,.92) !important;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25) !important;
-    }
-    html[data-theme="dark"] .toggle span{
-      color: rgba(255,255,255,.78) !important;
-    }
-
-    /* Tables */
-    html[data-theme="dark"] table{
-      color: rgba(255,255,255,.90) !important;
-    }
-    html[data-theme="dark"] thead th{
-      color: rgba(255,255,255,.62) !important;
-      border-color: rgba(255,255,255,.10) !important;
-      background: rgba(0,0,0,.18) !important;
-    }
-    html[data-theme="dark"] td{
-      border-color: rgba(255,255,255,.08) !important;
-    }
-
-    /* Pricing cards (keep your structure but shift to dark palette) */
-    html[data-theme="dark"] .priceCard{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)) !important;
-      border-color: var(--m-border) !important;
-      box-shadow: var(--m-shadow) !important;
-    }
-    html[data-theme="dark"] .priceTagline,
-    html[data-theme="dark"] .priceList,
-    html[data-theme="dark"] .priceFootnote,
-    html[data-theme="dark"] .pricingLead,
-    html[data-theme="dark"] .pricingLegal{
-      color: rgba(255,255,255,.64) !important;
-    }
-    html[data-theme="dark"] .pricePlan,
-    html[data-theme="dark"] .priceAmount{
-      color: rgba(255,255,255,.92) !important;
-    }
-
-    /* Ticker in dark mode */
     html[data-theme="dark"] .ticker{
+      background: rgba(0,0,0,.55) !important;
       border-bottom: 1px solid rgba(255,255,255,.10) !important;
-      background: rgba(11,15,20,.72) !important;
-      backdrop-filter: blur(12px) !important;
+      backdrop-filter: blur(10px) !important;
     }
-    html[data-theme="dark"] .tickerGroup{
-      color: rgba(255,255,255,.70) !important;
-    }
-    html[data-theme="dark"] .tickValue{
-      color: rgba(255,255,255,.92) !important;
-    }
-    html[data-theme="dark"] .tickCta a{
-      color: rgba(142,200,255,1) !important;
+    html[data-theme="dark"] .tickerGroup{ color: rgba(255,255,255,.70) !important; }
+    html[data-theme="dark"] .tickValue{ color: rgba(255,255,255,.92) !important; }
+    html[data-theme="dark"] .tickSep{ opacity: .50 !important; }
+
+    html[data-theme="dark"] .navBannerSurface{
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.12));
+      backdrop-filter: blur(12px);
     }
 
-    /* Footer */
-    html[data-theme="dark"] .footer{
-      color: rgba(255,255,255,.70) !important;
+    /* Keep the rest of your Apple-level pricing styles untouched */
+    .pricingPanel{
+      border: 1px solid rgba(17,17,20,.10);
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        radial-gradient(900px 320px at 14% 0%, rgba(10,132,255,.12), transparent 58%),
+        radial-gradient(900px 320px at 78% 0%, rgba(153,69,255,.10), transparent 62%),
+        rgba(255,255,255,.78);
+      box-shadow: var(--shadow);
+    }
+    .pricingTop{
+      display:grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid rgba(17,17,20,.08);
+      background: rgba(255,255,255,.55);
+      backdrop-filter: blur(10px);
+    }
+    .pricingKicker{
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(17,17,20,.62);
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .pricingTitle{
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    .pricingSub{
+      margin: 0 0 12px;
+      color: rgba(17,17,20,.70);
+      line-height: 1.55;
+      max-width: 86ch;
+    }
+    .pricingCtas{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .pricingNote{
+      color: rgba(17,17,20,.62);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .pricingStat{
+      border: 1px solid rgba(17,17,20,.10);
+      background: rgba(255,255,255,.70);
+      border-radius: 18px;
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.04);
+    }
+    .pricingStatLabel{
+      font-size: 12px;
+      color: rgba(17,17,20,.62);
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .pricingStatValue{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .pricingStatSub{
+      font-size: 12px;
+      color: rgba(17,17,20,.62);
+    }
+    .planRows{ background: rgba(255,255,255,.82); }
+    .planRow{
+      display:grid;
+      grid-template-columns: 1fr 1.35fr .6fr;
+      gap: 12px;
+      padding: 14px 18px;
+      align-items:center;
+      border-bottom: 1px solid rgba(17,17,20,.08);
+    }
+    .planRow:last-child{ border-bottom: 0; }
+    .planTopLine{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .planName{
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(17,17,20,.12);
+      background: rgba(255,255,255,.65);
+      color: rgba(17,17,20,.70);
+      white-space: nowrap;
+    }
+    .pillPro{
+      border-color: rgba(10,132,255,.28);
+      background: rgba(10,132,255,.12);
+      color: #0a84ff;
+    }
+    .pillElite{
+      border-color: rgba(168,108,255,.30);
+      background: rgba(168,108,255,.14);
+      color: #a86cff;
+    }
+    .planPrice{
+      display:flex;
+      align-items:baseline;
+      gap: 6px;
+    }
+    .planDollars{
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+    .planPer{
+      font-weight: 800;
+      color: rgba(17,17,20,.62);
+    }
+    .planDesc{
+      margin-top: 6px;
+      color: rgba(17,17,20,.66);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .planFeatures{ display:grid; gap: 8px; }
+    .feat{
+      font-weight: 650;
+      color: rgba(17,17,20,.78);
+      font-size: 13px;
+      line-height: 1.35;
+      padding-left: 18px;
+      position: relative;
+    }
+    .feat::before{
+      content:"";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(17,17,20,.22);
+      position:absolute;
+      left: 0;
+      top: 3px;
+    }
+    .planCta{
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn2{
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.75);
+      backdrop-filter: blur(10px);
+      padding:10px 14px; border-radius:999px;
+      font-weight:800; cursor:pointer; text-decoration:none; color:var(--text);
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn2:hover{ border-color: rgba(17,17,20,.18); background: rgba(255,255,255,.95); }
+    .btn2.pro{
+      border-color: rgba(10,132,255,.28);
+      background: rgba(10,132,255,.12);
+      color: #0a84ff;
+    }
+    .btn2.elite{
+      border-color: rgba(168,108,255,.30);
+      background: rgba(168,108,255,.14);
+      color: #a86cff;
+    }
+    .planRowPro{
+      background:
+        radial-gradient(900px 220px at 12% 0%, rgba(10,132,255,.10), transparent 62%),
+        rgba(255,255,255,.86);
+    }
+    .planRowElite{
+      background:
+        radial-gradient(900px 220px at 12% 0%, rgba(168,108,255,.10), transparent 62%),
+        rgba(255,255,255,.86);
+    }
+    .pricingFaq{
+      padding: 16px 18px 18px;
+      border-top: 1px solid rgba(17,17,20,.08);
+      background: rgba(255,255,255,.70);
+    }
+    .faqGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .faqGrid details{
+      border: 1px solid rgba(17,17,20,.10);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.72);
+    }
+    .faqGrid summary{ cursor: pointer; font-weight: 900; }
+    .faqGrid p{
+      margin: 8px 0 0;
+      line-height: 1.55;
+      color: rgba(17,17,20,.66);
+      font-size: 13px;
+    }
+    @media (max-width: 980px){
+      .pricingTop{ grid-template-columns: 1fr; }
+      .planRow{ grid-template-columns: 1fr; }
+      .planCta{ justify-content:flex-start; }
+      .faqGrid{ grid-template-columns: 1fr; }
+      .pricingTitle{ font-size: 24px; }
     }
   </style>
 </head>
@@ -325,7 +532,6 @@
     <div class="tickerInner">
       <div class="tickerViewport">
         <div class="tickerTrack" id="tickerTrack">
-          <!-- One "live" group with IDs -->
           <div class="tickerGroup" id="tickerLiveGroup">
             <span class="tickItem">
               <span class="tickLabel">GSR</span>
@@ -364,8 +570,43 @@
     </div>
   </div>
 
-  <!-- Spacer so ticker doesn't overlap your header/buttons -->
+  <!-- Spacer so ticker doesn't overlap content -->
   <div class="tickerSpacer" aria-hidden="true"></div>
+
+  <!-- =========================================================
+       NEW NAV BANNER (clean, stable in light/dark)
+       ========================================================= -->
+  <div class="navBannerSticky" role="navigation" aria-label="Primary navigation">
+    <div class="navBannerSurface">
+      <div class="navBanner shell">
+        <div class="navTabs" id="navTabs">
+          <a class="navTab" href="#pricing">Pricing</a>
+          <a class="navTab navTab--pro" href="/pro">Pro</a>
+          <a class="navTab navTab--elite" href="/elite">Elite</a>
+          <a class="navTab" href="/melt">Melt Calculator</a>
+
+          <button id="themeToggle" class="navTab" type="button" aria-pressed="false" title="Switch theme">
+            <span class="ttIcon ttIconMoon" aria-hidden="true" style="display:none;">
+              <!-- Moon icon -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 14.4A8.5 8.5 0 0 1 9.6 3a7 7 0 1 0 11.4 11.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="ttIcon ttIconSun" aria-hidden="true" style="display:none;">
+              <!-- Sun icon -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="ttLabel">—</span>
+          </button>
+
+          <button id="refreshBtn" class="navTab" type="button">Refresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main class="shell">
     <header class="topbar">
@@ -386,23 +627,7 @@
           </div>
         </div>
       </div>
-
-      <div class="actions">
-        <div class="navLinks" aria-label="Primary navigation">
-          <a class="navLink" href="#pricing">Pricing</a>
-          <a class="navLink" href="/pro">Pro</a>
-          <a class="navLink navLink--primary" href="/elite">Elite</a>
-          <a class="navLink" href="/melt">Melt Calculator</a>
-        </div>
-
-        <div style="display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-          <button id="themeToggle" class="btn" type="button" aria-pressed="false">
-            <span class="themeIcon" aria-hidden="true"></span>
-            <span class="themeLabel">Light</span>
-          </button>
-          <button id="refreshBtn" class="btn" type="button">Refresh</button>
-        </div>
-      </div>
+      <!-- actions removed intentionally (now in nav banner) -->
     </header>
 
     <!-- ===========================
@@ -547,7 +772,6 @@
         </p>
       </div>
       <div class="pricingGrid3" role="list">
-        <!-- FREE -->
         <article class="priceCard priceCard--free" role="listitem" aria-label="Free plan">
           <div class="priceTop">
             <div class="priceIcon" aria-hidden="true"></div>
@@ -567,7 +791,6 @@
           <div class="priceFootnote">No signup required.</div>
         </article>
 
-        <!-- PRO -->
         <article class="priceCard priceCard--pro" role="listitem" aria-label="Pro plan">
           <div class="priceTop">
             <div class="priceIcon priceIcon--pro" aria-hidden="true"></div>
@@ -587,7 +810,6 @@
           <div class="priceFootnote">Best for consistent weekly decision-making.</div>
         </article>
 
-        <!-- ELITE -->
         <article class="priceCard priceCard--elite" role="listitem" aria-label="Elite plan">
           <div class="priceTop">
             <div class="priceIcon priceIcon--elite" aria-hidden="true"></div>
@@ -622,67 +844,41 @@
   <script defer src="/app.js"></script>
 
   <!-- =========================================================
-       THEME TOGGLE (single button)
-       - Shows ☀️ Light when in light mode
-       - Shows 🌙 Dark when in dark mode
-       - Persists to localStorage ("mm_theme")
+       THEME TOGGLE (single button, moon/sun, persistent)
        ========================================================= -->
   <script>
     (function(){
+      const KEY = "mm_theme";
+      const root = document.documentElement;
       const btn = document.getElementById("themeToggle");
-      if (!btn) return;
+      const label = btn ? btn.querySelector(".ttLabel") : null;
+      const moon = btn ? btn.querySelector(".ttIconMoon") : null;
+      const sun  = btn ? btn.querySelector(".ttIconSun")  : null;
 
-      const iconWrap = btn.querySelector(".themeIcon");
-      const labelEl  = btn.querySelector(".themeLabel");
+      const getTheme = () => {
+        const t = (root.getAttribute("data-theme") || "").toLowerCase();
+        return (t === "dark" || t === "light") ? t : "light";
+      };
 
-      const SUN = `
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.64 5.64 4.22 4.22M19.78 19.78l-1.42-1.42M18.36 5.64l1.42-1.42M4.22 19.78l1.42-1.42"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      `;
-      const MOON = `
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M21 14.5A8 8 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      `;
+      const apply = (theme) => {
+        root.setAttribute("data-theme", theme);
+        const isDark = theme === "dark";
+        if (btn) btn.setAttribute("aria-pressed", isDark ? "true" : "false");
+        if (label) label.textContent = isDark ? "Dark" : "Light";
+        if (moon) moon.style.display = isDark ? "inline-flex" : "none";
+        if (sun)  sun.style.display  = isDark ? "none" : "inline-flex";
+        if (btn) btn.title = isDark ? "Switch to Light" : "Switch to Dark";
+        try { localStorage.setItem(KEY, theme); } catch(e) {}
+      };
 
-      function isDark(){
-        return document.documentElement.getAttribute("data-theme") === "dark";
+      apply(getTheme());
+
+      if (btn){
+        btn.addEventListener("click", () => {
+          const next = (getTheme() === "dark") ? "light" : "dark";
+          apply(next);
+        });
       }
-
-      function render(){
-        const dark = isDark();
-        btn.setAttribute("aria-pressed", dark ? "true" : "false");
-        if (iconWrap) iconWrap.innerHTML = dark ? MOON : SUN;
-        if (labelEl) labelEl.textContent = dark ? "Dark" : "Light";
-      }
-
-      function setTheme(next){
-        if (next === "dark") document.documentElement.setAttribute("data-theme","dark");
-        else document.documentElement.removeAttribute("data-theme");
-        try{ localStorage.setItem("mm_theme", next); }catch{}
-        render();
-      }
-
-      // Init from saved pref or OS preference (only if not saved)
-      (function init(){
-        let saved = null;
-        try{ saved = localStorage.getItem("mm_theme"); }catch{}
-        if (saved === "dark" || saved === "light"){
-          setTheme(saved);
-          return;
-        }
-        // Optional: default to OS preference
-        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setTheme(prefersDark ? "dark" : "light");
-      })();
-
-      btn.addEventListener("click", () => {
-        setTheme(isDark() ? "light" : "dark");
-      });
     })();
   </script>
 
@@ -769,7 +965,6 @@
       const btn = $("refreshBtn");
       if (btn) btn.addEventListener("click", refreshFuturesSafe);
 
-      // Light periodic refresh for futures (no paid quota)
       setInterval(refreshFuturesSafe, 60000);
     })();
   </script>
@@ -777,7 +972,7 @@
   <!-- =========================================================
        SPOT PLATINUM KPI UPDATER (Home page only)
        - Pulls /api/spot and fills Platinum IDs only
-       - IMPORTANT: No interval (protects limited paid quotas)
+       - No interval (protects limited paid quotas)
        - Runs on load + Refresh button
        ========================================================= -->
   <script>
