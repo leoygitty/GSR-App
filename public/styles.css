@@ -8,40 +8,25 @@
   --radius: 18px;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-
-  /* Accents */
   --pro: #0a84ff;
   --elite: #a86cff;
-
-  /* Fixed top ticker */
   --tickerH: 30px;
-  --tickerSeconds: 52s; /* SLOWED (desktop) */
-
-  /* =========================
-     Nav banner tokens (Light)
-     ========================= */
+  --tickerSeconds: 52s;
   --nb-bg: rgba(255,255,255,.62);
   --nb-border: rgba(17,17,20,.10);
   --nb-shadow: 0 18px 60px rgba(0,0,0,.10);
-
   --nb-item-bg: rgba(255,255,255,.78);
   --nb-item-border: rgba(17,17,20,.10);
   --nb-item-text: rgba(17,17,20,.88);
-
   --nb-pro-bg: rgba(10,132,255,.12);
   --nb-pro-border: rgba(10,132,255,.28);
   --nb-pro-text: #0a84ff;
-
   --nb-elite-bg: rgba(168,108,255,.14);
   --nb-elite-border: rgba(168,108,255,.30);
   --nb-elite-text: #a86cff;
-
   --nb-focus: 0 0 0 4px rgba(10,132,255,.18);
 }
 
-/* =========================
-   Base
-   ========================= */
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
 body{
@@ -49,15 +34,10 @@ body{
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
-  padding-top: var(--tickerH); /* reserve space for fixed ticker */
+  padding-top: var(--tickerH);
 }
-
-/* Make form controls look correct in both schemes */
 html{ color-scheme: light; }
 
-/* =========================
-   Layout
-   ========================= */
 .shell{
   max-width: 1120px;
   margin: 0 auto;
@@ -82,9 +62,6 @@ h1{
 .dot{ margin: 0 8px; opacity:.5; }
 .hidden{ display:none !important; }
 
-/* =========================
-   Header / Nav / Buttons (legacy)
-   ========================= */
 .topbar{
   display:flex;
   align-items:flex-start;
@@ -143,9 +120,6 @@ h1{
 }
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-/* =========================================================
-   NEW: Sticky Nav Banner under ticker (your new layout)
-   ========================================================= */
 .navBannerSticky{
   position: sticky;
   top: var(--tickerH);
@@ -192,18 +166,15 @@ h1{
   letter-spacing: .01em;
   text-decoration: none;
   cursor: pointer;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-
   transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
   user-select: none;
   white-space: nowrap;
-
   position: relative;
-  overflow: hidden; /* needed for shimmer */
+  overflow: hidden;
   isolation: isolate;
 }
 .navTab:hover{
@@ -228,7 +199,6 @@ h1{
 }
 .ttIcon svg{ width: 16px; height: 16px; display:block; }
 
-/* ---------- Pro / Elite emphasis (Glow + shimmer) ---------- */
 .navTab--pro{
   border-color: var(--nb-pro-border);
   background: var(--nb-pro-bg);
@@ -242,7 +212,6 @@ h1{
   box-shadow: 0 10px 30px rgba(168,108,255,.12);
 }
 
-/* Slow diagonal shimmer layer */
 .navTab--pro::before,
 .navTab--elite::before{
   content:"";
@@ -275,7 +244,6 @@ h1{
   100% { transform: translate(42%, 42%); }
 }
 
-/* Subtle animated glow pulse */
 .navTab--pro,
 .navTab--elite{
   animation: navGlowPulse 4.6s ease-in-out infinite;
@@ -304,7 +272,6 @@ h1{
 .navTab--pro:hover{
   border-color: rgba(10,132,255,.40);
   background: rgba(10,132,255,.16);
-  /* FIXED: removed invalid "(40px)" */
   box-shadow: 0 14px 40px rgba(10,132,255,.18), 0 0 0 4px rgba(10,132,255,.08);
 }
 .navTab--elite:hover{
@@ -320,9 +287,6 @@ h1{
   .navTab--elite::before{ animation: none !important; }
 }
 
-/* =========================
-   KPI cards
-   ========================= */
 .kpiGrid{
   display:grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -357,9 +321,6 @@ h1{
 .pos{ color: #0a7a3d; font-weight: 800; }
 .neg{ color: #b00020; font-weight: 800; }
 
-/* =========================
-   Controls
-   ========================= */
 .controls{
   display:flex;
   align-items:center;
@@ -404,9 +365,6 @@ h1{
   user-select:none;
 }
 
-/* =========================
-   Card / Charts / Tables
-   ========================= */
 .card{
   background: var(--card);
   border: 1px solid var(--stroke);
@@ -496,9 +454,6 @@ th{
   font-size: 12px;
 }
 
-/* =========================================================
-   Premium shared components (global, consistent across pages)
-   ========================================================= */
 .pWrap{ max-width:1120px; margin:0 auto; padding:28px 20px 60px; }
 .pTop{
   display:flex;
@@ -809,9 +764,6 @@ th{
   .priceTag .big{ font-size: 34px; }
 }
 
-/* =========================================================
-   Mobile layout (single consolidated block)
-   ========================================================= */
 @media (max-width: 720px){
   .shell{ padding: 18px 12px 34px; }
   .topbar{
@@ -945,8 +897,6 @@ th{
   }
   .card{ padding: 14px; border-radius: 16px; }
   .chartHeader{ padding: 9px 10px; }
-
-  /* Mobile ticker: even slower for readability */
   :root{ --tickerSeconds: 62s; }
 }
 @media (max-width: 390px){
@@ -954,9 +904,6 @@ th{
   #fetchedAt, #source{ max-width: 9ch; }
 }
 
-/* =========================================================
-   Fixed TOP ticker — FULL BLEED
-   ========================================================= */
 .ticker{
   position: fixed;
   top: 0;
@@ -1020,9 +967,6 @@ th{
   .tickerTrack.isReady{ animation: none; }
 }
 
-/* =========================================================
-   Pricing (Claude-style 3 cards)
-   ========================================================= */
 .pricingHeroSimple{
   margin: 6px 0 14px;
   padding: 14px 14px 6px;
@@ -1147,23 +1091,13 @@ th{
   .pricingHeadline{ font-size: 24px; }
 }
 
-/* =========================================================
-   MELT PAGE READABILITY FIX (scoped; no impact on home)
-   Requires: <body class="meltPage"> on /melt
-   ========================================================= */
 body.meltPage{
-  /* Make inherited text readable on the melt dark UI, even if the page is in light theme */
   --text: rgba(255,255,255,.92);
   color: var(--text);
   color-scheme: dark;
 }
-
-/* If melt reuses KPI typography for the big value, keep it readable */
 body.meltPage .kpiValue{ color: var(--text); }
 
-/* =========================================================
-   Melt Calculator Styles (SCOPED to /melt)
-   ========================================================= */
 body.meltPage .metal-tab {
   padding: 10px 20px;
   background: var(--gray-800);
@@ -1186,44 +1120,30 @@ body.meltPage .purity-btn.active { background: var(--gold); color: black; border
 
 body.meltPage .output-hidden { display: none; }
 body.meltPage .text-gold { color: var(--gold); }
-
-/* IMPORTANT: previously global. Now scoped so it can’t affect home tables */
 body.meltPage table td { color: var(--gray-300); }
-
 body.meltPage .metal-tab[data-metal="platinum"].active { background: #60a5fa; }
 body.meltPage .metal-tab[data-metal="silver"].active { background: #9ca3af; }
 
-/* =========================================================
-   DARK THEME (Fixes KPI numbers disappearing)
-   Toggle by: <html data-theme="dark">
-   ========================================================= */
 html[data-theme="dark"]{
   color-scheme: dark;
-
   --bg: #0b0f14;
   --card: rgba(255,255,255,.04);
   --text: rgba(255,255,255,.92);
   --muted: rgba(255,255,255,.62);
   --stroke: rgba(255,255,255,.12);
   --shadow: 0 18px 60px rgba(0,0,0,.55);
-
-  /* Nav banner tokens (Dark) */
   --nb-bg: rgba(0,0,0,.22);
   --nb-border: rgba(255,255,255,.10);
   --nb-shadow: 0 18px 60px rgba(0,0,0,.55);
-
   --nb-item-bg: rgba(255,255,255,.05);
   --nb-item-border: rgba(255,255,255,.10);
   --nb-item-text: rgba(255,255,255,.86);
-
   --nb-pro-bg: rgba(142,200,255,.10);
   --nb-pro-border: rgba(142,200,255,.32);
   --nb-pro-text: rgba(142,200,255,.95);
-
   --nb-elite-bg: rgba(168,108,255,.16);
   --nb-elite-border: rgba(168,108,255,.36);
   --nb-elite-text: rgba(200,165,255,.96);
-
   --nb-focus: 0 0 0 4px rgba(142,200,255,.18);
 }
 
@@ -1235,7 +1155,6 @@ html[data-theme="dark"] body{
   color: var(--text);
 }
 
-/* Ticker in dark */
 html[data-theme="dark"] .ticker{
   border-bottom: 1px solid rgba(255,255,255,.10);
   background: rgba(11,15,20,.72);
@@ -1244,13 +1163,11 @@ html[data-theme="dark"] .tickerGroup{ color: rgba(255,255,255,.70); }
 html[data-theme="dark"] .tickValue{ color: rgba(255,255,255,.92); }
 html[data-theme="dark"] .tickCta .tickValue{ color: rgba(142,200,255,.95); }
 
-/* Nav banner in dark */
 html[data-theme="dark"] .navBannerSurface{
   border-bottom: 1px solid rgba(255,255,255,.08);
   background: linear-gradient(180deg, rgba(11,15,20,.72), rgba(11,15,20,.38));
 }
 
-/* Cards & KPI surfaces in dark (THIS FIXES “MISSING NUMBERS”) */
 html[data-theme="dark"] .kpiCard,
 html[data-theme="dark"] .card{
   background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
@@ -1265,7 +1182,6 @@ html[data-theme="dark"] .metaLine{
   color: var(--muted);
 }
 
-/* Controls in dark */
 html[data-theme="dark"] .segmented{
   background: rgba(255,255,255,.04);
   border-color: rgba(255,255,255,.10);
@@ -1277,7 +1193,6 @@ html[data-theme="dark"] .segBtn.isActive{
   color: rgba(142,200,255,.95);
 }
 
-/* Charts / tables in dark */
 html[data-theme="dark"] .chartBlock{
   background: rgba(0,0,0,.18);
   border-color: rgba(255,255,255,.10);
@@ -1302,7 +1217,6 @@ html[data-theme="dark"] td{
   color: rgba(255,255,255,.82);
 }
 
-/* Pricing cards in dark (optional, but prevents “light island” feel) */
 html[data-theme="dark"] .priceCard{
   background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
   border-color: rgba(255,255,255,.10);
