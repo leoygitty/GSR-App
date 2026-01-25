@@ -14,12 +14,14 @@ except Exception:
 # Stooq CSV quote endpoint (no API key required)
 STOOQ_URL_TPL = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlc&h&e=csv"
 
-# Keep compatibility with your old interface (?symbols=GC=F,SI=F)
+# Keep compatibility with your old interface (?symbols=GC=F,SI=F,PL=F)
 SYMBOL_MAP = {
     "GC=F": "gc.f",  # Gold futures
     "SI=F": "si.f",  # Silver futures
+    "PL=F": "pl.f",  # Platinum futures (Stooq)
     "gc.f": "gc.f",
     "si.f": "si.f",
+    "pl.f": "pl.f",
 }
 
 
@@ -71,7 +73,7 @@ def _normalize_price(metal: str, px: float):
     Stooq futures sometimes return different scaling.
     We apply conservative heuristics:
     - Silver sometimes returns in cents (e.g., 10133.3 => $101.333). If very large, divide by 100.
-    - Gold should be in dollars; only downscale if it’s absurdly large.
+    - Gold/Platinum should be in dollars; only downscale if it’s absurdly large.
     """
     if px is None:
         return None
@@ -91,6 +93,12 @@ def _normalize_price(metal: str, px: float):
             return px / 100.0
         return px
 
+    if metal == "platinum":
+        # Defensive: if platinum is absurdly large, it's probably scaled.
+        if px > 100000:
+            return px / 100.0
+        return px
+
     return px
 
 
@@ -98,7 +106,7 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             qs = parse_qs(urlparse(self.path).query)
-            symbols_raw = (qs.get("symbols", ["GC=F,SI=F"])[0] or "GC=F,SI=F").strip()
+            symbols_raw = (qs.get("symbols", ["GC=F,SI=F,PL=F"])[0] or "GC=F,SI=F,PL=F").strip()
             requested = [s.strip() for s in symbols_raw.split(",") if s.strip()]
 
             stooq_syms = []
@@ -112,7 +120,7 @@ class handler(BaseHTTPRequestHandler):
                     unknown.append(key)
 
             if not stooq_syms:
-                stooq_syms = ["gc.f", "si.f"]
+                stooq_syms = ["gc.f", "si.f", "pl.f"]
 
             seen = set()
             stooq_syms = [x for x in stooq_syms if not (x in seen or seen.add(x))]
@@ -126,6 +134,7 @@ class handler(BaseHTTPRequestHandler):
 
             gold_raw = prices_raw.get("gc.f")
             silver_raw = prices_raw.get("si.f")
+            platinum_raw = prices_raw.get("pl.f")  # may be None if not requested/available
 
             if gold_raw is None or silver_raw is None:
                 return send_json(self, 502, {
@@ -137,11 +146,13 @@ class handler(BaseHTTPRequestHandler):
                         "unknown": unknown,
                         "have_gc_f": gold_raw is not None,
                         "have_si_f": silver_raw is not None,
+                        "have_pl_f": platinum_raw is not None,
                     }
                 })
 
             gold_px = _normalize_price("gold", gold_raw)
             silver_px = _normalize_price("silver", silver_raw)
+            platinum_px = _normalize_price("platinum", platinum_raw) if platinum_raw is not None else None
 
             if silver_px == 0:
                 return send_json(self, 502, {"ok": False, "error": "Invalid silver price (0)."})
@@ -151,29 +162,48 @@ class handler(BaseHTTPRequestHandler):
             now_utc = datetime.now(timezone.utc).isoformat()
             today_utc = datetime.now(timezone.utc).date().isoformat()
 
-            market_date = market_meta.get("gc.f", {}).get("date") or market_meta.get("si.f", {}).get("date") or ""
-            market_time = market_meta.get("gc.f", {}).get("time") or market_meta.get("si.f", {}).get("time") or ""
+            market_date = (
+                market_meta.get("gc.f", {}).get("date")
+                or market_meta.get("si.f", {}).get("date")
+                or market_meta.get("pl.f", {}).get("date")
+                or ""
+            )
+            market_time = (
+                market_meta.get("gc.f", {}).get("time")
+                or market_meta.get("si.f", {}).get("time")
+                or market_meta.get("pl.f", {}).get("time")
+                or ""
+            )
 
             return send_json(self, 200, {
                 "ok": True,
                 "date": today_utc,
                 "gold_usd": float(gold_px),
                 "silver_usd": float(silver_px),
+                "platinum_usd": (float(platinum_px) if platinum_px is not None else None),
                 "gsr": float(gsr),
                 "fetched_at_utc": now_utc,
                 "source": "futures_stooq",
                 "market": {
                     "date": market_date,
                     "time": market_time,
-                    "symbols": {"gold": "gc.f", "silver": "si.f"}
+                    "symbols": {"gold": "gc.f", "silver": "si.f", "platinum": "pl.f"}
                 },
                 # Keep debug so we can verify scaling in prod
                 "debug": {
                     "requested": requested,
                     "mapped": stooq_syms,
                     "unknown": unknown,
-                    "raw": {"gold": gold_raw, "silver": silver_raw},
-                    "normalized": {"gold": gold_px, "silver": silver_px}
+                    "raw": {
+                        "gold": gold_raw,
+                        "silver": silver_raw,
+                        "platinum": platinum_raw
+                    },
+                    "normalized": {
+                        "gold": gold_px,
+                        "silver": silver_px,
+                        "platinum": platinum_px
+                    }
                 }
             })
 
