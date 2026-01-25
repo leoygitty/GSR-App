@@ -1313,3 +1313,43 @@ html[data-theme="dark"] .priceBtn--dark{
   color: rgba(17,17,20,.92);
   border-color: rgba(255,255,255,.40);
 }
+/* =========================================================
+   Melt Calculator — force the BIG total value to stay white
+   (fixes black $93.50 on dark UI)
+   Add this at the END of styles.css
+   ========================================================= */
+
+/* Common IDs (safe if some don't exist) */
+#totalMeltValue,
+#totalMelt,
+#meltTotal,
+#meltValueTotal,
+#meltValueAmount{
+  color: rgba(255,255,255,.92) !important;
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
+}
+
+/* Common class patterns (covers most implementations) */
+.meltValue .total,
+.meltValue .totalValue,
+.meltValue .value,
+.meltValue .valueBig,
+.meltValue .valueAmount,
+.meltValue .meltTotalValue,
+.meltValue .meltTotal,
+.meltValue .meltAmount,
+.meltValue .meltNumber,
+.meltValue .meltCurrency{
+  color: rgba(255,255,255,.92) !important;
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
+}
+
+/* If the total sits inside the right "Melt Value" panel/card */
+.meltValue h1,
+.meltValue h2,
+.meltValue h3,
+.meltValue .big,
+.meltValue .amount{
+  color: rgba(255,255,255,.92) !important;
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
+}
