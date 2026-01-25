@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" role="img" aria-label="MetalMetric mark">
+  <defs>
+    <linearGradient id="mmGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8A5CFF"/>
+      <stop offset="1" stop-color="#5F33CC"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(12.000 17.742) scale(0.906561)">
+    <path d="M 3.833 3.833 L 3.833 65.167 L 14.833 65.667 L 16.167 64.500 L 16.167 36.833 L 17.000 30.500 L 32.167 43.333 L 39.333 50.667 L 41.833 52.000 L 67.000 30.833 L 67.667 64.667 L 70.000 65.667 L 78.833 65.667 L 80.000 64.833 L 79.833 3.667 L 77.333 3.833 L 74.167 7.500 L 42.500 35.000 L 39.833 34.000 L 5.167 3.333 Z" fill="url(#mmGrad)"/>
+    <circle cx="42.054" cy="60.400" r="7.321" fill="url(#mmGrad)"/>
+  </g>
+</svg>
