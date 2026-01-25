@@ -1,5 +1,8 @@
 /* global Chart */
+/* MetalMetric app.js — premium charts upgrade (keeps existing data + ranges) */
+
 const $ = (id) => document.getElementById(id);
+
 function fmtNum(x, digits = 2) {
   const n = Number(x);
   if (!Number.isFinite(n)) return "—";
@@ -40,6 +43,7 @@ function timeAgo(iso) {
   const day = Math.floor(hr / 24);
   return `${day} day${day === 1 ? "" : "s"} ago`;
 }
+
 // Keep MAX fast
 function downsample(points, maxPts = 3000) {
   if (!Array.isArray(points) || points.length <= maxPts) return points || [];
@@ -48,6 +52,7 @@ function downsample(points, maxPts = 3000) {
   for (let i = 0; i < maxPts; i++) out.push(points[Math.round(i * step)]);
   return out;
 }
+
 function setActiveRange(range) {
   document.querySelectorAll(".segBtn").forEach((b) => {
     b.classList.toggle("isActive", b.dataset.range === range);
@@ -75,17 +80,132 @@ function desiredLimitForRange(range) {
 function sortHistoryAsc(hist) {
   return (hist || []).slice().sort((a, b) => (String(a?.date || "") < String(b?.date || "") ? -1 : 1));
 }
+
+/* -----------------------------
+   Premium charts: theme + sync
+   ----------------------------- */
+
+let ENTITLEMENT_TIER = "elite"; // safe default (unlocked) if /api/entitlement isn't implemented
 let FULL_HISTORY = [];
 let CURRENT_RANGE = "1M";
+
 let CHART_GSR = null;
 let CHART_GOLD = null;
 let CHART_SILVER = null;
+
+const MM_CHARTS = []; // { key, chart }
+
+function isDarkMode() {
+  const el = document.documentElement;
+  const t = (el.getAttribute("data-theme") || "").toLowerCase();
+  if (t) return t.includes("dark");
+  return el.classList.contains("dark");
+}
+
+function getChartPalette() {
+  // Pull from CSS vars if present; otherwise fallback.
+  const cs = getComputedStyle(document.documentElement);
+  const grid = (cs.getPropertyValue("--mm-grid") || "").trim();
+  const tick = (cs.getPropertyValue("--mm-tick") || "").trim();
+  const text = (cs.getPropertyValue("--mm-text") || "").trim();
+  const bg = (cs.getPropertyValue("--mm-bg") || "").trim();
+
+  if (grid || tick || text || bg) {
+    return {
+      grid: grid || (isDarkMode() ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"),
+      tick: tick || (isDarkMode() ? "rgba(255,255,255,0.78)" : "rgba(0,0,0,0.72)"),
+      text: text || (isDarkMode() ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.92)"),
+      tooltipBg: isDarkMode() ? "rgba(10,12,16,0.92)" : "rgba(255,255,255,0.95)",
+      tooltipBorder: isDarkMode() ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)"
+    };
+  }
+
+  return {
+    grid: isDarkMode() ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)",
+    tick: isDarkMode() ? "rgba(255,255,255,0.78)" : "rgba(0,0,0,0.72)",
+    text: isDarkMode() ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.92)",
+    tooltipBg: isDarkMode() ? "rgba(10,12,16,0.92)" : "rgba(255,255,255,0.95)",
+    tooltipBorder: isDarkMode() ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)"
+  };
+}
+
+function applyChartTheme(chart) {
+  if (!chart) return;
+  const pal = getChartPalette();
+
+  chart.options.scales.x.grid.color = pal.grid;
+  chart.options.scales.y.grid.color = pal.grid;
+
+  chart.options.scales.x.ticks.color = pal.tick;
+  chart.options.scales.y.ticks.color = pal.tick;
+
+  chart.options.plugins.tooltip.backgroundColor = pal.tooltipBg;
+  chart.options.plugins.tooltip.borderColor = pal.tooltipBorder;
+  chart.options.plugins.tooltip.titleColor = pal.text;
+  chart.options.plugins.tooltip.bodyColor = pal.text;
+
+  chart.update("none");
+}
+
+function applyAllChartThemes() {
+  [CHART_GSR, CHART_GOLD, CHART_SILVER].forEach(applyChartTheme);
+}
+
+/* Crosshair draw plugin (synced hover) */
+const mmCrosshairPlugin = {
+  id: "mmCrosshairPlugin",
+  afterDraw(chart) {
+    const x = chart.$mmCrosshairX;
+    if (typeof x !== "number") return;
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, chartArea.top);
+    ctx.lineTo(x, chartArea.bottom);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = isDarkMode() ? "rgba(200,180,255,0.35)" : "rgba(90,60,180,0.22)";
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+
+/* Glow-on-hover plugin (subtle “breathe”) */
+const mmGlowPlugin = {
+  id: "mmGlowPlugin",
+  beforeDatasetsDraw(chart) {
+    const active = chart.getActiveElements ? chart.getActiveElements() : (chart._active || []);
+    if (!active || !active.length) return;
+
+    const { ctx } = chart;
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = isDarkMode() ? "rgba(140,110,255,0.35)" : "rgba(120,90,220,0.22)";
+  },
+  afterDatasetsDraw(chart) {
+    const active = chart.getActiveElements ? chart.getActiveElements() : (chart._active || []);
+    if (!active || !active.length) return;
+    chart.ctx.restore();
+  }
+};
+
+try { Chart.register(mmCrosshairPlugin); } catch {}
+try { Chart.register(mmGlowPlugin); } catch {}
+
 function destroyCharts() {
+  try { CHART_GSR?.$mmCleanup?.(); } catch {}
+  try { CHART_GOLD?.$mmCleanup?.(); } catch {}
+  try { CHART_SILVER?.$mmCleanup?.(); } catch {}
+
   try { CHART_GSR?.destroy(); } catch {}
   try { CHART_GOLD?.destroy(); } catch {}
   try { CHART_SILVER?.destroy(); } catch {}
+
   CHART_GSR = CHART_GOLD = CHART_SILVER = null;
+  MM_CHARTS.length = 0;
 }
+
 function buildSeries(points, key) {
   return points
     .map(p => {
@@ -95,19 +215,155 @@ function buildSeries(points, key) {
     })
     .filter(pt => pt.x instanceof Date && !isNaN(pt.x.getTime()) && Number.isFinite(pt.y));
 }
+
 function pickTimeUnit(range) {
-  // Makes x-axis readable at different ranges
   if (range === "1M") return "day";
   if (range === "3M") return "week";
   if (range === "6M") return "month";
   if (range === "1Y") return "month";
-  return "year"; // MAX
+  return "year";
 }
-function makeLineChart(canvasId, label, series, yFmtFn, unit) {
+
+function findNearestIndex(xs, target) {
+  // xs = sorted numbers
+  if (!xs || xs.length === 0) return -1;
+  let lo = 0, hi = xs.length - 1;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (xs[mid] < target) lo = mid + 1;
+    else hi = mid;
+  }
+  const i = lo;
+  if (i <= 0) return 0;
+  if (i >= xs.length) return xs.length - 1;
+  const a = xs[i - 1], b = xs[i];
+  return (Math.abs(a - target) <= Math.abs(b - target)) ? (i - 1) : i;
+}
+
+function setPointDetails(html) {
+  const el = $("pointDetails");
+  if (!el) return;
+  if (!html) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = html;
+  el.classList.remove("hidden");
+  window.clearTimeout(el.$mmT);
+  el.$mmT = window.setTimeout(() => setPointDetails(""), 4500);
+}
+
+function syncHoverFromX(xMs) {
+  // Update all charts to nearest x
+  MM_CHARTS.forEach(({ chart }) => {
+    try {
+      const data = chart.data?.datasets?.[0]?.data || [];
+      const xs = chart.$mmXs || (chart.$mmXs = data.map(d => (d?.x instanceof Date ? d.x.getTime() : NaN)).filter(Number.isFinite));
+      if (!xs.length) return;
+
+      const idx = findNearestIndex(xs, xMs);
+      const meta = chart.getDatasetMeta(0);
+      const el = meta?.data?.[idx];
+      if (!el) return;
+
+      chart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+      chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: el.x, y: el.y });
+      chart.$mmCrosshairX = el.x;
+      chart.update("none");
+    } catch {}
+  });
+}
+
+function clearHoverSync() {
+  MM_CHARTS.forEach(({ chart }) => {
+    try {
+      chart.setActiveElements([]);
+      chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+      chart.$mmCrosshairX = null;
+      chart.update("none");
+    } catch {}
+  });
+}
+
+function wireChartInteractions(key, chart, getSnapshotRowByDate) {
+  if (!chart?.canvas) return;
+
+  const canvas = chart.canvas;
+
+  const onMove = (ev) => {
+    // Locked charts (free) should not run interactions
+    if (ENTITLEMENT_TIER === "free") return;
+
+    const rect = canvas.getBoundingClientRect();
+    const clientX = ev.touches?.[0]?.clientX ?? ev.clientX;
+    if (!Number.isFinite(clientX)) return;
+
+    const xPixel = clientX - rect.left;
+    const xVal = chart.scales.x.getValueForPixel(xPixel);
+    const xMs = (xVal instanceof Date) ? xVal.getTime() : Number(xVal);
+
+    if (!Number.isFinite(xMs)) return;
+    syncHoverFromX(xMs);
+  };
+
+  const onLeave = () => {
+    if (ENTITLEMENT_TIER === "free") return;
+    clearHoverSync();
+  };
+
+  const onClick = () => {
+    if (ENTITLEMENT_TIER === "free") return;
+
+    try {
+      const active = chart.getActiveElements();
+      const a = active?.[0];
+      if (!a) return;
+
+      const d = chart.data.datasets[0].data[a.index];
+      const dt = d?.x instanceof Date ? isoFromDate(d.x) : "";
+      if (!dt) return;
+
+      const row = getSnapshotRowByDate(dt);
+      if (!row) return;
+
+      setPointDetails(
+        `<div><strong>${row.date}</strong></div>
+         <div>GSR: <strong>${fmtNum(row.gsr, 4)}</strong> &nbsp; Gold: <strong>${fmtUSD(row.gold_usd, 2)}</strong> &nbsp; Silver: <strong>${fmtUSD(row.silver_usd, 2)}</strong></div>`
+      );
+    } catch {}
+  };
+
+  // Touch + mouse
+  canvas.addEventListener("mousemove", onMove, { passive: true });
+  canvas.addEventListener("touchmove", onMove, { passive: true });
+  canvas.addEventListener("mouseleave", onLeave, { passive: true });
+  canvas.addEventListener("touchend", onLeave, { passive: true });
+  canvas.addEventListener("click", onClick);
+
+  // Double click = reset zoom (dopamine snap)
+  canvas.addEventListener("dblclick", () => {
+    if (typeof chart.resetZoom === "function") chart.resetZoom();
+  });
+
+  chart.$mmCleanup = () => {
+    canvas.removeEventListener("mousemove", onMove);
+    canvas.removeEventListener("touchmove", onMove);
+    canvas.removeEventListener("mouseleave", onLeave);
+    canvas.removeEventListener("touchend", onLeave);
+    canvas.removeEventListener("click", onClick);
+  };
+}
+
+function makeLineChart(canvasId, label, series, yFmtFn, unit, key, getSnapshotRowByDate) {
   const el = $(canvasId);
   if (!el) return null;
+
   const ctx = el.getContext("2d");
-  return new Chart(ctx, {
+  const pal = getChartPalette();
+
+  // Note: We intentionally keep dataset styling conservative to avoid breaking rendering.
+  const chart = new Chart(ctx, {
     type: "line",
     data: {
       datasets: [{
@@ -115,16 +371,30 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit) {
         data: series,
         borderWidth: 2,
         pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHitRadius: 14,
         tension: 0.18
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      normalized: true,
+      parsing: false,
       interaction: { mode: "index", intersect: false },
+      animation: {
+        duration: 520,
+        easing: "easeInOutQuart"
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
+          enabled: true,
+          backgroundColor: pal.tooltipBg,
+          borderColor: pal.tooltipBorder,
+          borderWidth: 1,
+          titleColor: pal.text,
+          bodyColor: pal.text,
           callbacks: {
             title: (items) => {
               const d = items?.[0]?.raw?.x;
@@ -132,7 +402,25 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit) {
             },
             label: (item) => `${label}: ${yFmtFn(item?.raw?.y)}`
           }
-        }
+        },
+
+        // Zoom / pan (plugin ignores if not loaded)
+        zoom: {
+          pan: {
+            enabled: ENTITLEMENT_TIER !== "free",
+            mode: "x",
+            modifierKey: "shift"
+          },
+          zoom: {
+            wheel: { enabled: ENTITLEMENT_TIER !== "free", modifierKey: "ctrl" },
+            pinch: { enabled: ENTITLEMENT_TIER !== "free" },
+            drag: { enabled: ENTITLEMENT_TIER !== "free" },
+            mode: "x"
+          }
+        },
+
+        // Annotation (only used in expanded mode if you later enable it)
+        annotation: { annotations: {} }
       },
       scales: {
         x: {
@@ -149,23 +437,77 @@ function makeLineChart(canvasId, label, series, yFmtFn, unit) {
           },
           ticks: {
             maxTicksLimit: 8,
-            autoSkip: true
+            autoSkip: true,
+            color: pal.tick
           },
-          grid: { color: "rgba(0,0,0,0.06)" }
+          grid: { color: pal.grid }
         },
         y: {
           ticks: {
-            callback: (v) => yFmtFn(v)
+            callback: (v) => yFmtFn(v),
+            color: pal.tick
           },
-          grid: { color: "rgba(0,0,0,0.06)" }
+          grid: { color: pal.grid }
         }
       }
     }
   });
+
+  MM_CHARTS.push({ key, chart });
+
+  // Interactions: synced hover + click details
+  wireChartInteractions(key, chart, getSnapshotRowByDate);
+
+  return chart;
 }
+
+function applyEntitlementToUI() {
+  const root = document.documentElement;
+  root.setAttribute("data-tier", ENTITLEMENT_TIER);
+
+  const overlay = $("chartsLockOverlay");
+  const chartsWrap = $("chartsWrap");
+  if (!overlay || !chartsWrap) return;
+
+  const dismissed = localStorage.getItem("mm_lock_dismissed") === "1";
+  if (ENTITLEMENT_TIER === "free" && !dismissed) {
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    chartsWrap.style.filter = "blur(4px) saturate(0.9)";
+    chartsWrap.style.opacity = "0.85";
+    chartsWrap.style.pointerEvents = "none";
+  } else {
+    overlay.classList.add("hidden");
+    overlay.setAttribute("aria-hidden", "true");
+    chartsWrap.style.filter = "";
+    chartsWrap.style.opacity = "";
+    chartsWrap.style.pointerEvents = "";
+  }
+}
+
+async function fetchEntitlementSafe() {
+  // If endpoint missing, keep unlocked (elite) so you don’t “lock yourself out”.
+  try {
+    const res = await fetch(`/api/entitlement?_t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json().catch(() => null);
+    const tier = String(data?.tier || "").toLowerCase();
+    if (tier === "free" || tier === "pro" || tier === "elite") {
+      ENTITLEMENT_TIER = tier;
+    }
+  } catch {}
+}
+
+/* -----------------------------
+   Existing render logic (kept)
+   ----------------------------- */
+
 function renderCharts(history) {
   const empty = $("emptyState");
   const chartsWrap = $("chartsWrap");
+
+  if (!empty || !chartsWrap) return;
+
   if (!history || history.length < 2) {
     empty.classList.remove("hidden");
     chartsWrap.classList.add("hidden");
@@ -174,27 +516,41 @@ function renderCharts(history) {
     $("historyTable").innerHTML = "";
     return;
   }
+
   empty.classList.add("hidden");
   chartsWrap.classList.remove("hidden");
+
   const first = history[0].date;
   const last = history[history.length - 1].date;
   $("rangeLabel").textContent = `${first} → ${last} (${history.length} pts)`;
+
   const showGsr = $("showGsr").checked;
   const showGold = $("showGold").checked;
   const showSilver = $("showSilver").checked;
+
   $("chartGsr").classList.toggle("hidden", !showGsr);
   $("chartGold").classList.toggle("hidden", !showGold);
   $("chartSilver").classList.toggle("hidden", !showSilver);
+
+  // Preserve your original behavior (destroy + rebuild) to avoid breaking history rendering.
   destroyCharts();
+
   const unit = pickTimeUnit(CURRENT_RANGE);
   const pts = (CURRENT_RANGE === "MAX") ? downsample(history, 3000) : history;
+
+  // For click popover, we want a quick lookup by date:
+  const byDate = new Map(pts.map(r => [r.date, r]));
+  const getRow = (isoDate) => byDate.get(isoDate) || null;
+
   if (showGsr) {
     CHART_GSR = makeLineChart(
       "chartGsrCanvas",
       "GSR",
       buildSeries(pts, "gsr"),
       (v) => fmtNum(v, 2),
-      unit
+      unit,
+      "gsr",
+      getRow
     );
   }
   if (showGold) {
@@ -203,7 +559,9 @@ function renderCharts(history) {
       "Gold Spot (USD)",
       buildSeries(pts, "gold_usd"),
       (v) => fmtUSD(v, 2),
-      unit
+      unit,
+      "gold",
+      getRow
     );
   }
   if (showSilver) {
@@ -212,9 +570,15 @@ function renderCharts(history) {
       "Silver Spot (USD)",
       buildSeries(pts, "silver_usd"),
       (v) => fmtUSD(v, 2),
-      unit
+      unit,
+      "silver",
+      getRow
     );
   }
+
+  // Ensure chart text/grid recolors immediately on theme toggle
+  applyAllChartThemes();
+
   // Table: last 200 rows, newest first
   const tail = history.slice(-200).slice().reverse();
   $("historyTable").innerHTML = tail.map(r => (
@@ -226,6 +590,7 @@ function renderCharts(history) {
     </tr>`
   )).join("");
 }
+
 function setNoData(errMsg) {
   $("gsr").textContent = "—";
   $("gold").textContent = "—";
@@ -240,6 +605,7 @@ function setNoData(errMsg) {
   FULL_HISTORY = [];
   renderCharts([]);
 }
+
 /**
  * Fetch from /api/latest, with:
  * - cache-buster
@@ -252,6 +618,7 @@ async function fetchLatest(limit, { force = false } = {}) {
   if (force) params.set("force", "1");
   params.set("_t", String(Date.now()));
   const url = `/api/latest?${params.toString()}`;
+
   const res = await fetch(url, {
     cache: "no-store",
     headers: {
@@ -259,16 +626,20 @@ async function fetchLatest(limit, { force = false } = {}) {
       "Pragma": "no-cache"
     }
   });
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
+
 async function load(forRange = CURRENT_RANGE, { force = false } = {}) {
   $("refreshBtn").disabled = true;
   $("refreshBtn").textContent = force ? "Refreshing (live)…" : "Refreshing…";
+
   try {
     const want = desiredLimitForRange(forRange);
     const data = await fetchLatest(want, { force });
+
     const latest = data.latest;
     $("gsr").textContent = fmtNum(latest.gsr, 4);
     $("gold").textContent = fmtUSD(latest.gold_usd, 2);
@@ -277,8 +648,10 @@ async function load(forRange = CURRENT_RANGE, { force = false } = {}) {
     $("source").textContent = latest.source || "—";
     $("utcDate").textContent = latest.date || "—";
     $("lastUpdatedHuman").textContent = latest.fetched_at_utc ? timeAgo(latest.fetched_at_utc) : "—";
+
     FULL_HISTORY = sortHistoryAsc(Array.isArray(data.history) ? data.history : []);
-    // Delta vs previous (small polish: consistent sign, avoid "+0.00", use ASCII "-")
+
+    // Delta vs previous
     if (FULL_HISTORY.length >= 2) {
       const prev = FULL_HISTORY[FULL_HISTORY.length - 2];
       const curr = FULL_HISTORY[FULL_HISTORY.length - 1];
@@ -297,7 +670,12 @@ async function load(forRange = CURRENT_RANGE, { force = false } = {}) {
       $("deltaAbs").className = "";
       $("deltaPct").className = "";
     }
+
     renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+
+    // Keep the teaser/lock UI consistent after load
+    applyEntitlementToUI();
+
   } catch (e) {
     setNoData(`Error: ${e?.message || e}`);
   } finally {
@@ -305,113 +683,148 @@ async function load(forRange = CURRENT_RANGE, { force = false } = {}) {
     $("refreshBtn").textContent = "Refresh";
   }
 }
-/**
- * UX policy:
- * - Manual Refresh: force=1 (try to get live intraday now)
- * - Hourly auto-refresh: force=false (only updates if stale)
- * - When tab becomes visible: force=1 (user returning expects fresh)
- */
-$("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE, { force: true }));
-document.querySelectorAll(".segBtn").forEach((b) => {
-  b.addEventListener("click", async () => {
-    CURRENT_RANGE = b.dataset.range;
-    setActiveRange(CURRENT_RANGE);
-    // For MAX we fetch bigger history; for others, reuse the already-fetched history
-    if (CURRENT_RANGE === "MAX") {
-      await load("MAX", { force: false });
-    } else {
-      renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
-    }
-  });
-});
-["showGold", "showSilver", "showGsr"].forEach((id) => {
-  $(id).addEventListener("change", () => {
-    renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
-  });
-});
 
-setActiveRange(CURRENT_RANGE);
+/* -----------------------------
+   Home page wiring (safe guards)
+   ----------------------------- */
 
-/* =========================================================
-   FIX: Chart tick/axis text color updates immediately on
-   light/dark toggle WITHOUT requiring manual Refresh.
-   - No refetch
-   - No history changes
-   - Simply rebuild charts from in-memory FULL_HISTORY
-   ========================================================= */
-(function setupImmediateChartThemeRefresh(){
-  // Only activate on the dashboard page that has charts
-  const hasCharts =
-    !!$("chartGsrCanvas") || !!$("chartGoldCanvas") || !!$("chartSilverCanvas");
-  if (!hasCharts) return;
+function initPremiumChartControls() {
+  const expandBtn = $("chartsExpandBtn");
+  const closeBtn = $("chartsCloseBtn");
+  const resetBtn = $("chartsResetZoomBtn");
+  const lockDismissBtn = $("lockDismissBtn");
 
-  const root = document.documentElement;
+  if (lockDismissBtn) {
+    lockDismissBtn.addEventListener("click", () => {
+      localStorage.setItem("mm_lock_dismissed", "1");
+      applyEntitlementToUI();
+    });
+  }
 
-  const getTheme = () => {
-    const t = (root.getAttribute("data-theme") || "light").toLowerCase();
-    return (t === "dark" || t === "light") ? t : "light";
+  const resetAllZoom = () => {
+    [CHART_GSR, CHART_GOLD, CHART_SILVER].forEach(c => {
+      try { if (typeof c?.resetZoom === "function") c.resetZoom(); } catch {}
+    });
   };
 
-  let lastTheme = getTheme();
-  let timer = null;
+  if (resetBtn) resetBtn.addEventListener("click", resetAllZoom);
 
-  const softRebuild = () => {
-    // Rebuild charts from existing FULL_HISTORY so Chart.js resolves new theme colors
-    if (Array.isArray(FULL_HISTORY) && FULL_HISTORY.length >= 2) {
-      renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
-    } else {
-      // If charts exist but history isn't loaded yet, at least try to re-style existing charts
-      try { CHART_GSR?.update("none"); } catch {}
-      try { CHART_GOLD?.update("none"); } catch {}
-      try { CHART_SILVER?.update("none"); } catch {}
+  const openExpanded = async () => {
+    document.body.classList.add("mmChartsExpanded");
+    if (closeBtn) closeBtn.classList.remove("hidden");
+
+    // Mobile: true fullscreen if available
+    const card = $("chartsCard");
+    if (card && window.matchMedia("(max-width: 820px)").matches) {
+      try { await card.requestFullscreen?.(); } catch {}
     }
 
-    // If your index.html exposes a helper, run it after rebuild (safe no-op if missing)
-    try { window.mmApplyChartTheme && window.mmApplyChartTheme(); } catch (e) {}
+    // Re-apply theme in expanded mode
+    applyAllChartThemes();
   };
 
-  const schedule = () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = null;
-      softRebuild();
-    }, 0);
+  const closeExpanded = async () => {
+    document.body.classList.remove("mmChartsExpanded");
+    if (closeBtn) closeBtn.classList.add("hidden");
+
+    if (document.fullscreenElement) {
+      try { await document.exitFullscreen?.(); } catch {}
+    }
+
+    applyAllChartThemes();
   };
 
-  // Watch for <html data-theme="..."> changes
+  if (expandBtn) expandBtn.addEventListener("click", openExpanded);
+  if (closeBtn) closeBtn.addEventListener("click", closeExpanded);
+
+  // ESC closes expanded (desktop)
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.body.classList.contains("mmChartsExpanded")) {
+      closeExpanded();
+    }
+  });
+
+  // If fullscreen is exited by gesture, keep classes consistent
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && document.body.classList.contains("mmChartsExpanded")) {
+      document.body.classList.remove("mmChartsExpanded");
+      if (closeBtn) closeBtn.classList.add("hidden");
+    }
+  });
+}
+
+async function initHome() {
+  // If this page doesn’t have your dashboard elements, do nothing.
+  if (!$("refreshBtn") || !$("chartsWrap") || !$("chartGsrCanvas")) return;
+
+  // Entitlement: if route exists, apply gating; otherwise stay unlocked.
+  await fetchEntitlementSafe();
+  applyEntitlementToUI();
+
+  // Hook theme changes so charts recolor immediately (NO refresh needed)
   const mo = new MutationObserver(() => {
-    const now = getTheme();
-    if (now === lastTheme) return;
-    lastTheme = now;
-    schedule();
+    applyAllChartThemes();
   });
-  mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
 
-  // Extra safety: if the toggle button is clicked, schedule a rebuild as well
-  const btn = $("themeToggle");
-  if (btn) btn.addEventListener("click", schedule);
-})();
+  initPremiumChartControls();
 
-// Initial load: no force (fast path)
-load(CURRENT_RANGE, { force: false });
+  $("refreshBtn").addEventListener("click", () => load(CURRENT_RANGE, { force: true }));
 
-// Existing: update "time ago"
-setInterval(() => {
-  const txt = $("fetchedAt").textContent;
-  if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
-}, 10000);
+  document.querySelectorAll(".segBtn").forEach((b) => {
+    b.addEventListener("click", async () => {
+      CURRENT_RANGE = b.dataset.range;
+      setActiveRange(CURRENT_RANGE);
 
-// Auto-refresh hourly while the page is open (non-forced)
-setInterval(() => {
+      // Reset zoom on range switch for predictable UX
+      try { CHART_GSR?.resetZoom?.(); } catch {}
+      try { CHART_GOLD?.resetZoom?.(); } catch {}
+      try { CHART_SILVER?.resetZoom?.(); } catch {}
+
+      if (CURRENT_RANGE === "MAX") {
+        await load("MAX", { force: false });
+      } else {
+        renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+      }
+    });
+  });
+
+  ["showGold", "showSilver", "showGsr"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("change", () => {
+      renderCharts(filterByRange(FULL_HISTORY, CURRENT_RANGE));
+    });
+  });
+
+  setActiveRange(CURRENT_RANGE);
+
+  // Initial load: no force (fast path)
   load(CURRENT_RANGE, { force: false });
-}, 60 * 60 * 1000);
 
-// When user returns to the tab, refresh once (forced)
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) load(CURRENT_RANGE, { force: true });
-});
+  // Existing: update "time ago"
+  setInterval(() => {
+    const txt = $("fetchedAt").textContent;
+    if (txt && txt !== "—") $("lastUpdatedHuman").textContent = timeAgo(txt);
+  }, 10000);
 
-// Melt Calculator Logic
+  // Auto-refresh hourly while the page is open (non-forced)
+  setInterval(() => {
+    load(CURRENT_RANGE, { force: false });
+  }, 60 * 60 * 1000);
+
+  // When user returns to the tab, refresh once (forced)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) load(CURRENT_RANGE, { force: true });
+  });
+}
+
+/* Start Home init */
+initHome();
+
+/* -----------------------------
+   Melt Calculator Logic (unchanged)
+   ----------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
   if (!document.querySelector('.metal-tab')) return;  // Only run on melt page
 
