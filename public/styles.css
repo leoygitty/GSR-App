@@ -1353,3 +1353,41 @@ html[data-theme="dark"] .priceBtn--dark{
   color: rgba(255,255,255,.92) !important;
   -webkit-text-fill-color: rgba(255,255,255,.92) !important;
 }
+/* =========================================================
+   DARK THEME VARIABLE OVERRIDES (prevents black text in dark mode)
+   Put at VERY BOTTOM of styles.css
+   ========================================================= */
+html[data-theme="dark"]{
+  --bg: #0b0f14;
+  --card: rgba(255,255,255,.04);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.62);
+  --stroke: rgba(255,255,255,.12);
+  --shadow: 0 18px 60px rgba(0,0,0,.55);
+}
+
+/* =========================================================
+   MELT CALCULATOR: FORCE TOTAL MELT VALUE TO ALWAYS BE WHITE
+   (high-specificity + !important to beat any black/gray rule)
+   ========================================================= */
+
+/* common ids/classes people use for that big number */
+html[data-theme="dark"] #totalMeltValue,
+html[data-theme="dark"] #meltTotalValue,
+html[data-theme="dark"] #meltValue,
+html[data-theme="dark"] #meltValueOut,
+html[data-theme="dark"] .total-melt-value,
+html[data-theme="dark"] .totalMeltValue,
+html[data-theme="dark"] .melt-total,
+html[data-theme="dark"] .meltTotal,
+html[data-theme="dark"] .melt-value-total{
+  color: rgba(255,255,255,.96) !important;
+}
+
+/* fallback: if the total is inside the Melt Value panel, force the first big $ number white */
+html[data-theme="dark"] .meltValuePanel .big,
+html[data-theme="dark"] .meltValuePanel .value,
+html[data-theme="dark"] .melt-value-panel .big,
+html[data-theme="dark"] .melt-value-panel .value{
+  color: rgba(255,255,255,.96) !important;
+}
