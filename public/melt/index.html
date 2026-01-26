@@ -1444,7 +1444,33 @@
   };
 }
 
+async function fetchPlatinumSpotFallback() {
+  // Stooq gives USDXPT; we invert to get USD per 1 XPT (spot-ish proxy)
+  const url = "https://stooq.com/q/l/?s=usdxpt&f=sd2t2ohlcv&h&e=csv";
+  const res = await fetch(url, { cache: "no-store" });
+  const csv = (await res.text()).trim();
 
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return null;
+
+  const header = lines[0].split(",").map(s => s.trim().toLowerCase());
+  const row = lines[lines.length - 1].split(",").map(s => s.trim());
+
+  const closeIdx = header.indexOf("close");
+  if (closeIdx < 0) return null;
+
+  const close = num(row[closeIdx]);
+  if (!Number.isFinite(close) || close <= 0) return null;
+
+  const inv = 1 / close;
+
+  // sanity: platinum spot should be in the hundreds/thousands USD
+  if (Number.isFinite(inv) && inv > 100 && inv < 10000) return inv;
+
+  // if stooq ever changes meaning, fall back to raw close
+  return close;
+}
+      
 async function fetchSpots() {
   setStatus("Fetching live spot…", "");
 
@@ -1492,23 +1518,28 @@ async function fetchSpots() {
       }
     }
 
-    // 2) Fill any missing values from /api/latest (no overwrites)
-    if (latest.ok) {
-      if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
-      if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
-      if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+   // 2) Use /api/latest ONLY as a fallback to fill missing values (no overwrites)
+if (latest.ok) {
+  if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
+  if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
+  if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+  if (!state.updatedAt && latest.updated) state.updatedAt = latest.updated;
+}
 
-      if (!state.updatedAt && latest.updatedRaw) state.updatedAt = formatUpdated(latest.updatedRaw);
-    }
+// ✅ ADD THIS RIGHT HERE
+if (state.spots.platinum == null) {
+  try {
+    const pt = await fetchPlatinumSpotFallback();
+    if (Number.isFinite(num(pt))) state.spots.platinum = pt;
+  } catch (e) {
+    console.warn("[melt] platinum fallback failed:", e);
+  }
+}
 
-    // 3) Platinum: force the fallback if still missing
-    if (state.spots.platinum == null && Number.isFinite(num(ptFallback))) {
-      state.spots.platinum = ptFallback;
-    }
+if (!state.updatedAt) state.updatedAt = new Date().toISOString();
 
-    if (!state.updatedAt) state.updatedAt = formatUpdated(new Date().toISOString());
+updateSpotHeaderUI();
 
-    updateSpotHeaderUI();
 
     const active = getActiveSpot();
     if (Number.isFinite(active) && active > 0) setStatus("Live spot loaded. Ready.", "good");
