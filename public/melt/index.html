@@ -1400,17 +1400,17 @@
         return data;
       }
 
-     function pullSpotFromKnownShape(obj) {
-  if (!obj || typeof obj !== "object") {
-    return { ok: false, err: "Invalid response", g: null, s: null, p: null, updated: null };
-  }
+    function pullSpotFromKnownShape(obj) {
+  if (!obj || typeof obj !== "object") return { ok: false, err: "Invalid response" };
 
-  // Parse values EVEN IF obj.ok === false (platinum may be rate-limited)
-  const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold]
-    .map(num).find(Number.isFinite);
+  // Even if API says ok:false, still try to extract gold/silver/platinum if present
+  const apiErr = (obj.ok === false)
+    ? (obj.error ? String(obj.error) : "Spot returned ok:false")
+    : null;
 
-  const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver]
-    .map(num).find(Number.isFinite);
+  // Support your API keys + a few fallbacks
+  const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold].map(num).find(Number.isFinite);
+  const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver].map(num).find(Number.isFinite);
 
   const platinum = [
     obj.platinum_usd,
@@ -1429,90 +1429,80 @@
     obj.date ||
     null;
 
-  const updated = updatedRaw ? formatUpdated(updatedRaw) : null;
+  const anyFound = (gold != null) || (silver != null) || (platinum != null);
 
-  const any = [gold, silver, platinum].some(Number.isFinite);
+  // If nothing found and API explicitly failed, treat as failure
+  if (!anyFound && apiErr) return { ok: false, err: apiErr };
 
   return {
-    ok: any, // ok=true if we got at least one usable number
+    ok: true,
     g: Number.isFinite(gold) ? gold : null,
     s: Number.isFinite(silver) ? silver : null,
     p: Number.isFinite(platinum) ? platinum : null,
-    updated,
-    apiOk: (obj.ok !== false), // lets you know if API claimed success
-    err: obj.ok === false ? (obj.error ? String(obj.error) : "Spot returned ok:false") : null
+    updatedRaw,
+    apiErr
   };
 }
 
-async function fetchPlatinumSpotFallback(){
-  // Mirrors the home-page approach: use Stooq, try direct then inverted
-  const fetchCsv = async (symbol) => {
-    const url = `https://stooq.com/q/l/?s=${symbol}&f=sd2t2ohlcv&h&e=csv&ts=${Date.now()}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Stooq HTTP ${res.status}`);
-    const text = await res.text();
 
-    // CSV with header; last line contains quote
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) throw new Error("Stooq CSV empty");
-    const last = lines[lines.length - 1].trim();
-    const cols = last.split(",");
-
-    // With f=...ohlcv the close is typically the 7th column (index 6)
-    const close = num(cols[6]);
-    if (!Number.isFinite(close) || close <= 0) throw new Error("Stooq close invalid");
-    return close;
-  };
-
-  // Try XPTUSD first (direct USD per XPT). If not available, use USDXPT inverted.
-  try {
-    const direct = await fetchCsv("xptusd");
-    return direct;
-  } catch {}
-
-  const inverted = await fetchCsv("usdxpt");
-  return 1 / inverted;
-}
-    async function fetchSpots() {
+async function fetchSpots() {
   setStatus("Fetching live spot…", "");
+
+  // Unwrap common API shapes: array, {rows:[...]}, {data:[...]}, etc.
+  const unwrap = (v) => {
+    if (!v) return null;
+    if (Array.isArray(v)) return v[v.length - 1] || null;
+    if (typeof v === "object") {
+      if (Array.isArray(v.rows)) return v.rows[v.rows.length - 1] || null;
+      if (Array.isArray(v.data)) return v.data[v.data.length - 1] || null;
+      if (Array.isArray(v.results)) return v.results[v.results.length - 1] || null;
+      if (v.latest && typeof v.latest === "object") return v.latest;
+    }
+    return v;
+  };
 
   try {
     const [spotRes, latestRes, ptRes] = await Promise.allSettled([
       fetchAny("/api/spot"),
       fetchAny("/api/latest"),
-      fetchPlatinumSpotFallback()
+      // keep your platinum fallback (stooq)
+      (typeof fetchPlatinumSpotFallback === "function") ? fetchPlatinumSpotFallback() : Promise.resolve(null)
     ]);
 
     const spotRaw = (spotRes.status === "fulfilled") ? spotRes.value : null;
     const latestRaw = (latestRes.status === "fulfilled") ? latestRes.value : null;
     const ptFallback = (ptRes.status === "fulfilled") ? ptRes.value : null;
 
-    // IMPORTANT: handle arrays from /api/latest (if it returns an array of rows)
-    const normalizeMaybeArray = (v) => Array.isArray(v) ? (v[v.length - 1] || {}) : (v || {});
+    const spot = pullSpotFromKnownShape(unwrap(spotRaw));
+    const latest = pullSpotFromKnownShape(unwrap(latestRaw));
 
-    const spot = pullSpotFromKnownShape(normalizeMaybeArray(spotRaw));
-    const latest = pullSpotFromKnownShape(normalizeMaybeArray(latestRaw));
-
-    // 1) Fill Gold/Silver from /api/spot if present (even if platinum fails there)
+    // 1) Prefer /api/spot (gold/silver) if available
     if (spot.ok) {
       if (spot.g != null) state.spots.gold = spot.g;
       if (spot.s != null) state.spots.silver = spot.s;
-      // ignore spot.p here; platinum is handled by fallback below
+
+      // If /api/spot still has platinum, accept it; otherwise we'll use fallback below
+      if (spot.p != null) state.spots.platinum = spot.p;
+
       if (spot.updatedRaw) state.updatedAt = formatUpdated(spot.updatedRaw);
-    } else if (spotRaw && spotRaw.ok === false) {
-      // Don’t let platinum failure kill gold/silver UX
-      setStatus("Spot warning: " + String(spot.err || "Unavailable"), "warn");
+
+      if (spot.apiErr) {
+        // Non-fatal warning (e.g., platinum component failed inside /api/spot)
+        setStatus("Spot warning: " + spot.apiErr, "warn");
+      }
     }
 
-    // 2) Fallback Gold/Silver from /api/latest (no overwrites)
+    // 2) Fill any missing values from /api/latest (no overwrites)
     if (latest.ok) {
       if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
       if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
+      if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+
       if (!state.updatedAt && latest.updatedRaw) state.updatedAt = formatUpdated(latest.updatedRaw);
     }
 
-    // 3) Platinum: always use Stooq fallback (what made your home page work)
-    if (Number.isFinite(num(ptFallback))) {
+    // 3) Platinum: force the fallback if still missing
+    if (state.spots.platinum == null && Number.isFinite(num(ptFallback))) {
       state.spots.platinum = ptFallback;
     }
 
