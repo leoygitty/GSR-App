@@ -1400,44 +1400,52 @@
         return data;
       }
 
-      function pullSpotFromKnownShape(obj) {
-        if (!obj || typeof obj !== "object") return { ok: false, err: "Invalid response" };
+     function pullSpotFromKnownShape(obj) {
+  if (!obj || typeof obj !== "object") {
+    return { ok: false, err: "Invalid response", g: null, s: null, p: null, updated: null };
+  }
 
-        if (obj.ok === false) {
-          return { ok: false, err: obj.error ? String(obj.error) : "Spot returned ok:false" };
-        }
+  // Parse values EVEN IF obj.ok === false (platinum may be rate-limited)
+  const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold]
+    .map(num).find(Number.isFinite);
 
-        // Support your API keys + a few fallbacks
-        const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold].map(num).find(Number.isFinite);
-        const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver].map(num).find(Number.isFinite);
+  const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver]
+    .map(num).find(Number.isFinite);
 
-        const platinum = [
-          obj.platinum_usd,
-          obj?.normalized?.platinum,
-          obj.xpt_usd,
-          obj.xpt,
-          obj.platinum,
-          obj?.raw?.platinum
-        ].map(num).find(Number.isFinite);
+  const platinum = [
+    obj.platinum_usd,
+    obj?.normalized?.platinum,
+    obj.xpt_usd,
+    obj.xpt,
+    obj.platinum,
+    obj?.raw?.platinum
+  ].map(num).find(Number.isFinite);
 
-        const updatedRaw =
-          obj.fetched_at_utc ||
-          obj.updated_at ||
-          obj.updatedAt ||
-          obj.date_utc ||
-          obj.date ||
-          null;
+  const updatedRaw =
+    obj.fetched_at_utc ||
+    obj.updated_at ||
+    obj.updatedAt ||
+    obj.date_utc ||
+    obj.date ||
+    null;
 
-        return {
-          ok: true,
-          g: Number.isFinite(gold) ? gold : null,
-          s: Number.isFinite(silver) ? silver : null,
-          p: Number.isFinite(platinum) ? platinum : null,
-          updatedRaw
-        };
-      }
+  const updated = updatedRaw ? formatUpdated(updatedRaw) : null;
 
-     async function fetchSpots() {
+  const any = [gold, silver, platinum].some(Number.isFinite);
+
+  return {
+    ok: any, // ok=true if we got at least one usable number
+    g: Number.isFinite(gold) ? gold : null,
+    s: Number.isFinite(silver) ? silver : null,
+    p: Number.isFinite(platinum) ? platinum : null,
+    updated,
+    apiOk: (obj.ok !== false), // lets you know if API claimed success
+    err: obj.ok === false ? (obj.error ? String(obj.error) : "Spot returned ok:false") : null
+  };
+}
+
+
+    async function fetchSpots() {
   setStatus("Fetching live spot…", "");
 
   try {
@@ -1452,33 +1460,34 @@
     const spot = pullSpotFromKnownShape(spotRaw || {});
     const latest = pullSpotFromKnownShape(latestRaw || {});
 
-    // 1) Apply /api/spot FIRST (authoritative for live pricing)
-    if (spot.ok) {
-      if (spot.g != null) state.spots.gold = spot.g;
-      if (spot.s != null) state.spots.silver = spot.s;
-      if (spot.p != null) state.spots.platinum = spot.p;
-      if (spot.updated) state.updatedAt = spot.updated;
-    } else if (spotRaw && spotRaw.ok === false) {
-      setStatus("Live spot error: " + (spot.err || "Unknown").toString(), "warn");
-    }
+    // Apply /api/spot FIRST (even if apiOk is false, keep any numbers we did get)
+    if (spot.g != null) state.spots.gold = spot.g;
+    if (spot.s != null) state.spots.silver = spot.s;
+    if (spot.p != null) state.spots.platinum = spot.p;
+    if (spot.updated) state.updatedAt = spot.updated;
 
-    // 2) Use /api/latest ONLY as a fallback to fill missing values (no overwrites)
-    if (latest.ok) {
-      if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
-      if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
-      if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
-      if (!state.updatedAt && latest.updated) state.updatedAt = latest.updated;
-    }
+    // Fallback: use /api/latest ONLY to fill missing values (no overwrites)
+    if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
+    if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
+    if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+    if (!state.updatedAt && latest.updated) state.updatedAt = latest.updated;
 
-    if (!state.updatedAt) state.updatedAt = new Date().toISOString();
+    if (!state.updatedAt) state.updatedAt = formatUpdated(new Date().toISOString());
 
     updateSpotHeaderUI();
 
     const active = getActiveSpot();
-    if (Number.isFinite(active) && active > 0) {
+    const haveAny = ["gold","silver","platinum"].some(m => Number.isFinite(num(state.spots[m])));
+
+    // Status messaging: don’t fail the whole UI if platinum is missing
+    if (!haveAny) {
+      setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
+    } else if (state.spots.platinum == null) {
+      setStatus("Gold/Silver loaded. Platinum unavailable (rate limit). Switch to Manual for PT.", "warn");
+    } else if (Number.isFinite(active) && active > 0) {
       setStatus("Live spot loaded. Ready.", "good");
     } else {
-      setStatus("Live spot unavailable. Refresh or switch to Manual.", "warn");
+      setStatus("Live spot loaded. Select a metal or switch to Manual.", "warn");
     }
 
     compute(true);
@@ -1492,6 +1501,7 @@
     compute(true);
   }
 }
+
 
       function renderSilverLadder(weightG, spot, canCalc) {
         ladderList.innerHTML = "";
