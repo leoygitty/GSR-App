@@ -57,6 +57,54 @@
     @media (max-width: 720px){
       :root{ --tickerSeconds: 78s; }
     }
+
+    /* =========================================================
+       STRIPE CHECKOUT BUTTONS (index only)
+       - Match the Pro/Elite card style
+       - Yearly is slightly darker than Monthly
+       ========================================================= */
+
+    /* Pro palette */
+    .priceCard--pro{
+      --mmBtnMonthly: #2563eb; /* monthly */
+      --mmBtnYearly:  #1d4ed8; /* yearly (darker) */
+    }
+
+    /* Elite palette */
+    .priceCard--elite{
+      --mmBtnMonthly: #7c3aed; /* monthly */
+      --mmBtnYearly:  #6d28d9; /* yearly (darker) */
+    }
+
+    /* Shared button look (keeps your existing .priceBtn sizing/typography) */
+    .priceCard--pro a.mmCheckoutBtn,
+    .priceCard--elite a.mmCheckoutBtn{
+      background: var(--mmBtnMonthly);
+      color: #fff !important;
+      border: 1px solid rgba(255,255,255,.14);
+      text-decoration: none;
+    }
+
+    /* Yearly = slightly darker */
+    .priceCard--pro a.mmCheckoutBtn.mmCheckoutBtn--yearly,
+    .priceCard--elite a.mmCheckoutBtn.mmCheckoutBtn--yearly{
+      background: var(--mmBtnYearly);
+    }
+
+    /* Hover/focus */
+    .priceCard--pro a.mmCheckoutBtn:hover,
+    .priceCard--elite a.mmCheckoutBtn:hover{
+      filter: brightness(1.06);
+    }
+    .priceCard--pro a.mmCheckoutBtn:active,
+    .priceCard--elite a.mmCheckoutBtn:active{
+      filter: brightness(0.98);
+    }
+    .priceCard--pro a.mmCheckoutBtn:focus-visible,
+    .priceCard--elite a.mmCheckoutBtn:focus-visible{
+      outline: 2px solid rgba(255,255,255,.35);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 
@@ -145,12 +193,12 @@
       <div class="titleBlock">
         <div class="brandLockup">
           <img
-  class="brandMark"
-  src="/metalmetric-mark.svg"
-  alt="MetalMetric"
-  width="36"
-  height="36"
-/>
+            class="brandMark"
+            src="/metalmetric-mark.svg"
+            alt="MetalMetric"
+            width="36"
+            height="36"
+          />
           <div class="brandStack">
             <div class="brandRow">
               <h1 class="brandName">MetalMetric</h1>
@@ -239,87 +287,86 @@
       </div>
     </section>
 
-   <section class="card" id="chartsCard">
-  <div class="cardHead cardHead--charts">
-    <div class="cardTitle">Charts</div>
-    <div class="cardMeta" id="rangeLabel">—</div>
+    <section class="card" id="chartsCard">
+      <div class="cardHead cardHead--charts">
+        <div class="cardTitle">Charts</div>
+        <div class="cardMeta" id="rangeLabel">—</div>
 
-    <!-- Premium controls (safe: app.js checks for existence) -->
-    <div class="chartTools">
-      <button id="chartsResetZoomBtn" class="iconBtn" type="button" title="Reset zoom" aria-label="Reset zoom">⟲</button>
-      <button id="chartsExpandBtn" class="iconBtn" type="button" title="Expand charts" aria-label="Expand charts">⤢</button>
-      <button id="chartsCloseBtn" class="iconBtn hidden" type="button" title="Close" aria-label="Close charts">✕</button>
-    </div>
-  </div>
-
-  <!-- Optional lock/teaser overlay (only shows if your JS enables it) -->
-  <div id="chartsLockOverlay" class="chartsLockOverlay hidden" aria-hidden="true">
-    <div class="lockTitle">Interactive charts are Pro+</div>
-    <div class="lockSub">Zoom, pan, synced crosshair, and insights.</div>
-    <div class="lockActions">
-      <a class="lockBtn" href="#pricing">Upgrade</a>
-      <button id="lockDismissBtn" class="lockBtn lockBtn--ghost" type="button">Not now</button>
-    </div>
-  </div>
-
-  <!-- Clicked-point details popover (JS fills this) -->
-  <div id="pointDetails" class="pointDetails hidden" role="status" aria-live="polite"></div>
-
-  <div id="emptyState" class="emptyState hidden">
-    <div class="emptyTitle">No history yet</div>
-    <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
-  </div>
-
-  <div id="chartsWrap" class="chartsWrap">
-    <div class="chartBlock" id="chartGsr">
-      <div class="chartHeader">
-        <div class="chartName">GSR</div>
-        <div class="chartHint muted">ratio</div>
+        <!-- Premium controls (safe: app.js checks for existence) -->
+        <div class="chartTools">
+          <button id="chartsResetZoomBtn" class="iconBtn" type="button" title="Reset zoom" aria-label="Reset zoom">⟲</button>
+          <button id="chartsExpandBtn" class="iconBtn" type="button" title="Expand charts" aria-label="Expand charts">⤢</button>
+          <button id="chartsCloseBtn" class="iconBtn hidden" type="button" title="Close" aria-label="Close charts">✕</button>
+        </div>
       </div>
-      <div class="chartCanvasWrap">
-        <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
-      </div>
-    </div>
 
-    <div class="chartBlock" id="chartGold">
-      <div class="chartHeader">
-        <div class="chartName">Gold Spot (USD)</div>
-        <div class="chartHint muted">close</div>
+      <!-- Optional lock/teaser overlay (only shows if your JS enables it) -->
+      <div id="chartsLockOverlay" class="chartsLockOverlay hidden" aria-hidden="true">
+        <div class="lockTitle">Interactive charts are Pro+</div>
+        <div class="lockSub">Zoom, pan, synced crosshair, and insights.</div>
+        <div class="lockActions">
+          <a class="lockBtn" href="#pricing">Upgrade</a>
+          <button id="lockDismissBtn" class="lockBtn lockBtn--ghost" type="button">Not now</button>
+        </div>
       </div>
-      <div class="chartCanvasWrap">
-        <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
-      </div>
-    </div>
 
-    <div class="chartBlock" id="chartSilver">
-      <div class="chartHeader">
-        <div class="chartName">Silver Spot (USD)</div>
-        <div class="chartHint muted">close</div>
-      </div>
-      <div class="chartCanvasWrap">
-        <canvas id="chartSilverCanvas" class="chartCanvas"></canvas>
-      </div>
-    </div>
-  </div>
+      <!-- Clicked-point details popover (JS fills this) -->
+      <div id="pointDetails" class="pointDetails hidden" role="status" aria-live="polite"></div>
 
-  <details class="details">
-    <summary>Show history table</summary>
-    <div class="tableWrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date (UTC)</th>
-            <th>GSR</th>
-            <th>Gold</th>
-            <th>Silver</th>
-          </tr>
-        </thead>
-        <tbody id="historyTable"></tbody>
-      </table>
-    </div>
-  </details>
-</section>
+      <div id="emptyState" class="emptyState hidden">
+        <div class="emptyTitle">No history yet</div>
+        <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
+      </div>
 
+      <div id="chartsWrap" class="chartsWrap">
+        <div class="chartBlock" id="chartGsr">
+          <div class="chartHeader">
+            <div class="chartName">GSR</div>
+            <div class="chartHint muted">ratio</div>
+          </div>
+          <div class="chartCanvasWrap">
+            <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="chartBlock" id="chartGold">
+          <div class="chartHeader">
+            <div class="chartName">Gold Spot (USD)</div>
+            <div class="chartHint muted">close</div>
+          </div>
+          <div class="chartCanvasWrap">
+            <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="chartBlock" id="chartSilver">
+          <div class="chartHeader">
+            <div class="chartName">Silver Spot (USD)</div>
+            <div class="chartHint muted">close</div>
+          </div>
+          <div class="chartCanvasWrap">
+            <canvas id="chartSilverCanvas" class="chartCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <details class="details">
+        <summary>Show history table</summary>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date (UTC)</th>
+                <th>GSR</th>
+                <th>Gold</th>
+                <th>Silver</th>
+              </tr>
+            </thead>
+            <tbody id="historyTable"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
 
     <section class="card" id="pricing" aria-label="Pricing">
       <div class="cardHead">
@@ -335,6 +382,7 @@
           Free gives you the live ratio + history. Pro and Elite add signals, alerts, and research tools built to reduce noise and speed up decisions.
         </p>
       </div>
+
       <div class="pricingGrid3" role="list">
         <article class="priceCard priceCard--free" role="listitem" aria-label="Free plan">
           <div class="priceTop">
@@ -366,22 +414,22 @@
             <div class="pricePer">/mo</div>
           </div>
 
-          <!-- UPDATED: Stripe checkout buttons (monthly + yearly) -->
+          <!-- UPDATED: buttons match Pro card + yearly slightly darker -->
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="priceBtn priceBtn--dark"
+            <a class="priceBtn mmCheckoutBtn"
                href="#"
                data-checkout-plan="pro"
                data-checkout-interval="monthly">
               Get Pro (Monthly)
             </a>
-            <a class="priceBtn priceBtn--ghost"
+
+            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly"
                href="#"
                data-checkout-plan="pro"
                data-checkout-interval="yearly">
               Get Pro (Yearly)
             </a>
           </div>
-          <div class="checkoutMsg muted" style="margin-top:6px;font-size:12px;"></div>
 
           <ul class="priceList">
             <li>Buy/Sell Score + 10 smart alerts</li>
@@ -402,22 +450,22 @@
             <div class="pricePer">/mo</div>
           </div>
 
-          <!-- UPDATED: Stripe checkout buttons (monthly + yearly) -->
+          <!-- UPDATED: buttons match Elite card + yearly slightly darker -->
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="priceBtn priceBtn--dark"
+            <a class="priceBtn mmCheckoutBtn"
                href="#"
                data-checkout-plan="elite"
                data-checkout-interval="monthly">
               Get Elite (Monthly)
             </a>
-            <a class="priceBtn priceBtn--ghost"
+
+            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly"
                href="#"
                data-checkout-plan="elite"
                data-checkout-interval="yearly">
               Get Elite (Yearly)
             </a>
           </div>
-          <div class="checkoutMsg muted" style="margin-top:6px;font-size:12px;"></div>
 
           <ul class="priceList">
             <li>50 alerts + percentiles + confidence scoring</li>
@@ -427,6 +475,7 @@
           <div class="priceFootnote">Built for serious allocation + timing.</div>
         </article>
       </div>
+
       <div class="pricingLegal muted">
         *Usage limits apply. Prices shown don’t include applicable tax.
       </div>
@@ -507,7 +556,7 @@
         return found > 0;
       }
 
-      // NEW: schedule a couple quick re-applies so ticks repaint immediately after theme flips
+      // schedule a couple quick re-applies so ticks repaint immediately after theme flips
       function scheduleApply(){
         try { applyChartTheme(); } catch(e) {}
         try { requestAnimationFrame(() => { try { applyChartTheme(); } catch(e) {} }); } catch(e) {}
@@ -525,7 +574,7 @@
         }, 250);
       });
 
-      // NEW: auto-apply whenever data-theme changes (no refresh button needed)
+      // auto-apply whenever data-theme changes (no refresh button needed)
       try{
         const mo = new MutationObserver((muts) => {
           for (const m of muts){
@@ -544,78 +593,6 @@
   </script>
 
   <script defer src="/app.js"></script>
-
-  <!-- =========================================================
-       STRIPE CHECKOUT (Home page pricing buttons)
-       - Uses /api/create_checkout_session
-       - Expects JSON: { ok: true, url: "https://checkout.stripe.com/..." }
-       ========================================================= -->
-  <script>
-    (function () {
-      async function startCheckout(plan, interval, el) {
-        const card = el && el.closest ? el.closest(".priceCard") : null;
-        const msg = card ? card.querySelector(".checkoutMsg") : null;
-
-        try {
-          // UI state
-          if (msg) msg.textContent = "Creating secure checkout…";
-          if (el) {
-            el.dataset._oldText = el.textContent;
-            el.textContent = "Redirecting…";
-            el.style.pointerEvents = "none";
-            el.setAttribute("aria-disabled", "true");
-          }
-
-          const res = await fetch("/api/create_checkout_session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plan, interval })
-          });
-
-          const text = await res.text();
-          let data = {};
-          try { data = JSON.parse(text); } catch { data = {}; }
-
-          if (!res.ok || !data.ok || !data.url) {
-            const err = (data && data.error) ? String(data.error) : `Checkout failed (HTTP ${res.status})`;
-            if (msg) msg.textContent = err;
-
-            if (el) {
-              el.textContent = el.dataset._oldText || "Try again";
-              el.style.pointerEvents = "";
-              el.removeAttribute("aria-disabled");
-            }
-            return;
-          }
-
-          window.location.href = data.url;
-        } catch (e) {
-          if (msg) msg.textContent = "Checkout error: " + (e && e.message ? e.message : e);
-          if (el) {
-            el.textContent = el.dataset._oldText || "Try again";
-            el.style.pointerEvents = "";
-            el.removeAttribute("aria-disabled");
-          }
-        }
-      }
-
-      document.addEventListener("click", (e) => {
-        const el = e && e.target && e.target.closest ? e.target.closest("[data-checkout-plan][data-checkout-interval]") : null;
-        if (!el) return;
-
-        e.preventDefault();
-
-        const plan = String(el.dataset.checkoutPlan || "").trim().toLowerCase();
-        const interval = String(el.dataset.checkoutInterval || "").trim().toLowerCase();
-
-        if (!plan || !interval) return;
-        if (plan !== "pro" && plan !== "elite") return;
-        if (interval !== "monthly" && interval !== "yearly") return;
-
-        startCheckout(plan, interval, el);
-      }, true);
-    })();
-  </script>
 
   <!-- =========================================================
        THEME TOGGLE (single button, moon/sun, persistent)
@@ -668,6 +645,70 @@
           // run again shortly in case charts update after toggle
           setTimeout(() => { try { window.mmApplyChartTheme && window.mmApplyChartTheme(); } catch(e) {} }, 250);
         });
+      }
+    })();
+  </script>
+
+  <!-- =========================================================
+       STRIPE CHECKOUT WIRING (guarded)
+       - Only runs if not already wired elsewhere
+       ========================================================= -->
+  <script>
+    (function () {
+      try {
+        if (window.__mmStripeCheckoutWired) return;
+        window.__mmStripeCheckoutWired = true;
+
+        const btns = Array.from(document.querySelectorAll("[data-checkout-plan][data-checkout-interval]"));
+        if (!btns.length) return;
+
+        async function go(plan, interval, el){
+          const original = el ? el.textContent : "";
+          try{
+            if (el) {
+              el.setAttribute("aria-busy", "true");
+              el.style.pointerEvents = "none";
+              el.textContent = "Redirecting…";
+            }
+
+            const res = await fetch("/api/create_checkout_session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ plan, interval })
+            });
+
+            const text = await res.text();
+            let data = null;
+            try { data = JSON.parse(text); } catch {}
+
+            if (!res.ok || !data?.ok || !data?.url) {
+              throw new Error((data && (data.error || data.message)) || `Checkout failed (${res.status})`);
+            }
+
+            window.location.href = data.url;
+          } finally {
+            if (el) {
+              el.removeAttribute("aria-busy");
+              el.style.pointerEvents = "";
+              el.textContent = original;
+            }
+          }
+        }
+
+        btns.forEach((a) => {
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            const plan = a.getAttribute("data-checkout-plan");
+            const interval = a.getAttribute("data-checkout-interval");
+            if (!plan || !interval) return;
+            go(plan, interval, a).catch((err) => {
+              console.warn("[stripe] checkout error:", err);
+              alert(err?.message || "Checkout failed. Please try again.");
+            });
+          });
+        });
+      } catch (e) {
+        console.warn("[stripe] wiring failed:", e);
       }
     })();
   </script>
@@ -757,67 +798,67 @@
     })();
   </script>
 
- <!-- =========================================================
-     SPOT PLATINUM KPI UPDATER (Home page only)
-     Replaced: platinum pulls from /api/platinum_live (free, no MetalPriceAPI quota)
-     ========================================================= -->
-<script>
-  (function(){
-    const $ = (id) => document.getElementById(id);
+  <!-- =========================================================
+       SPOT PLATINUM KPI UPDATER (Home page only)
+       Replaced: platinum pulls from /api/platinum_live (free, no MetalPriceAPI quota)
+       ========================================================= -->
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
 
-    const toNum = (v) => {
-      const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
-      return Number.isFinite(n) ? n : NaN;
-    };
+      const toNum = (v) => {
+        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
+        return Number.isFinite(n) ? n : NaN;
+      };
 
-    const money = (v) => {
-      const n = toNum(v);
-      if (!Number.isFinite(n)) return "—";
-      return n.toLocaleString(undefined, {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    };
+      const money = (v) => {
+        const n = toNum(v);
+        if (!Number.isFinite(n)) return "—";
+        return n.toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
 
-    async function fetchJsonNoStore(path){
-      const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
-      const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error(`Non-JSON from ${path}`); }
-      if (!res.ok || data?.ok === false) throw new Error(data?.error ? String(data.error) : `HTTP ${res.status}`);
-      return data;
-    }
+      async function fetchJsonNoStore(path){
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { throw new Error(`Non-JSON from ${path}`); }
+        if (!res.ok || data?.ok === false) throw new Error(data?.error ? String(data.error) : `HTTP ${res.status}`);
+        return data;
+      }
 
-    function setText(id, val){
-      const el = $(id);
-      if (el) el.textContent = val;
-    }
+      function setText(id, val){
+        const el = $(id);
+        if (el) el.textContent = val;
+      }
 
-    async function refreshSpotPlatinum(){
-      // New: platinum comes from its own endpoint, avoiding MetalPriceAPI quota issues
-      const data = await fetchJsonNoStore("/api/platinum_live");
+      async function refreshSpotPlatinum(){
+        // New: platinum comes from its own endpoint, avoiding MetalPriceAPI quota issues
+        const data = await fetchJsonNoStore("/api/platinum_live");
 
-      // Accept multiple possible keys just in case
-      const pt = (data && (data.platinum_usd ?? data.platinum ?? data.xpt_usd)) ?? null;
+        // Accept multiple possible keys just in case
+        const pt = (data && (data.platinum_usd ?? data.platinum ?? data.xpt_usd)) ?? null;
 
-      setText("platinum", money(pt));
-      setText("platinumSource", data?.source ? String(data.source) : "—");
-    }
+        setText("platinum", money(pt));
+        setText("platinumSource", data?.source ? String(data.source) : "—");
+      }
 
-    async function refreshSpotPlatinumSafe(){
-      try { await refreshSpotPlatinum(); }
-      catch(e){ console.warn("[index] spot platinum refresh failed:", e); }
-    }
+      async function refreshSpotPlatinumSafe(){
+        try { await refreshSpotPlatinum(); }
+        catch(e){ console.warn("[index] spot platinum refresh failed:", e); }
+      }
 
-    window.addEventListener("load", refreshSpotPlatinumSafe);
+      window.addEventListener("load", refreshSpotPlatinumSafe);
 
-    const btn = $("refreshBtn");
-    if (btn) btn.addEventListener("click", refreshSpotPlatinumSafe);
-  })();
-</script>
+      const btn = $("refreshBtn");
+      if (btn) btn.addEventListener("click", refreshSpotPlatinumSafe);
+    })();
+  </script>
 
   <!-- =========================================================
        Ticker sync + auto-duplicate (prevents blanks)
