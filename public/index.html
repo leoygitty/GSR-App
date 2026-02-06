@@ -31,28 +31,10 @@
     #pricing { scroll-margin-top: 18px; }
 
     /* =========================================================
-       KPI GRID: 4-UP (index only)
-       - Keeps KPI cards evenly spaced when adding Platinum
-       - Responsive collapse: 4 -> 2 -> 1
-       ========================================================= */
-    .kpiGrid.kpiGrid--4{
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-    }
-    @media (max-width: 1100px){
-      .kpiGrid.kpiGrid--4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 620px){
-      .kpiGrid.kpiGrid--4{ grid-template-columns: 1fr; }
-    }
-
-    /* =========================================================
        Ticker speed override for THIS page only (slower)
-       Your styles.css also defines defaults; this safely overrides speed.
        ========================================================= */
     :root{
-      --tickerSeconds: 64s; /* adjust slower/faster here */
+      --tickerSeconds: 64s;
     }
     @media (max-width: 720px){
       :root{ --tickerSeconds: 78s; }
@@ -66,17 +48,16 @@
 
     /* Pro palette */
     .priceCard--pro{
-      --mmBtnMonthly: #2563eb; /* monthly */
-      --mmBtnYearly:  #1d4ed8; /* yearly (darker) */
+      --mmBtnMonthly: #2563eb;
+      --mmBtnYearly:  #1d4ed8;
     }
 
     /* Elite palette */
     .priceCard--elite{
-      --mmBtnMonthly: #7c3aed; /* monthly */
-      --mmBtnYearly:  #6d28d9; /* yearly (darker) */
+      --mmBtnMonthly: #7c3aed;
+      --mmBtnYearly:  #6d28d9;
     }
 
-    /* Shared button look (keeps your existing .priceBtn sizing/typography) */
     .priceCard--pro a.mmCheckoutBtn,
     .priceCard--elite a.mmCheckoutBtn{
       background: var(--mmBtnMonthly);
@@ -84,14 +65,10 @@
       border: 1px solid rgba(255,255,255,.14);
       text-decoration: none;
     }
-
-    /* Yearly = slightly darker */
     .priceCard--pro a.mmCheckoutBtn.mmCheckoutBtn--yearly,
     .priceCard--elite a.mmCheckoutBtn.mmCheckoutBtn--yearly{
       background: var(--mmBtnYearly);
     }
-
-    /* Hover/focus */
     .priceCard--pro a.mmCheckoutBtn:hover,
     .priceCard--elite a.mmCheckoutBtn:hover{
       filter: brightness(1.06);
@@ -111,7 +88,6 @@
 <body>
   <!-- =========================================================
        FIXED FULL-WIDTH TOP TICKER (ABOVE EVERYTHING)
-       (Styling is handled in /styles.css to avoid conflicts)
        ========================================================= -->
   <div class="ticker" role="region" aria-label="Live prices ticker">
     <div class="tickerInner">
@@ -149,14 +125,13 @@
             </span>
             <span class="tickSep">•</span>
           </div>
-          <!-- clones appended by JS -->
         </div>
       </div>
     </div>
   </div>
 
   <!-- =========================================================
-       NEW NAV BANNER (clean, stable in light/dark)
+       NAV BANNER
        ========================================================= -->
   <div class="navBannerSticky" role="navigation" aria-label="Primary navigation">
     <div class="navBannerSurface">
@@ -192,13 +167,7 @@
     <header class="topbar">
       <div class="titleBlock">
         <div class="brandLockup">
-          <img
-            class="brandMark"
-            src="/metalmetric-mark.svg"
-            alt="MetalMetric"
-            width="36"
-            height="36"
-          />
+          <img class="brandMark" src="/metalmetric-mark.svg" alt="MetalMetric" width="36" height="36" />
           <div class="brandStack">
             <div class="brandRow">
               <h1 class="brandName">MetalMetric</h1>
@@ -213,14 +182,68 @@
           </div>
         </div>
       </div>
-      <!-- actions removed intentionally (now in nav banner) -->
     </header>
 
-    <!-- ===========================
-         SPOT (Spot price /api/spot)
-         =========================== -->
-    <section class="kpiGrid kpiGrid--4" aria-label="Spot prices">
-      <div class="kpiCard">
+    <!-- =========================================================
+         NEW KPI ORGANIZATION
+         Futures (left) + Spot (right), then GSR row below
+         ========================================================= -->
+    <section class="kpiMatrix" aria-label="Spot and futures prices">
+      <!-- FUTURES (LEFT) -->
+      <div class="kpiMatrixCol kpiMatrixCol--futures">
+        <div class="kpiMatrixHead">Futures</div>
+
+        <div class="kpiCard kpiCard--coinGold kpiCard--futures">
+          <div class="kpiLabel">GOLD (FUTURES USD)</div>
+          <div class="kpiValue" id="futGold">—</div>
+          <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
+        </div>
+
+        <div class="kpiCard kpiCard--coinSilver kpiCard--futures">
+          <div class="kpiLabel">SILVER (FUTURES USD)</div>
+          <div class="kpiValue" id="futSilver">—</div>
+          <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
+        </div>
+
+        <div class="kpiCard kpiCard--coinPlatinum kpiCard--futures">
+          <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
+          <div class="kpiValue" id="futPlatinum">—</div>
+          <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
+        </div>
+      </div>
+
+      <!-- SPOT (RIGHT) -->
+      <div class="kpiMatrixCol kpiMatrixCol--spot">
+        <div class="kpiMatrixHead">Spot</div>
+
+        <div class="kpiCard kpiCard--coinGold">
+          <div class="kpiLabel">GOLD (SPOT USD)</div>
+          <div class="kpiValue" id="gold">—</div>
+          <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="fetchedAt">—</span></div>
+        </div>
+
+        <div class="kpiCard kpiCard--coinSilver">
+          <div class="kpiLabel">SILVER (SPOT USD)</div>
+          <div class="kpiValue" id="silver">—</div>
+          <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
+        </div>
+
+        <div class="kpiCard kpiCard--coinPlatinum">
+          <div class="kpiLabel">PLATINUM (SPOT USD)</div>
+          <div class="kpiValue" id="platinum">—</div>
+          <div class="kpiSub"><span class="muted">Source:</span> <span id="platinumSource">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpiGsrRow" aria-label="Gold-to-Silver Ratio">
+      <div class="kpiCard kpiCard--mini">
+        <div class="kpiLabel">GSR (FUTURES)</div>
+        <div class="kpiValue" id="futGsr">—</div>
+        <div class="kpiSub"><span class="muted">Market time:</span> <span id="futMarketTime">—</span></div>
+      </div>
+
+      <div class="kpiCard kpiCard--mini">
         <div class="kpiLabel">GSR (SPOT)</div>
         <div class="kpiValue" id="gsr">—</div>
         <div class="kpiSub">
@@ -228,47 +251,6 @@
           <span id="deltaAbs">—</span>
           <span class="muted"> (</span><span id="deltaPct">—</span><span class="muted">)</span>
         </div>
-      </div>
-      <div class="kpiCard kpiCard--coinGold">
-        <div class="kpiLabel">GOLD (SPOT USD)</div>
-        <div class="kpiValue" id="gold">—</div>
-        <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="fetchedAt">—</span></div>
-      </div>
-      <div class="kpiCard kpiCard--coinSilver">
-        <div class="kpiLabel">SILVER (SPOT USD)</div>
-        <div class="kpiValue" id="silver">—</div>
-        <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
-      </div>
-      <div class="kpiCard kpiCard--coinPlatinum">
-        <div class="kpiLabel">PLATINUM (SPOT USD)</div>
-        <div class="kpiValue" id="platinum">—</div>
-        <div class="kpiSub"><span class="muted">Source:</span> <span id="platinumSource">—</span></div>
-      </div>
-    </section>
-
-    <!-- ======================================
-         FUTURES-DERIVED (Futures /api/futures)
-         ====================================== -->
-    <section class="kpiGrid kpiGrid--4" aria-label="Futures-derived prices">
-      <div class="kpiCard">
-        <div class="kpiLabel">GSR (FUTURES)</div>
-        <div class="kpiValue" id="futGsr">—</div>
-        <div class="kpiSub"><span class="muted">Market time:</span> <span id="futMarketTime">—</span></div>
-      </div>
-      <div class="kpiCard kpiCard--coinGold kpiCard--futures">
-        <div class="kpiLabel">GOLD (FUTURES USD)</div>
-        <div class="kpiValue" id="futGold">—</div>
-        <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
-      </div>
-      <div class="kpiCard kpiCard--coinSilver kpiCard--futures">
-        <div class="kpiLabel">SILVER (FUTURES USD)</div>
-        <div class="kpiValue" id="futSilver">—</div>
-        <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
-      </div>
-      <div class="kpiCard kpiCard--coinPlatinum kpiCard--futures">
-        <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
-        <div class="kpiValue" id="futPlatinum">—</div>
-        <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
       </div>
     </section>
 
@@ -292,7 +274,6 @@
         <div class="cardTitle">Charts</div>
         <div class="cardMeta" id="rangeLabel">—</div>
 
-        <!-- Premium controls (safe: app.js checks for existence) -->
         <div class="chartTools">
           <button id="chartsResetZoomBtn" class="iconBtn" type="button" title="Reset zoom" aria-label="Reset zoom">⟲</button>
           <button id="chartsExpandBtn" class="iconBtn" type="button" title="Expand charts" aria-label="Expand charts">⤢</button>
@@ -300,7 +281,6 @@
         </div>
       </div>
 
-      <!-- Optional lock/teaser overlay (only shows if your JS enables it) -->
       <div id="chartsLockOverlay" class="chartsLockOverlay hidden" aria-hidden="true">
         <div class="lockTitle">Interactive charts are Pro+</div>
         <div class="lockSub">Zoom, pan, synced crosshair, and insights.</div>
@@ -310,7 +290,6 @@
         </div>
       </div>
 
-      <!-- Clicked-point details popover (JS fills this) -->
       <div id="pointDetails" class="pointDetails hidden" role="status" aria-live="polite"></div>
 
       <div id="emptyState" class="emptyState hidden">
@@ -414,19 +393,11 @@
             <div class="pricePer">/mo</div>
           </div>
 
-          <!-- UPDATED: buttons match Pro card + yearly slightly darker -->
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="priceBtn mmCheckoutBtn"
-               href="#"
-               data-checkout-plan="pro"
-               data-checkout-interval="monthly">
+            <a class="priceBtn mmCheckoutBtn" href="#" data-checkout-plan="pro" data-checkout-interval="monthly">
               Get Pro (Monthly)
             </a>
-
-            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly"
-               href="#"
-               data-checkout-plan="pro"
-               data-checkout-interval="yearly">
+            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly" href="#" data-checkout-plan="pro" data-checkout-interval="yearly">
               Get Pro (Yearly)
             </a>
           </div>
@@ -450,19 +421,11 @@
             <div class="pricePer">/mo</div>
           </div>
 
-          <!-- UPDATED: buttons match Elite card + yearly slightly darker -->
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="priceBtn mmCheckoutBtn"
-               href="#"
-               data-checkout-plan="elite"
-               data-checkout-interval="monthly">
+            <a class="priceBtn mmCheckoutBtn" href="#" data-checkout-plan="elite" data-checkout-interval="monthly">
               Get Elite (Monthly)
             </a>
-
-            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly"
-               href="#"
-               data-checkout-plan="elite"
-               data-checkout-interval="yearly">
+            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly" href="#" data-checkout-plan="elite" data-checkout-interval="yearly">
               Get Elite (Yearly)
             </a>
           </div>
@@ -492,36 +455,28 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
 
-  <!-- Chart theme helper (keeps axis/legend readable in dark mode) -->
+  <!-- Chart theme helper -->
   <script>
     (function(){
       function isDark(){
         return (document.documentElement.getAttribute("data-theme") || "light").toLowerCase() === "dark";
       }
-
       function applyChartTheme(){
         if (!window.Chart || !Chart.getChart) return false;
-
         const dark = isDark();
         const tick = dark ? "rgba(255,255,255,.78)" : "rgba(17,17,20,.72)";
         const grid = dark ? "rgba(255,255,255,.08)" : "rgba(17,17,20,.10)";
         const title = dark ? "rgba(255,255,255,.88)" : "rgba(17,17,20,.86)";
-
-        // defaults
         Chart.defaults.color = tick;
         Chart.defaults.borderColor = grid;
-
         const ids = ["chartGsrCanvas","chartGoldCanvas","chartSilverCanvas"];
         let found = 0;
-
         ids.forEach(id => {
           const c = document.getElementById(id);
           if (!c) return;
           const chart = Chart.getChart(c);
           if (!chart) return;
           found++;
-
-          // scales
           if (chart.options && chart.options.scales){
             Object.values(chart.options.scales).forEach(sc => {
               sc.ticks = sc.ticks || {};
@@ -534,37 +489,27 @@
               sc.title.color = title;
             });
           }
-
-          // legend / tooltip
           chart.options.plugins = chart.options.plugins || {};
           chart.options.plugins.legend = chart.options.plugins.legend || {};
           chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
           chart.options.plugins.legend.labels.color = tick;
-
           chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
           chart.options.plugins.tooltip.titleColor = dark ? "rgba(255,255,255,.92)" : "rgba(17,17,20,.92)";
           chart.options.plugins.tooltip.bodyColor  = dark ? "rgba(255,255,255,.86)" : "rgba(17,17,20,.86)";
           chart.options.plugins.tooltip.backgroundColor = dark ? "rgba(0,0,0,.78)" : "rgba(255,255,255,.92)";
           chart.options.plugins.tooltip.borderColor = dark ? "rgba(255,255,255,.12)" : "rgba(17,17,20,.10)";
           chart.options.plugins.tooltip.borderWidth = 1;
-
-          // Force immediate repaint
           chart.update("none");
           try { if (chart.draw) chart.draw(); } catch(e) {}
         });
-
         return found > 0;
       }
-
-      // schedule a couple quick re-applies so ticks repaint immediately after theme flips
       function scheduleApply(){
         try { applyChartTheme(); } catch(e) {}
         try { requestAnimationFrame(() => { try { applyChartTheme(); } catch(e) {} }); } catch(e) {}
         setTimeout(() => { try { applyChartTheme(); } catch(e) {} }, 120);
         setTimeout(() => { try { applyChartTheme(); } catch(e) {} }, 350);
       }
-
-      // Run after everything is loaded (app.js builds charts after fetch)
       window.addEventListener("load", () => {
         let tries = 0;
         const t = setInterval(() => {
@@ -573,8 +518,6 @@
           if (ok || tries > 20) clearInterval(t);
         }, 250);
       });
-
-      // auto-apply whenever data-theme changes (no refresh button needed)
       try{
         const mo = new MutationObserver((muts) => {
           for (const m of muts){
@@ -586,18 +529,13 @@
         });
         mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
       }catch(e){}
-
-      // Expose so theme toggle can call it immediately
       window.mmApplyChartTheme = scheduleApply;
     })();
   </script>
 
   <script defer src="/app.js"></script>
 
-  <!-- =========================================================
-       THEME TOGGLE (single button, moon/sun, persistent)
-       FIXED: shows ACTION label (Dark in light, Light in dark)
-       ========================================================= -->
+  <!-- THEME TOGGLE -->
   <script>
     (function(){
       const KEY = "mm_theme";
@@ -615,24 +553,13 @@
       const apply = (theme) => {
         root.setAttribute("data-theme", theme);
         const isDark = theme === "dark";
-
-        // aria-pressed reflects current state
         if (btn) btn.setAttribute("aria-pressed", isDark ? "true" : "false");
-
-        // Show ACTION label/icons:
-        // If currently dark => show "Light" (sun) to switch to light
-        // If currently light => show "Dark" (moon) to switch to dark
         if (label) label.textContent = isDark ? "Light" : "Dark";
         if (moon) moon.style.display = isDark ? "none" : "inline-flex";
         if (sun)  sun.style.display  = isDark ? "inline-flex" : "none";
         if (btn) btn.title = isDark ? "Switch to Light" : "Switch to Dark";
-
         try { localStorage.setItem(KEY, theme); } catch(e) {}
-
-        // Update Chart.js colors (if charts already exist)
-        try {
-          if (window.mmApplyChartTheme) window.mmApplyChartTheme();
-        } catch(e) {}
+        try { if (window.mmApplyChartTheme) window.mmApplyChartTheme(); } catch(e) {}
       };
 
       apply(getTheme());
@@ -641,18 +568,13 @@
         btn.addEventListener("click", () => {
           const next = (getTheme() === "dark") ? "light" : "dark";
           apply(next);
-
-          // run again shortly in case charts update after toggle
           setTimeout(() => { try { window.mmApplyChartTheme && window.mmApplyChartTheme(); } catch(e) {} }, 250);
         });
       }
     })();
   </script>
 
-  <!-- =========================================================
-       STRIPE CHECKOUT WIRING (guarded)
-       - Only runs if not already wired elsewhere
-       ========================================================= -->
+  <!-- STRIPE CHECKOUT WIRING (guarded) -->
   <script>
     (function () {
       try {
@@ -713,9 +635,7 @@
     })();
   </script>
 
-  <!-- =========================================================
-       FUTURES-DERIVED KPI UPDATER (Home page only)
-       ========================================================= -->
+  <!-- FUTURES-DERIVED KPI UPDATER -->
   <script>
     (function(){
       const $ = (id) => document.getElementById(id);
@@ -798,10 +718,7 @@
     })();
   </script>
 
-  <!-- =========================================================
-       SPOT PLATINUM KPI UPDATER (Home page only)
-       Replaced: platinum pulls from /api/platinum_live (free, no MetalPriceAPI quota)
-       ========================================================= -->
+  <!-- SPOT PLATINUM KPI UPDATER -->
   <script>
     (function(){
       const $ = (id) => document.getElementById(id);
@@ -838,12 +755,8 @@
       }
 
       async function refreshSpotPlatinum(){
-        // New: platinum comes from its own endpoint, avoiding MetalPriceAPI quota issues
         const data = await fetchJsonNoStore("/api/platinum_live");
-
-        // Accept multiple possible keys just in case
         const pt = (data && (data.platinum_usd ?? data.platinum ?? data.xpt_usd)) ?? null;
-
         setText("platinum", money(pt));
         setText("platinumSource", data?.source ? String(data.source) : "—");
       }
@@ -860,121 +773,119 @@
     })();
   </script>
 
- <!-- =========================================================
-     Ticker sync (NO restart) + clone-fill only on load/resize
-     - Fixes: pause/restart loop on mobile
-     ========================================================= -->
-<script>
-  (function(){
-    const $ = (id) => document.getElementById(id);
-    const track = $("tickerTrack");
-    const live = $("tickerLiveGroup");
-    if (!track || !live) return;
+  <!-- =========================================================
+       TICKER: seamless continuous loop (no pause/restart)
+       - builds TWO identical halves so translateX(-50%) is seamless
+       - does NOT rebuild on KPI text updates (only syncs text)
+       ========================================================= -->
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+      const track = $("tickerTrack");
+      const live = $("tickerLiveGroup");
+      if (!track || !live) return;
 
-    const viewport = track.closest(".tickerViewport");
-
-    const readText = (id) => {
-      const el = $(id);
-      const t = (el && el.textContent || "").trim();
-      return t && t !== "—" ? t : "—";
-    };
-
-    const setText = (id, val) => {
-      const el = $(id);
-      if (el) el.textContent = val;
-    };
-
-    const computeDeltaLine = () => {
-      const abs = readText("deltaAbs");
-      const pct = readText("deltaPct");
-      if (abs === "—" && pct === "—") return "—";
-      if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
-      return abs !== "—" ? abs : pct;
-    };
-
-    const stripCloneIds = (node) => {
-      node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
-    };
-
-    // Build clones ONLY when layout changes (load/resize),
-    // not when values update (which would restart animation).
-    let built = false;
-    let lastVp = 0;
-    let lastBase = 0;
-
-    function buildClones(force = false){
+      const viewport = track.closest(".tickerViewport");
       if (!viewport) return;
 
-      const vp = Math.max(0, viewport.clientWidth || 0);
-      const baseW = Math.max(0, live.scrollWidth || 0);
-
-      // Skip rebuild if nothing meaningful changed
-      if (!force && built && Math.abs(vp - lastVp) < 2 && Math.abs(baseW - lastBase) < 2) return;
-
-      lastVp = vp;
-      lastBase = baseW;
-      built = true;
-
-      track.querySelectorAll(".tickerClone").forEach(n => n.remove());
-
-      const target = vp * 3; // enough to avoid gaps
-      let guard = 0;
-
-      const makeClone = () => {
-        const c = live.cloneNode(true);
-        c.classList.add("tickerClone");
-        c.setAttribute("aria-hidden","true");
-        c.removeAttribute("id");
-        stripCloneIds(c);
-        return c;
+      const readText = (id) => {
+        const el = $(id);
+        const t = (el && el.textContent || "").trim();
+        return t && t !== "—" ? t : "—";
+      };
+      const setText = (id, val) => {
+        const el = $(id);
+        if (el) el.textContent = val;
+      };
+      const computeDeltaLine = () => {
+        const abs = readText("deltaAbs");
+        const pct = readText("deltaPct");
+        if (abs === "—" && pct === "—") return "—";
+        if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
+        return abs !== "—" ? abs : pct;
+      };
+      const stripCloneIds = (node) => {
+        node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
       };
 
-      while (track.scrollWidth < target && guard < 80) {
-        track.appendChild(makeClone());
-        guard++;
+      function sync(){
+        setText("sbGold", readText("gold"));
+        setText("sbSilver", readText("silver"));
+        setText("sbGsr", readText("gsr"));
+        setText("sbDelta", computeDeltaLine());
+        setText("sbUpdated", readText("lastUpdatedHuman"));
       }
 
-      track.classList.add("isReady");
-    }
+      function buildSeamless(){
+        // Restart animation only when rebuilding structure (load/resize)
+        track.classList.remove("isReady");
 
-    function sync(){
-      setText("sbGold", readText("gold"));
-      setText("sbSilver", readText("silver"));
-      setText("sbGsr", readText("gsr"));
-      setText("sbDelta", computeDeltaLine());
-      setText("sbUpdated", readText("lastUpdatedHuman"));
-    }
+        // Remove previous clones
+        track.querySelectorAll(".tickerClone, .tickerHalfClone").forEach(n => n.remove());
 
-    // Initial
-    sync();
-    buildClones(true);
+        const vp = Math.max(0, viewport.clientWidth || 0);
+        const pad = 40; // buffer to avoid gaps
 
-    window.addEventListener("load", () => {
+        // Build FIRST HALF: live + enough copies to fill >= viewport width
+        let guard = 0;
+        while (track.scrollWidth < (vp + pad) && guard < 60) {
+          const c = live.cloneNode(true);
+          c.classList.add("tickerHalfClone");
+          c.setAttribute("aria-hidden","true");
+          c.removeAttribute("id");
+          stripCloneIds(c);
+          track.appendChild(c);
+          guard++;
+        }
+
+        // Duplicate the entire first half to create TWO identical halves
+        const firstHalf = Array.from(track.children);
+        const frag = document.createDocumentFragment();
+        firstHalf.forEach(el => {
+          const c = el.cloneNode(true);
+          c.classList.add("tickerClone");
+          c.setAttribute("aria-hidden","true");
+          c.removeAttribute("id");
+          stripCloneIds(c);
+          frag.appendChild(c);
+        });
+        track.appendChild(frag);
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          track.classList.add("isReady");
+        }));
+      }
+
+      // Initial
       sync();
-      buildClones(true);
-      // once more after layout/fonts settle
-      setTimeout(() => buildClones(true), 200);
-    });
+      buildSeamless();
 
-    window.addEventListener("resize", () => buildClones(true));
+      window.addEventListener("load", () => {
+        sync();
+        buildSeamless();
+        setTimeout(buildSeamless, 200);
+      });
 
-    // Only sync values on KPI changes (no rebuild)
-    const mo = new MutationObserver(() => sync());
-    ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
-      const el = $(id);
-      if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
-    });
+      window.addEventListener("resize", buildSeamless);
 
-    // keep numbers fresh, but DO NOT rebuild clones
-    setInterval(sync, 1200);
+      // Only sync values on KPI changes (no rebuild = no restart)
+      const mo = new MutationObserver(() => sync());
+      ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
+        const el = $(id);
+        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
+      });
 
-    // Optional: rebuild clones when viewport/contents size changes (orientation/font)
-    if (window.ResizeObserver && viewport) {
-      const ro = new ResizeObserver(() => buildClones(true));
-      ro.observe(viewport);
-      ro.observe(live);
+      // keep ticker numbers fresh
+      setInterval(sync, 1200);
+    })();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
     }
-  })();
-</script>
+  </script>
 </body>
 </html>
