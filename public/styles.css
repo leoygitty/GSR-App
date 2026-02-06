@@ -1908,4 +1908,98 @@ body.mmChartsExpanded .chartBlock{
     font-size: 38px !important;
   }
 }
+/* =========================================================
+   INDEX: Spot/Futures organized layout + GSR row
+   AND fix coin ornaments getting clipped on mobile
+   Paste at VERY BOTTOM of styles.css
+   ========================================================= */
 
+/* --- NEW: two-column matrix (Futures left, Spot right) --- */
+.kpiMatrix{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 18px 0 12px;
+}
+.kpiMatrixCol{
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.kpiMatrixHead{
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 900;
+  padding-left: 6px;
+  margin: 2px 0 -2px;
+}
+
+/* GSR row below both columns */
+.kpiGsrRow{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+
+/* Slightly smaller “tab” feel for the two GSR cards */
+.kpiCard--mini{
+  padding: 14px 14px 12px;
+}
+.kpiCard--mini .kpiLabel{ margin-bottom: 8px; }
+.kpiCard--mini .kpiValue{ font-size: 34px; }
+
+/* Stack columns on smaller screens */
+@media (max-width: 980px){
+  .kpiMatrix{ grid-template-columns: 1fr; }
+  /* On mobile/tablet, show Spot first, then Futures */
+  .kpiMatrixCol--spot{ order: 1; }
+  .kpiMatrixCol--futures{ order: 2; }
+}
+
+/* Very small phones: stack GSR cards if needed */
+@media (max-width: 390px){
+  .kpiGsrRow{ grid-template-columns: 1fr; }
+}
+
+/* =========================================================
+   FIX: Coins cut off on mobile
+   Cause: your mobile .kpiLabel sets overflow:hidden which clips ::before
+   Solution: coin labels must be overflow:visible + have a min-height
+   ========================================================= */
+.kpiCard--coinGold .kpiLabel,
+.kpiCard--coinSilver .kpiLabel,
+.kpiCard--coinPlatinum .kpiLabel{
+  overflow: visible !important;   /* <- stops clipping */
+  min-height: 34px;              /* enough room for the 34px coin */
+  display: flex;
+  align-items: center;
+  line-height: 1.15;
+}
+
+/* Shrink coins a bit more on mobile so they always fit cleanly */
+@media (max-width: 720px){
+  .kpiCard--coinGold .kpiLabel,
+  .kpiCard--coinSilver .kpiLabel,
+  .kpiCard--coinPlatinum .kpiLabel{
+    min-height: 28px;
+    padding-left: 38px !important;
+  }
+
+  .kpiCard--coinGold .kpiLabel::before,
+  .kpiCard--coinSilver .kpiLabel::before,
+  .kpiCard--coinPlatinum .kpiLabel::before{
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
+
+@media (max-width: 520px){
+  .kpiCard--coinGold .kpiLabel,
+  .kpiCard--coinSilver .kpiLabel,
+  .kpiCard--coinPlatinum .kpiLabel{
+    padding-left: 36px !important;
+  }
+}
