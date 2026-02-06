@@ -860,89 +860,121 @@
     })();
   </script>
 
-  <!-- =========================================================
-       Ticker sync + auto-duplicate (prevents blanks)
-       ========================================================= -->
-  <script>
-    (function(){
-      const $ = (id) => document.getElementById(id);
-      const readText = (id) => {
-        const el = $(id);
-        const t = (el && el.textContent || "").trim();
-        return t && t !== "—" ? t : "—";
-      };
-      const setText = (id, val) => {
-        const el = $(id);
-        if (el) el.textContent = val;
-      };
-      const computeDeltaLine = () => {
-        const abs = readText("deltaAbs");
-        const pct = readText("deltaPct");
-        if (abs === "—" && pct === "—") return "—";
-        if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
-        return abs !== "—" ? abs : pct;
-      };
-      const stripCloneIds = (node) => {
-        node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
-      };
-      const ensureTickerFilled = () => {
-        const track = $("tickerTrack");
-        const live = $("tickerLiveGroup");
-        if (!track || !live) return;
-        track.classList.remove("isReady");
-        track.querySelectorAll(".tickerClone").forEach(n => n.remove());
-        const viewport = track.closest(".tickerViewport");
-        if (!viewport) return;
-        const target = viewport.clientWidth * 3;
-        let guard = 0;
-        const makeClone = () => {
-          const c = live.cloneNode(true);
-          c.classList.add("tickerClone");
-          c.setAttribute("aria-hidden","true");
-          c.removeAttribute("id");
-          stripCloneIds(c);
-          return c;
-        };
-        while (track.scrollWidth < target && guard < 50) {
-          track.appendChild(makeClone());
-          guard++;
-        }
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          track.classList.add("isReady");
-        }));
-      };
-      const sync = () => {
-        setText("sbGold", readText("gold"));
-        setText("sbSilver", readText("silver"));
-        setText("sbGsr", readText("gsr"));
-        setText("sbDelta", computeDeltaLine());
-        setText("sbUpdated", readText("lastUpdatedHuman"));
-      };
-      sync();
-      ensureTickerFilled();
-      window.addEventListener("load", () => {
-        sync();
-        ensureTickerFilled();
-      });
-      const mo = new MutationObserver(() => {
-        sync();
-        ensureTickerFilled();
-      });
-      ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
-        const el = $(id);
-        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
-      });
-      window.addEventListener("resize", ensureTickerFilled);
-      setInterval(sync, 1200);
-    })();
-  </script>
+ <!-- =========================================================
+     Ticker sync (NO restart) + clone-fill only on load/resize
+     - Fixes: pause/restart loop on mobile
+     ========================================================= -->
+<script>
+  (function(){
+    const $ = (id) => document.getElementById(id);
+    const track = $("tickerTrack");
+    const live = $("tickerLiveGroup");
+    if (!track || !live) return;
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      });
+    const viewport = track.closest(".tickerViewport");
+
+    const readText = (id) => {
+      const el = $(id);
+      const t = (el && el.textContent || "").trim();
+      return t && t !== "—" ? t : "—";
+    };
+
+    const setText = (id, val) => {
+      const el = $(id);
+      if (el) el.textContent = val;
+    };
+
+    const computeDeltaLine = () => {
+      const abs = readText("deltaAbs");
+      const pct = readText("deltaPct");
+      if (abs === "—" && pct === "—") return "—";
+      if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
+      return abs !== "—" ? abs : pct;
+    };
+
+    const stripCloneIds = (node) => {
+      node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+    };
+
+    // Build clones ONLY when layout changes (load/resize),
+    // not when values update (which would restart animation).
+    let built = false;
+    let lastVp = 0;
+    let lastBase = 0;
+
+    function buildClones(force = false){
+      if (!viewport) return;
+
+      const vp = Math.max(0, viewport.clientWidth || 0);
+      const baseW = Math.max(0, live.scrollWidth || 0);
+
+      // Skip rebuild if nothing meaningful changed
+      if (!force && built && Math.abs(vp - lastVp) < 2 && Math.abs(baseW - lastBase) < 2) return;
+
+      lastVp = vp;
+      lastBase = baseW;
+      built = true;
+
+      track.querySelectorAll(".tickerClone").forEach(n => n.remove());
+
+      const target = vp * 3; // enough to avoid gaps
+      let guard = 0;
+
+      const makeClone = () => {
+        const c = live.cloneNode(true);
+        c.classList.add("tickerClone");
+        c.setAttribute("aria-hidden","true");
+        c.removeAttribute("id");
+        stripCloneIds(c);
+        return c;
+      };
+
+      while (track.scrollWidth < target && guard < 80) {
+        track.appendChild(makeClone());
+        guard++;
+      }
+
+      track.classList.add("isReady");
     }
-  </script>
+
+    function sync(){
+      setText("sbGold", readText("gold"));
+      setText("sbSilver", readText("silver"));
+      setText("sbGsr", readText("gsr"));
+      setText("sbDelta", computeDeltaLine());
+      setText("sbUpdated", readText("lastUpdatedHuman"));
+    }
+
+    // Initial
+    sync();
+    buildClones(true);
+
+    window.addEventListener("load", () => {
+      sync();
+      buildClones(true);
+      // once more after layout/fonts settle
+      setTimeout(() => buildClones(true), 200);
+    });
+
+    window.addEventListener("resize", () => buildClones(true));
+
+    // Only sync values on KPI changes (no rebuild)
+    const mo = new MutationObserver(() => sync());
+    ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
+      const el = $(id);
+      if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+
+    // keep numbers fresh, but DO NOT rebuild clones
+    setInterval(sync, 1200);
+
+    // Optional: rebuild clones when viewport/contents size changes (orientation/font)
+    if (window.ResizeObserver && viewport) {
+      const ro = new ResizeObserver(() => buildClones(true));
+      ro.observe(viewport);
+      ro.observe(live);
+    }
+  })();
+</script>
 </body>
 </html>
