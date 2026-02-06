@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vault Tracker — MetalMetric</title>
+
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../icon.svg" />
+
+  <style>
+    :root{
+      --m-bg: #0b0f14;
+      --m-panel: rgba(255,255,255,.04);
+      --m-panel2: rgba(255,255,255,.06);
+      --m-border: rgba(255,255,255,.10);
+      --m-border2: rgba(255,255,255,.14);
+      --m-text: rgba(255,255,255,.92);
+      --m-subtext: rgba(255,255,255,.64);
+      --m-muted: rgba(255,255,255,.50);
+      --m-shadow: 0 18px 60px rgba(0,0,0,.50);
+      --m-radius: 18px;
+      --m-radius2: 14px;
+
+      --m-accent: rgba(142, 200, 255, 1);
+      --m-gold: rgba(245, 200, 90, 1);
+      --m-silver: rgba(210, 220, 232, 1);
+      --m-plat: rgba(180, 195, 255, 1);
+
+      --m-good: rgba(52, 211, 153, 1);
+      --m-bad: rgba(248, 113, 113, 1);
+      --m-warn: rgba(251, 191, 36, 1);
+    }
+
+    body.vaultPage{
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 520px at 20% 0%, rgba(142,200,255,.12), transparent 60%),
+        radial-gradient(900px 520px at 80% 0%, rgba(245,200,90,.10), transparent 60%),
+        var(--m-bg);
+      color: var(--m-text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      overflow-x: hidden; /* hard prevent page horizontal scroll */
+    }
+
+    body.vaultPage a{ color: inherit; text-decoration: none; }
+    body.vaultPage a:hover{ text-decoration: underline; text-decoration-color: rgba(255,255,255,.35); }
+
+    .mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+    .meltWrap{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+
+    /* Top bar (same as Melt) */
+    .meltTop{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .meltBrand{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .meltMark{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+      border: 1px solid var(--m-border);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      display: grid; place-items: center;
+    }
+    .meltMark svg{ opacity: .92; }
+    .meltBrandText{ display: flex; flex-direction: column; line-height: 1.1; }
+    .meltBrandText b{ font-size: 14px; letter-spacing: .2px; }
+    .meltBrandText span{ font-size: 12px; color: var(--m-subtext); }
+
+    .meltNav{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pillRow{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--m-border);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .pill strong{ font-weight: 650; letter-spacing: .2px; }
+    .pill small{ color: var(--m-subtext); font-size: 11px; }
+    .pill.isActive{
+      background: rgba(142,200,255,.08);
+      border-color: rgba(142,200,255,.22);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 0 0 4px rgba(142,200,255,.08);
+    }
+
+    .btn{
+      appearance: none;
+      border: 1px solid var(--m-border);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.90);
+      padding: 9px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.28);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select: none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); border-color: var(--m-border2); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); }
+    .btn:focus-visible{
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(142,200,255,.18), 0 18px 60px rgba(0,0,0,.35);
+      border-color: rgba(142,200,255,.45);
+    }
+    .btnPrimary{
+      border-color: rgba(142,200,255,.35);
+      background: rgba(142,200,255,.12);
+    }
+    .btnPrimary:hover{
+      background: rgba(142,200,255,.18);
+      border-color: rgba(142,200,255,.48);
+    }
+    .btnDanger{
+      border-color: rgba(248,113,113,.30);
+      background: rgba(248,113,113,.10);
+    }
+    .btnDanger:hover{
+      background: rgba(248,113,113,.14);
+      border-color: rgba(248,113,113,.45);
+    }
+    .btn:disabled{
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Hero (same vibe as Melt) */
+    .meltHero{
+      margin: 12px 0 22px;
+      padding: 18px 18px 0;
+    }
+    .meltHero h1{
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    .meltHero p{
+      margin: 0;
+      color: var(--m-subtext);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    /* Layout grid */
+    .meltGrid{
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px){
+      .meltGrid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border-radius: var(--m-radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--m-border);
+      box-shadow: var(--m-shadow);
+      overflow: hidden;
+      min-width: 0;
+    }
+    .cardHeader{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .cardHeader h2{
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: .3px;
+      font-weight: 650;
+      color: rgba(255,255,255,.86);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .cardBody{ padding: 16px; }
+
+    /* Form controls (from Melt) */
+    .row{
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (max-width: 980px){
+      .row{ grid-template-columns: 1fr 160px; }
+    }
+    @media (max-width: 560px){
+      .row{ grid-template-columns: 1fr; }
+    }
+    .field label{
+      display: block;
+      font-size: 11px;
+      color: var(--m-subtext);
+      margin-bottom: 6px;
+      letter-spacing: .2px;
+    }
+    .control{
+      width: 100%;
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.90);
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+      box-sizing: border-box;
+    }
+    .control:hover{ border-color: rgba(255,255,255,.16); }
+    .control:focus{
+      border-color: rgba(142,200,255,.50);
+      box-shadow: 0 0 0 4px rgba(142,200,255,.14);
+      background: rgba(255,255,255,.06);
+    }
+    select.control{ padding-right: 34px; }
+    textarea.control{ min-height: 84px; resize: vertical; }
+
+    /* Summary hero (reuse Melt output hero styling) */
+    .resultHero{
+      padding: 18px 16px 12px;
+      background: linear-gradient(180deg, rgba(142,200,255,.10), rgba(255,255,255,.00));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .resultHero .label{
+      font-size: 11px;
+      color: rgba(255,255,255,.65);
+      letter-spacing: .28em;
+      text-transform: uppercase;
+    }
+    .resultHero .value{
+      margin-top: 8px;
+      font-size: 44px;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+      line-height: 1.0;
+    }
+    .resultHero .sub{
+      margin-top: 8px;
+      color: var(--m-subtext);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-height: 18px;
+    }
+    .deltaUp{ color: rgba(52,211,153,.95); }
+    .deltaDown{ color: rgba(248,113,113,.95); }
+    .deltaFlat{ color: rgba(255,255,255,.62); }
+
+    .kpiRow{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px 16px 16px;
+    }
+    @media (max-width: 980px){
+      .kpiRow{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .kpi{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding: 12px 12px;
+      min-width: 0;
+    }
+    .kpi .k{ font-size: 10px; color: rgba(255,255,255,.58); letter-spacing: .22em; text-transform: uppercase; }
+    .kpi .v{ margin-top: 6px; font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
+    .kpi .s{ margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.62); }
+
+    /* Vault list styled like coinGrid (premium list, no ugly table) */
+    .list{
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      background: rgba(0,0,0,.18);
+    }
+    .listRow{
+      display: grid;
+      grid-template-columns: 1.25fr .75fr .7fr .9fr .9fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+      min-width: 0;
+    }
+    .listRow:first-child{ border-top: none; }
+    .listHead{
+      background: rgba(255,255,255,.03);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.62);
+    }
+    .itemName{
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 0;
+    }
+    .itemName b{
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .itemName span{
+      font-size: 11px;
+      color: rgba(255,255,255,.58);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .right{ text-align: right; }
+    .muted{ color: rgba(255,255,255,.62); }
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1px;
+      white-space: nowrap;
+    }
+
+    /* Make list horizontally scroll INSIDE card only on small screens */
+    .listWrap{
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .listMin{ min-width: 860px; }
+
+    /* Addictive pulse (premium) */
+    .pulse {
+      animation: mmPulse 650ms ease;
+    }
+    @keyframes mmPulse {
+      0% { box-shadow: none; }
+      35% { box-shadow: 0 0 0 4px rgba(142,200,255,.16), 0 18px 60px rgba(0,0,0,.35); }
+      100% { box-shadow: none; }
+    }
+
+    .status{
+      font-size: 12px;
+      color: var(--m-subtext);
+      min-height: 18px;
+      margin-top: 10px;
+    }
+    .status.bad{ color: rgba(248,113,113,.95); }
+    .status.good{ color: rgba(52,211,153,.95); }
+    .status.warn{ color: rgba(251,191,36,.95); }
+
+    .actionRow{
+      margin-top: 12px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    /* Small “Pro/Elite lock” scaffolding (future) */
+    .locked{
+      position: relative;
+      filter: blur(0);
+    }
+    .locked[data-locked="true"]{
+      filter: blur(0.2px);
+    }
+    .lockOverlay{
+      display: none;
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      text-align: center;
+      color: rgba(255,255,255,.88);
+      font-size: 13px;
+    }
+    .locked[data-locked="true"] .lockOverlay{ display: flex; }
+  </style>
+</head>
+
+<body class="vaultPage">
+  <div class="meltWrap">
+
+    <!-- Top -->
+    <div class="meltTop">
+      <div class="meltBrand">
+        <div class="meltMark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8h12M7 12h10M8 16h8" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="meltBrandText">
+          <b>MetalMetric</b>
+          <span class="mono" id="vaultUpdatedSmall">Vault tool • live spot</span>
+        </div>
+      </div>
+
+      <div class="meltNav">
+        <div class="pillRow" aria-label="Live spot prices (USD per oz t)">
+          <div class="pill" id="pillGold" title="Gold spot price ($/oz t)">
+            <strong>Gold</strong>
+            <span class="mono" id="spotGoldPill">$—</span>
+            <small>/ oz t</small>
+          </div>
+          <div class="pill" id="pillSilver" title="Silver spot price ($/oz t)">
+            <strong>Silver</strong>
+            <span class="mono" id="spotSilverPill">$—</span>
+            <small>/ oz t</small>
+          </div>
+          <div class="pill" id="pillPlatinum" title="Platinum spot price ($/oz t)">
+            <strong>Platinum</strong>
+            <span class="mono" id="spotPlatinumPill">$—</span>
+            <small>/ oz t</small>
+          </div>
+          <div class="pill" title="Tier (stub until entitlements)">
+            <strong>Tier</strong>
+            <span class="mono" id="tierPill">free</span>
+          </div>
+          <div class="pill" title="Data freshness">
+            <strong>Updated</strong>
+            <span class="mono" id="chipUpdated">—</span>
+          </div>
+        </div>
+
+        <button class="btn" id="btnRefresh" type="button">Refresh spot</button>
+        <a class="btn" href="../melt/index.html">Melt</a>
+        <a class="btn" href="../index.html">Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="meltHero">
+      <h1>Vault Tracker</h1>
+      <p>
+        Track bullion + jewelry melt value live using spot. Premium-ready scaffolding for market premiums, exports, alerts, and Pro/Elite gating.
+      </p>
+    </div>
+
+    <div class="meltGrid">
+      <!-- INPUT CARD -->
+      <section class="card" aria-label="Add item">
+        <div class="cardHeader">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="rgba(255,255,255,.72)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Add Item
+          </h2>
+          <button class="btn" id="btnReset" type="button">Reset</button>
+        </div>
+
+        <div class="cardBody">
+          <div class="field">
+            <label for="label">Label</label>
+            <input class="control" id="label" placeholder='e.g., "1 oz Gold Eagle" or "14k ring, 5g"' />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="metal">Metal</label>
+              <select class="control" id="metal">
+                <option value="gold">Gold</option>
+                <option value="silver">Silver</option>
+                <option value="platinum">Platinum</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="itemType">Item type</label>
+              <select class="control" id="itemType">
+                <option value="bullion">Bullion</option>
+                <option value="coin">Coin</option>
+                <option value="bar">Bar</option>
+                <option value="jewelry">Jewelry</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="weightValue">Weight</label>
+              <input class="control mono" id="weightValue" inputmode="decimal" type="number" min="0" step="0.01" placeholder="e.g., 31.1" />
+            </div>
+
+            <div class="field">
+              <label for="weightUnit">Unit</label>
+              <select class="control" id="weightUnit">
+                <option value="g" selected>g</option>
+                <option value="oz">oz t</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="purityPreset">Purity preset</label>
+              <select class="control" id="purityPreset">
+                <option value="">Select…</option>
+                <option value="0.999">.999 (Fine)</option>
+                <option value="0.9167">22k (0.9167)</option>
+                <option value="0.900">0.900</option>
+                <option value="0.750">18k (0.750)</option>
+                <option value="0.585">14k (0.585)</option>
+                <option value="0.417">10k (0.417)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="purity">Purity (0–1)</label>
+              <input class="control mono" id="purity" inputmode="decimal" type="number" min="0" max="1" step="0.001" placeholder="e.g., 0.999" />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label for="premiumPct">Premium % (optional, for market value)</label>
+            <input class="control mono" id="premiumPct" inputmode="decimal" type="number" min="0" step="0.01" placeholder="e.g., 6.5" />
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label for="notes">Notes (optional)</label>
+            <textarea class="control" id="notes" placeholder="Anything you want to remember about this item…"></textarea>
+          </div>
+
+          <div class="status" id="statusText">Fetching spot…</div>
+
+          <div class="actionRow">
+            <button class="btn btnPrimary" id="btnAdd" type="button">Add to Vault</button>
+          </div>
+
+          <div class="status muted" style="margin-top:10px;">
+            Jewelry defaults to melt. Bullion/coins can use Premium % later for market valuation + Pro/Elite tools.
+          </div>
+        </div>
+      </section>
+
+      <!-- OUTPUT CARD -->
+      <section class="card" aria-label="Vault summary">
+        <div class="cardHeader">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 14l5-5 4 4 7-7" stroke="rgba(142,200,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 7v6h-6" stroke="rgba(142,200,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Vault Value
+          </h2>
+          <div class="pill" title="Price basis">
+            <strong>USD</strong>
+            <span class="mono">/ oz t</span>
+          </div>
+        </div>
+
+        <div class="resultHero" id="kpiTotal">
+          <div class="label">Total Vault Value (Live)</div>
+          <div class="value mono" id="totalValue">$—</div>
+          <div class="sub mono">
+            <span id="summaryLine">—</span>
+            <span id="deltaLine" class="deltaFlat">Δ —</span>
+          </div>
+        </div>
+
+        <div class="kpiRow">
+          <div class="kpi">
+            <div class="k">Pure oz</div>
+            <div class="v mono" id="kPureAll">—</div>
+            <div class="s mono" id="kPureSub">Au — • Ag — • Pt —</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Breakdown</div>
+            <div class="v mono" id="kBreakdown">—</div>
+            <div class="s mono">Gold / Silver / Platinum</div>
+          </div>
+          <div class="kpi locked" id="kpiLocked" data-locked="false" data-requires="pro">
+            <div class="k">Retention hook</div>
+            <div class="v mono" id="kHook">Value pulse</div>
+            <div class="s mono">Updates every 60s</div>
+            <div class="lockOverlay">
+              Pro unlocks deeper analytics (history, “since added”, alerts).
+            </div>
+          </div>
+        </div>
+
+        <div class="cardBody" style="padding-top: 0;">
+          <div class="field" style="margin-top: 6px;">
+            <label>Vault Items</label>
+          </div>
+
+          <div class="listWrap" aria-label="Vault items list">
+            <div class="list listMin" id="list">
+              <div class="listRow listHead">
+                <div>Item</div>
+                <div>Metal</div>
+                <div class="right mono">Pure oz</div>
+                <div class="right mono">Melt</div>
+                <div class="right mono">Market</div>
+                <div class="right">Action</div>
+              </div>
+
+              <div class="listRow" id="emptyRow">
+                <div class="muted" style="grid-column: 1 / -1;">Loading…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status muted" style="margin-top:10px;">
+            Live valuation recalculates using <span class="mono">/api/spot</span>. Items persist in DB via <span class="mono">/api/vault_items</span>.
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const OZ_TROY_IN_G = 31.1034768;
+
+      const el = (id) => document.getElementById(id);
+
+      const pillGold = el("pillGold");
+      const pillSilver = el("pillSilver");
+      const pillPlatinum = el("pillPlatinum");
+
+      const spotGoldPill = el("spotGoldPill");
+      const spotSilverPill = el("spotSilverPill");
+      const spotPlatinumPill = el("spotPlatinumPill");
+
+      const chipUpdated = el("chipUpdated");
+      const tierPill = el("tierPill");
+      const vaultUpdatedSmall = el("vaultUpdatedSmall");
+
+      const btnRefresh = el("btnRefresh");
+      const btnReset = el("btnReset");
+      const btnAdd = el("btnAdd");
+
+      const labelInput = el("label");
+      const metalSelect = el("metal");
+      const itemTypeSelect = el("itemType");
+      const weightValueInput = el("weightValue");
+      const weightUnitSelect = el("weightUnit");
+      const purityPresetSelect = el("purityPreset");
+      const purityInput = el("purity");
+      const premiumPctInput = el("premiumPct");
+      const notesInput = el("notes");
+
+      const statusText = el("statusText");
+
+      const kpiTotal = el("kpiTotal");
+      const totalValueEl = el("totalValue");
+      const summaryLineEl = el("summaryLine");
+      const deltaLineEl = el("deltaLine");
+
+      const kPureAll = el("kPureAll");
+      const kPureSub = el("kPureSub");
+      const kBreakdown = el("kBreakdown");
+
+      const listEl = el("list");
+      const emptyRow = el("emptyRow");
+
+      // --- Helpers
+      function num(v) {
+        if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+        if (v == null) return NaN;
+        const s = String(v).trim().replace(/,/g, "");
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : NaN;
+      }
+
+      const money = (v) => {
+        const n = num(v);
+        if (!Number.isFinite(n)) return "$—";
+        return n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+      const fmt4 = (v) => Number.isFinite(num(v)) ? num(v).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
+
+      function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+      function escapeHtml(s) {
+        return String(s || "")
+          .replaceAll("&","&amp;")
+          .replaceAll("<","&lt;")
+          .replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;")
+          .replaceAll("'","&#039;");
+      }
+
+      function setStatus(msg, kind) {
+        statusText.textContent = msg;
+        statusText.classList.remove("bad", "good", "warn");
+        if (kind) statusText.classList.add(kind);
+      }
+
+      function getTier() {
+        return (localStorage.getItem("mm_tier") || "free").toLowerCase();
+      }
+
+      function highlightActiveMetalPill(metal) {
+        pillGold.classList.toggle("isActive", metal === "gold");
+        pillSilver.classList.toggle("isActive", metal === "silver");
+        pillPlatinum.classList.toggle("isActive", metal === "platinum");
+      }
+
+      function formatUpdated(v) {
+        if (!v) return null;
+        const s = String(v);
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+        }
+        return s;
+      }
+
+      function weightToOzTroy(weightValue, unit) {
+        const w = num(weightValue);
+        if (!Number.isFinite(w) || w <= 0) return null;
+        return unit === "oz" ? w : (w / OZ_TROY_IN_G);
+      }
+
+      function computeItemValuation(item, spot) {
+        const metal = item.metal;
+        const spotPerOz = spot?.[metal]?.usd;
+        if (!Number.isFinite(num(spotPerOz))) return { melt: null, market: null, pureOz: null };
+
+        const purity = clamp(num(item.purity || 0), 0, 1);
+        const ozTroy = weightToOzTroy(item.weight_value, item.weight_unit);
+        if (!ozTroy) return { melt: null, market: null, pureOz: null };
+
+        const pureOz = ozTroy * purity;
+        const melt = pureOz * num(spotPerOz);
+
+        const premPct = num(item.premium_pct);
+        const hasPrem = Number.isFinite(premPct);
+        const market = hasPrem ? (melt * (1 + premPct / 100)) : melt;
+
+        return { melt, market, pureOz, premPct: hasPrem ? premPct : null };
+      }
+
+      async function fetchAny(path) {
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const text = await res.text();
+
+        let data;
+        try { data = JSON.parse(text); }
+        catch (e) {
+          const err = new Error(`Non-JSON from ${path}: ${text.slice(0, 160)}`);
+          err.status = res.status;
+          err.payload = text;
+          throw err;
+        }
+
+        if (!res.ok) {
+          const msg = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
+          const err = new Error(msg);
+          err.status = res.status;
+          err.payload = data;
+          throw err;
+        }
+        return data;
+      }
+
+      function pullSpotFromKnownShape(obj) {
+        if (!obj || typeof obj !== "object") return { ok: false, err: "Invalid response" };
+
+        const apiErr = (obj.ok === false)
+          ? (obj.error ? String(obj.error) : "Spot returned ok:false")
+          : null;
+
+        const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold].map(num).find(Number.isFinite);
+        const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver].map(num).find(Number.isFinite);
+
+        const platinum = [
+          obj.platinum_usd,
+          obj?.normalized?.platinum,
+          obj.xpt_usd,
+          obj.xpt,
+          obj.platinum,
+          obj?.raw?.platinum
+        ].map(num).find(Number.isFinite);
+
+        const updatedRaw =
+          obj.fetched_at_utc ||
+          obj.updated_at ||
+          obj.updatedAt ||
+          obj.date_utc ||
+          obj.date ||
+          null;
+
+        const anyFound = (gold != null) || (silver != null) || (platinum != null);
+        if (!anyFound && apiErr) return { ok: false, err: apiErr };
+
+        return {
+          ok: true,
+          g: Number.isFinite(gold) ? gold : null,
+          s: Number.isFinite(silver) ? silver : null,
+          p: Number.isFinite(platinum) ? platinum : null,
+          updatedRaw,
+          apiErr
+        };
+      }
+
+      function unwrap(v) {
+        if (!v) return null;
+        if (Array.isArray(v)) return v[v.length - 1] || null;
+        if (typeof v === "object") {
+          if (Array.isArray(v.rows)) return v.rows[v.rows.length - 1] || null;
+          if (Array.isArray(v.data)) return v.data[v.data.length - 1] || null;
+          if (Array.isArray(v.results)) return v.results[v.results.length - 1] || null;
+          if (v.latest && typeof v.latest === "object") return v.latest;
+        }
+        return v;
+      }
+
+      async function fetchSpots() {
+        setStatus("Fetching live spot…", "");
+
+        try {
+          const [spotRes, latestRes] = await Promise.allSettled([
+            fetchAny("/api/spot"),
+            fetchAny("/api/latest")
+          ]);
+
+          const spotRaw = (spotRes.status === "fulfilled") ? spotRes.value : null;
+          const latestRaw = (latestRes.status === "fulfilled") ? latestRes.value : null;
+
+          const spot = pullSpotFromKnownShape(unwrap(spotRaw));
+          const latest = pullSpotFromKnownShape(unwrap(latestRaw));
+
+          if (spot.ok) {
+            if (spot.g != null) state.spots.gold = spot.g;
+            if (spot.s != null) state.spots.silver = spot.s;
+            if (spot.p != null) state.spots.platinum = spot.p;
+            if (spot.updatedRaw) state.updatedAt = formatUpdated(spot.updatedRaw);
+            if (spot.apiErr) setStatus("Spot warning: " + spot.apiErr, "warn");
+          }
+
+          if (latest.ok) {
+            if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
+            if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
+            if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+            if (!state.updatedAt && latest.updatedRaw) state.updatedAt = formatUpdated(latest.updatedRaw);
+          }
+
+          if (!state.updatedAt) state.updatedAt = new Date().toISOString();
+          updateSpotHeaderUI();
+
+          const active = state.spots.gold || state.spots.silver || state.spots.platinum;
+          if (Number.isFinite(num(active))) setStatus("Live spot loaded. Ready.", "good");
+          else setStatus("Live spot unavailable. Try refresh.", "warn");
+
+          renderAll();
+        } catch (e) {
+          console.error("[vault] fetchSpots failed:", e);
+          updateSpotHeaderUI();
+          setStatus("Spot fetch failed: " + (e?.message || String(e)), "bad");
+          renderAll();
+        }
+      }
+
+      async function postVault(actionBody) {
+        const res = await fetch("/api/vault_items", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(actionBody)
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+        return j;
+      }
+
+      async function loadVaultItems() {
+        const j = await fetchAny("/api/vault_items?limit=500");
+        state.items = Array.isArray(j.items) ? j.items : [];
+      }
+
+      function updateSpotHeaderUI() {
+        highlightActiveMetalPill(state.activeMetalForPills());
+
+        spotGoldPill.textContent = money(state.spots.gold);
+        spotSilverPill.textContent = money(state.spots.silver);
+        spotPlatinumPill.textContent = money(state.spots.platinum);
+
+        chipUpdated.textContent = state.updatedAt || "—";
+        vaultUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Vault tool • live spot";
+
+        tierPill.textContent = getTier();
+      }
+
+      function buildSpotNormalized() {
+        return {
+          gold: { usd: state.spots.gold },
+          silver: { usd: state.spots.silver },
+          platinum: { usd: state.spots.platinum },
+        };
+      }
+
+      function renderAll() {
+        const spot = buildSpotNormalized();
+
+        // Compute totals
+        let totals = { gold: 0, silver: 0, platinum: 0 };
+        let pureOz = { gold: 0, silver: 0, platinum: 0 };
+        let totalMarket = 0;
+
+        const rows = [];
+
+        for (const item of state.items) {
+          const v = computeItemValuation(item, spot);
+          const m = item.metal;
+
+          if (Number.isFinite(num(v.market))) {
+            totalMarket += num(v.market);
+            totals[m] += num(v.market);
+          }
+          if (Number.isFinite(num(v.pureOz))) pureOz[m] += num(v.pureOz);
+
+          const metalBadge =
+            m === "gold" ? `<span class="badge mono" style="border-color: rgba(245,200,90,.22); background: rgba(245,200,90,.08);">${escapeHtml(m)}</span>` :
+            m === "silver" ? `<span class="badge mono" style="border-color: rgba(210,220,232,.22); background: rgba(210,220,232,.08);">${escapeHtml(m)}</span>` :
+            `<span class="badge mono" style="border-color: rgba(180,195,255,.22); background: rgba(180,195,255,.08);">${escapeHtml(m)}</span>`;
+
+          const sub = [
+            item.item_type ? escapeHtml(item.item_type) : "",
+            item.notes ? escapeHtml(item.notes) : ""
+          ].filter(Boolean).join(" • ");
+
+          rows.push(`
+            <div class="listRow" data-id="${escapeHtml(item.id)}">
+              <div class="itemName">
+                <b>${escapeHtml(item.label || "—")}</b>
+                <span class="mono">${sub || "&nbsp;"}</span>
+              </div>
+              <div>${metalBadge}</div>
+              <div class="right mono">${fmt4(v.pureOz)}</div>
+              <div class="right mono">${money(v.melt)}</div>
+              <div class="right mono">${money(v.market)}</div>
+              <div class="right">
+                <button class="btn btnDanger" type="button" data-del="${escapeHtml(item.id)}">Delete</button>
+              </div>
+            </div>
+          `);
+        }
+
+        // List
+        // Remove old rows (keep header as first)
+        const children = Array.from(listEl.children);
+        children.slice(1).forEach(n => n.remove());
+
+        if (rows.length) {
+          emptyRow.style.display = "none";
+          listEl.insertAdjacentHTML("beforeend", rows.join(""));
+        } else {
+          emptyRow.style.display = "";
+          emptyRow.querySelector("div").textContent = "No items yet. Add your first one.";
+        }
+
+        // Wire delete
+        listEl.querySelectorAll("[data-del]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const id = btn.getAttribute("data-del");
+            if (!id) return;
+            if (!confirm("Delete this item?")) return;
+            btn.disabled = true;
+            try {
+              await postVault({ action: "delete", id });
+              await refreshVaultOnly();
+              renderAll();
+            } catch (e) {
+              alert(String(e.message || e));
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
+
+        // KPIs
+        totalValueEl.textContent = money(totalMarket);
+
+        const allPure = pureOz.gold + pureOz.silver + pureOz.platinum;
+        kPureAll.textContent = fmt4(allPure);
+        kPureSub.textContent = `Au ${fmt4(pureOz.gold)} • Ag ${fmt4(pureOz.silver)} • Pt ${fmt4(pureOz.platinum)}`;
+
+        kBreakdown.textContent = `${money(totals.gold)} / ${money(totals.silver)} / ${money(totals.platinum)}`;
+
+        summaryLineEl.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"} • updates every 60s`;
+
+        // Delta + pulse
+        if (state.lastTotal != null && Number.isFinite(num(totalMarket))) {
+          const d = num(totalMarket) - num(state.lastTotal);
+          const abs = Math.abs(d);
+          const cls = abs < 0.01 ? "deltaFlat" : (d > 0 ? "deltaUp" : "deltaDown");
+          deltaLineEl.className = cls;
+          deltaLineEl.textContent = abs < 0.01 ? "Δ —" : `Δ ${money(d)}`;
+
+          if (abs > 0.01) {
+            kpiTotal.classList.remove("pulse");
+            void kpiTotal.offsetWidth;
+            kpiTotal.classList.add("pulse");
+          }
+        } else {
+          deltaLineEl.className = "deltaFlat";
+          deltaLineEl.textContent = "Δ —";
+        }
+
+        state.lastTotal = totalMarket;
+
+        // Future gating stub example
+        const tier = getTier();
+        const locked = (tier === "free"); // later: real entitlements
+        const kpiLocked = el("kpiLocked");
+        kpiLocked.setAttribute("data-locked", locked ? "true" : "false");
+      }
+
+      // --- State
+      const state = {
+        items: [],
+        spots: { gold: null, silver: null, platinum: null },
+        updatedAt: null,
+        lastTotal: null,
+        activeMetalForPills: () => {
+          // pick a default highlight; if user last added metal, we could store it later
+          return "gold";
+        }
+      };
+
+      // --- Events
+      purityPresetSelect.addEventListener("change", () => {
+        if (purityPresetSelect.value) purityInput.value = purityPresetSelect.value;
+      });
+
+      btnRefresh.addEventListener("click", fetchSpots);
+
+      btnReset.addEventListener("click", () => {
+        labelInput.value = "";
+        metalSelect.value = "gold";
+        itemTypeSelect.value = "bullion";
+        weightValueInput.value = "";
+        weightUnitSelect.value = "g";
+        purityPresetSelect.value = "";
+        purityInput.value = "";
+        premiumPctInput.value = "";
+        notesInput.value = "";
+        setStatus("Reset.", "");
+      });
+
+      btnAdd.addEventListener("click", async () => {
+        const payload = {
+          action: "create",
+          label: (labelInput.value || "").trim(),
+          metal: metalSelect.value,
+          item_type: itemTypeSelect.value,
+          weight_value: num(weightValueInput.value),
+          weight_unit: weightUnitSelect.value,
+          purity: num(purityInput.value),
+          premium_pct: (premiumPctInput.value || "").trim() === "" ? null : num(premiumPctInput.value),
+          notes: (notesInput.value || "").trim(),
+          source: "manual"
+        };
+
+        if (!payload.label) return setStatus("Add a label (what is this item?).", "bad");
+        if (!Number.isFinite(payload.weight_value) || payload.weight_value <= 0) return setStatus("Weight must be a positive number.", "bad");
+        if (!Number.isFinite(payload.purity) || payload.purity <= 0 || payload.purity > 1) return setStatus("Purity must be between 0 and 1.", "bad");
+        if (payload.premium_pct != null && (!Number.isFinite(payload.premium_pct) || payload.premium_pct < 0 || payload.premium_pct > 500)) {
+          return setStatus("Premium % must be a reasonable number (0–500).", "bad");
+        }
+
+        btnAdd.disabled = true;
+        try {
+          await postVault(payload);
+          setStatus("Added to vault.", "good");
+          // Clear lightly
+          labelInput.value = "";
+          weightValueInput.value = "";
+          notesInput.value = "";
+          await refreshVaultOnly();
+          renderAll();
+        } catch (e) {
+          setStatus("Add failed: " + (e?.message || String(e)), "bad");
+        } finally {
+          btnAdd.disabled = false;
+        }
+      });
+
+      async function refreshVaultOnly() {
+        try { await loadVaultItems(); } catch {}
+      }
+
+      async function refreshAll() {
+        tierPill.textContent = getTier();
+        await Promise.allSettled([loadVaultItems(), fetchSpots()]);
+        updateSpotHeaderUI();
+        renderAll();
+      }
+
+      async function pollSpotOnly() {
+        // spot-only refresh to make it feel real-time
+        await fetchSpots();
+      }
+
+      // --- Init
+      (function init() {
+        setStatus("Fetching live spot…", "");
+        refreshAll();
+
+        // Poll every 60s for “value pulse”
+        setInterval(() => {
+          pollSpotOnly().catch(() => {});
+        }, 60_000);
+      })();
+    })();
+  </script>
+</body>
+</html>
