@@ -200,7 +200,10 @@ class handler(BaseHTTPRequestHandler):
                       shelf_section, shelf_slot, accent, created_at
                     from vault_items
                     where user_id = %s
-                    order by created_at desc
+                    order by
+  coalesce(shelf_section, 'Main') asc,
+  (case when shelf_slot is null then 999999 else shelf_slot end) asc,
+  created_at desc
                     limit %s
                     """,
                     (user_id, limit),
