@@ -112,15 +112,25 @@ class handler(BaseHTTPRequestHandler):
             if (not force) and _CACHE["payload"] and (now - _CACHE["ts"] < CACHE_TTL_SECONDS):
                 return send_json(self, 200, _CACHE["payload"])
 
+            # Gold & silver are REQUIRED
             gold_usd, silver_usd, gsr = _fetch_goldprice_gold_silver()
-            platinum_usd = _fetch_metalpriceapi_platinum()
+
+            # Platinum is OPTIONAL (never break the endpoint)
+            platinum_usd = None
+            platinum_error = None
+            try:
+                platinum_usd = float(_fetch_metalpriceapi_platinum())
+            except (urllib.error.HTTPError, urllib.error.URLError, ValueError) as e:
+                platinum_error = str(e)
+            except Exception as e:
+                platinum_error = str(e)
 
             payload = {
                 "ok": True,
                 "date": datetime.now(timezone.utc).date().isoformat(),
                 "gold_usd": float(gold_usd),
                 "silver_usd": float(silver_usd),
-                "platinum_usd": float(platinum_usd),
+                "platinum_usd": platinum_usd,  # may be None
                 "gsr": float(gsr),
                 "fetched_at_utc": _utc_now_iso(),
                 "source": "spot_mixed",
@@ -134,11 +144,16 @@ class handler(BaseHTTPRequestHandler):
                 }
             }
 
+            # Only include this key when something went wrong (keeps response clean)
+            if platinum_error:
+                payload["platinum_error"] = platinum_error
+
             _CACHE["ts"] = now
             _CACHE["payload"] = payload
             return send_json(self, 200, payload)
 
         except (urllib.error.HTTPError, urllib.error.URLError, ValueError) as e:
+            # Keep this as 502 because it means gold/silver failed (critical)
             return send_json(self, 502, {"ok": False, "error": str(e)})
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
