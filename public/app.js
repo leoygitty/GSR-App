@@ -21,6 +21,94 @@ function fmtUSD(x, digits = 2) {
   });
 }
 
+/* =========================
+   STRIPE CHECKOUT (Pro/Elite + monthly/yearly)
+   - Calls /api/create_checkout_session (POST JSON)
+   - Exposes window.startCheckout(plan, interval)
+   - Optional: auto-binds any element with:
+       data-checkout-plan="pro|elite"
+       data-checkout-interval="monthly|yearly"
+   ========================= */
+
+async function mmReadJsonSafe(res) {
+  try {
+    return await res.json();
+  } catch {
+    const txt = await res.text().catch(() => "");
+    return { ok: false, error: txt || `HTTP ${res.status}` };
+  }
+}
+
+function mmNormalizePlan(v) {
+  const p = String(v || "").trim().toLowerCase();
+  return (p === "pro" || p === "elite") ? p : "";
+}
+
+function mmNormalizeInterval(v) {
+  const i = String(v || "").trim().toLowerCase();
+  return (i === "monthly" || i === "yearly") ? i : "monthly";
+}
+
+async function mmCreateCheckoutSession(plan, interval) {
+  const p = mmNormalizePlan(plan);
+  const i = mmNormalizeInterval(interval);
+  if (!p) throw new Error("Invalid plan. Use 'pro' or 'elite'.");
+
+  const res = await fetch("/api/create_checkout_session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan: p, interval: i })
+  });
+
+  const data = await mmReadJsonSafe(res);
+  if (!res.ok || !data.ok || !data.url) {
+    throw new Error(data?.error || `Checkout failed (HTTP ${res.status})`);
+  }
+  return data.url;
+}
+
+async function startCheckout(plan, interval) {
+  const url = await mmCreateCheckoutSession(plan, interval);
+  window.location.href = url;
+}
+
+// expose for inline onclick or console testing
+window.startCheckout = startCheckout;
+
+// Optional auto-bind (no effect unless you add these attributes in HTML)
+(function mmBindCheckoutButtons() {
+  function bind() {
+    document.querySelectorAll("[data-checkout-plan]").forEach((el) => {
+      if (el.__mmCheckoutBound) return;
+      el.__mmCheckoutBound = true;
+
+      el.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const plan = el.getAttribute("data-checkout-plan");
+        const interval = el.getAttribute("data-checkout-interval") || "monthly";
+
+        const prevText = el.textContent;
+        try {
+          el.disabled = true;
+          el.textContent = "Redirecting…";
+          await startCheckout(plan, interval);
+        } catch (err) {
+          el.disabled = false;
+          el.textContent = prevText;
+          console.error(err);
+          alert(err?.message || String(err));
+        }
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bind);
+  } else {
+    bind();
+  }
+})();
+
 function parseISODate(d) {
   // "YYYY-MM-DD" -> Date (UTC midnight)
   const [y, m, day] = String(d || "").split("-").map((v) => parseInt(v, 10));
