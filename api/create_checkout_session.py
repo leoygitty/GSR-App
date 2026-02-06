@@ -16,16 +16,6 @@ def _env(name: str) -> str:
     return v
 
 
-def _normalize_interval(raw: str) -> str:
-    s = (raw or "").strip().lower()
-    if s in ("year", "annual", "annually", "yr"):
-        return "yearly"
-    if s in ("month", "monthly", "mo"):
-        return "monthly"
-    # default
-    return "monthly"
-
-
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
@@ -36,31 +26,27 @@ class handler(BaseHTTPRequestHandler):
             payload = json.loads(raw or "{}")
 
             plan = (payload.get("plan") or "").strip().lower()
+            interval = (payload.get("interval") or "monthly").strip().lower()  # monthly|yearly
+
             if plan not in ("pro", "elite"):
                 return send_json(self, 400, {"ok": False, "error": "Invalid plan. Use 'pro' or 'elite'."})
-
-            interval = _normalize_interval(payload.get("interval"))
             if interval not in ("monthly", "yearly"):
-                interval = "monthly"
+                return send_json(self, 400, {"ok": False, "error": "Invalid interval. Use 'monthly' or 'yearly'."})
 
-            # ENV VARS YOU SAID YOU CREATED:
-            # STRIPE_PRICE_ID_PRO_MONTHLY
-            # STRIPE_PRICE_ID_PRO_YEARLY
-            # STRIPE_PRICE_ID_ELITE_MONTHLY
-            # STRIPE_PRICE_ID_ELITE_YEARLY
             price_env = f"STRIPE_PRICE_ID_{plan.upper()}_{interval.upper()}"
             price_id = _env(price_env)
 
             success_url = _env("STRIPE_SUCCESS_URL")
             cancel_url = _env("STRIPE_CANCEL_URL")
 
+            # Optional but smart: tag the subscription so your webhook can set tier later
             session = stripe.checkout.Session.create(
                 mode="subscription",
                 line_items=[{"price": price_id, "quantity": 1}],
                 success_url=success_url,
                 cancel_url=cancel_url,
                 allow_promotion_codes=True,
-                # helpful later for webhooks + tier logic
+                subscription_data={"metadata": {"plan": plan, "interval": interval}},
                 metadata={"plan": plan, "interval": interval},
             )
 
