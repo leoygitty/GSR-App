@@ -1,1095 +1,1146 @@
-<!doctype html>
-<html lang="en" data-theme="light">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MetalMetric — Gold-to-Silver Ratio (GSR)</title>
-  <meta name="description" content="MetalMetric: Gold-to-Silver Ratio dashboard with historical charts, metrics, and alerts." />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vault Tracker — MetalMetric</title>
 
-  <!-- Prevent flash: apply saved/system theme ASAP -->
-  <script>
-    (function () {
-      try {
-        const KEY = "mm_theme";
-        const saved = localStorage.getItem(KEY);
-        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const theme = (saved === "dark" || saved === "light") ? saved : (prefersDark ? "dark" : "light");
-        document.documentElement.setAttribute("data-theme", theme);
-      } catch (e) {}
-    })();
-  </script>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="icon" href="../icon.svg" />
 
   <style>
-    /* Ensures Chart.js canvases have a stable height within your existing layout */
-    .chartCanvasWrap { height: 260px; position: relative; }
-    canvas.chartCanvas { width: 100% !important; height: 100% !important; display: block; }
+    :root{
+      --m-bg: #0b0f14;
+      --m-panel: rgba(255,255,255,.04);
+      --m-panel2: rgba(255,255,255,.06);
+      --m-border: rgba(255,255,255,.10);
+      --m-border2: rgba(255,255,255,.14);
+      --m-text: rgba(255,255,255,.92);
+      --m-subtext: rgba(255,255,255,.64);
+      --m-muted: rgba(255,255,255,.50);
+      --m-shadow: 0 18px 60px rgba(0,0,0,.50);
+      --m-radius: 18px;
+      --m-radius2: 14px;
 
-    /* Pricing section anchor spacing (kept local to avoid global impact) */
-    #pricing { scroll-margin-top: 18px; }
+      --m-accent: rgba(142, 200, 255, 1);
+      --m-gold: rgba(245, 200, 90, 1);
+      --m-silver: rgba(210, 220, 232, 1);
+      --m-plat: rgba(180, 195, 255, 1);
 
-    /* =========================================================
-       Ticker speed override for THIS page only (slower)
-       ========================================================= */
-    :root{ --tickerSeconds: 64s; }
-    @media (max-width: 720px){ :root{ --tickerSeconds: 78s; } }
-
-    /* =========================================================
-       STRIPE CHECKOUT BUTTONS (index only)
-       ========================================================= */
-    .priceCard--pro{ --mmBtnMonthly: #2563eb; --mmBtnYearly:  #1d4ed8; }
-    .priceCard--elite{ --mmBtnMonthly: #7c3aed; --mmBtnYearly:  #6d28d9; }
-
-    .priceCard--pro a.mmCheckoutBtn,
-    .priceCard--elite a.mmCheckoutBtn{
-      background: var(--mmBtnMonthly);
-      color: #fff !important;
-      border: 1px solid rgba(255,255,255,.14);
-      text-decoration: none;
-    }
-    .priceCard--pro a.mmCheckoutBtn.mmCheckoutBtn--yearly,
-    .priceCard--elite a.mmCheckoutBtn.mmCheckoutBtn--yearly{ background: var(--mmBtnYearly); }
-    .priceCard--pro a.mmCheckoutBtn:hover,
-    .priceCard--elite a.mmCheckoutBtn:hover{ filter: brightness(1.06); }
-    .priceCard--pro a.mmCheckoutBtn:active,
-    .priceCard--elite a.mmCheckoutBtn:active{ filter: brightness(0.98); }
-    .priceCard--pro a.mmCheckoutBtn:focus-visible,
-    .priceCard--elite a.mmCheckoutBtn:focus-visible{
-      outline: 2px solid rgba(255,255,255,.35);
-      outline-offset: 2px;
+      --m-good: rgba(52, 211, 153, 1);
+      --m-bad: rgba(248, 113, 113, 1);
+      --m-warn: rgba(251, 191, 36, 1);
     }
 
-    /* =========================================================
-       HARD NO HORIZONTAL SCROLL
-       ========================================================= */
-    html, body{ overflow-x: hidden; }
-    main.shell{ max-width: 100%; }
-
-    /* =========================================================
-       NAV: closer under ticker + hide on scroll down, show on scroll up
-       ========================================================= */
-    .navBannerSticky{
-      top: 32px !important;               /* directly below ticker */
-      transition: transform .18s ease, opacity .18s ease;
-      will-change: transform;
-    }
-    .navBannerSticky.mmNavHidden{
-      transform: translateY(-120%);
-      opacity: 0;
-      pointer-events: none;
+    body.vaultPage{
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 520px at 20% 0%, rgba(142,200,255,.12), transparent 60%),
+        radial-gradient(900px 520px at 80% 0%, rgba(245,200,90,.10), transparent 60%),
+        var(--m-bg);
+      color: var(--m-text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      overflow-x: hidden;
     }
 
-    /* =========================================================
-       HEADER: ACTUALLY smaller (stronger selectors + !important)
-       ========================================================= */
-    @media (max-width: 720px){
-      img.brandMark{ width: 26px !important; height: 26px !important; }
-      h1.brandName{ font-size: 34px !important; line-height: 1.05 !important; margin: 0 !important; }
-      .brandSub{ font-size: 14px !important; }
-      .brandBadge{ font-size: 10px !important; padding: 3px 7px !important; }
-      header.topbar{ padding-top: 8px !important; padding-bottom: 6px !important; }
-      .metaLine{ font-size: 11px !important; }
+    body.vaultPage a{ color: inherit; text-decoration: none; }
+    body.vaultPage a:hover{ text-decoration: underline; text-decoration-color: rgba(255,255,255,.35); }
+
+    .mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+    .meltWrap{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
     }
 
-    /* =========================================================
-       KPI MATRIX: equal columns + equal widths + clean futures
-       ========================================================= */
-    .kpiMatrix{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      width: 100%;
-      max-width: 100%;
-      margin: 14px 0 8px;
-      align-items:start;
+    .meltTop{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
     }
-    .kpiMatrixCol{
+    .meltBrand{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .meltMark{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+      border: 1px solid var(--m-border);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      display: grid; place-items: center;
+    }
+    .meltMark svg{ opacity: .92; }
+    .meltBrandText{ display: flex; flex-direction: column; line-height: 1.1; }
+    .meltBrandText b{ font-size: 14px; letter-spacing: .2px; }
+    .meltBrandText span{ font-size: 12px; color: var(--m-subtext); }
+
+    .meltNav{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pillRow{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--m-border);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .pill strong{ font-weight: 650; letter-spacing: .2px; }
+    .pill small{ color: var(--m-subtext); font-size: 11px; }
+    .pill.isActive{
+      background: rgba(142,200,255,.08);
+      border-color: rgba(142,200,255,.22);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 0 0 4px rgba(142,200,255,.08);
+    }
+
+    .btn{
+      appearance: none;
+      border: 1px solid var(--m-border);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.90);
+      padding: 9px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.28);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select: none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); border-color: var(--m-border2); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); }
+    .btn:focus-visible{
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(142,200,255,.18), 0 18px 60px rgba(0,0,0,.35);
+      border-color: rgba(142,200,255,.45);
+    }
+    .btnPrimary{
+      border-color: rgba(142,200,255,.35);
+      background: rgba(142,200,255,.12);
+    }
+    .btnPrimary:hover{
+      background: rgba(142,200,255,.18);
+      border-color: rgba(142,200,255,.48);
+    }
+    .btnDanger{
+      border-color: rgba(248,113,113,.30);
+      background: rgba(248,113,113,.10);
+    }
+    .btnDanger:hover{
+      background: rgba(248,113,113,.14);
+      border-color: rgba(248,113,113,.45);
+    }
+    .btn:disabled{
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .meltHero{
+      margin: 12px 0 22px;
+      padding: 18px 18px 0;
+    }
+    .meltHero h1{
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    .meltHero p{
+      margin: 0;
+      color: var(--m-subtext);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .meltGrid{
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px){
+      .meltGrid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border-radius: var(--m-radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--m-border);
+      box-shadow: var(--m-shadow);
+      overflow: hidden;
       min-width: 0;
-      display:flex;
-      flex-direction:column;
+    }
+    .cardHeader{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 10px;
     }
-    .kpiMatrixHead{
+    .cardHeader h2{
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: .3px;
+      font-weight: 650;
+      color: rgba(255,255,255,.86);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .cardBody{ padding: 16px; }
+
+    .row{
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (max-width: 980px){
+      .row{ grid-template-columns: 1fr 160px; }
+    }
+    @media (max-width: 560px){
+      .row{ grid-template-columns: 1fr; }
+    }
+    .field label{
+      display: block;
       font-size: 11px;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      font-weight: 900;
-      color: var(--muted);
-      padding: 0 2px;
+      color: var(--m-subtext);
+      margin-bottom: 6px;
+      letter-spacing: .2px;
     }
-
-    /* Ensure BOTH columns use identical sizing behavior */
-    .kpiMatrix .kpiCard{
-      min-width: 0;
-      overflow: hidden;
-      min-height: 118px;  /* same “tab” height */
-    }
-
-    /* Clamp long lines so nothing pushes layout */
-    .kpiMatrix .kpiLabel,
-    .kpiMatrix .kpiSub{
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      min-width: 0;
-    }
-
-    /* Typography tuned for half-width cards */
-    .kpiMatrix .kpiLabel{ font-size: 11px; letter-spacing: .12em; }
-    .kpiMatrix .kpiValue{ font-size: 30px; line-height: 1.05; }
-    .kpiMatrix .kpiSub{ font-size: 11px; }
-
-    /* ===== FUTURES CLEAN LAYOUT (NO OVERLAP) =====
-       Left icon column (same size as coin), right content column
-    */
-    .kpiCard--futures{
-      display:flex !important;
-      gap: 12px;
-      align-items:flex-start;
-    }
-    .kpiFutIconCol{
-      flex: 0 0 36px;
-      width: 36px;
-      height: 36px;
-      margin-top: 2px;
-      border-radius: 999px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: 0 10px 26px rgba(0,0,0,.22);
-    }
-    .kpiFutIconCol svg{ width: 22px; height: 22px; display:block; }
-    .kpiFutIconCol--gold{ color:#E0B84A; }
-    .kpiFutIconCol--silver{ color:#C7D0DA; }
-    .kpiFutIconCol--platinum{ color:#B9A7FF; }
-
-    .kpiFutBody{
-      min-width: 0;
-      flex: 1;
-    }
-
-    /* =========================================================
-       GSR row: smaller tabs, aligned bottoms, equal sizing
-       ========================================================= */
-    .kpiGsrRow{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .control{
       width: 100%;
-      max-width: 100%;
-      margin: 8px 0 12px;
-      align-items:end;
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.90);
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+      box-sizing: border-box;
     }
-    .kpiGsrRow .kpiCard{
-      min-width:0;
-      overflow:hidden;
-      min-height: 92px;
-      padding: 12px 14px 11px !important;
+    .control:hover{ border-color: rgba(255,255,255,.16); }
+    .control:focus{
+      border-color: rgba(142,200,255,.50);
+      box-shadow: 0 0 0 4px rgba(142,200,255,.14);
+      background: rgba(255,255,255,.06);
     }
-    .kpiGsrRow .kpiLabel{
-      font-size: 10px !important;
-      letter-spacing: .12em;
+    select.control{ padding-right: 34px; }
+    textarea.control{ min-height: 84px; resize: vertical; }
+
+    .resultHero{
+      padding: 18px 16px 12px;
+      background: linear-gradient(180deg, rgba(142,200,255,.10), rgba(255,255,255,.00));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .resultHero .label{
+      font-size: 11px;
+      color: rgba(255,255,255,.65);
+      letter-spacing: .28em;
+      text-transform: uppercase;
+    }
+    .resultHero .value{
+      margin-top: 8px;
+      font-size: 44px;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+      line-height: 1.0;
+    }
+    .resultHero .sub{
+      margin-top: 8px;
+      color: var(--m-subtext);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-height: 18px;
+    }
+    .deltaUp{ color: rgba(52,211,153,.95); }
+    .deltaDown{ color: rgba(248,113,113,.95); }
+    .deltaFlat{ color: rgba(255,255,255,.62); }
+
+    .kpiRow{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px 16px 16px;
+    }
+    @media (max-width: 980px){
+      .kpiRow{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .kpi{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding: 12px 12px;
+      min-width: 0;
+    }
+    .kpi .k{ font-size: 10px; color: rgba(255,255,255,.58); letter-spacing: .22em; text-transform: uppercase; }
+    .kpi .v{ margin-top: 6px; font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
+    .kpi .s{ margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.62); }
+
+    .list{
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      background: rgba(0,0,0,.18);
+    }
+    .listRow{
+      display: grid;
+      grid-template-columns: 1.25fr .75fr .7fr .9fr .9fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+      min-width: 0;
+    }
+    .listRow:first-child{ border-top: none; }
+    .listHead{
+      background: rgba(255,255,255,.03);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.62);
+    }
+    .itemName{
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 0;
+    }
+    .itemName b{
+      font-size: 13px;
+      letter-spacing: -0.01em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .kpiGsrRow .kpiValue{ font-size: 22px !important; line-height: 1.05; }
-    .kpiGsrRow .kpiSub{ font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    @media (max-width: 720px){
-      .kpiMatrix{ gap: 10px; }
-      .kpiMatrixCol{ gap: 8px; }
-
-      .kpiMatrix .kpiCard{
-        min-height: 112px;
-        padding: 12px 12px 11px !important;
-        border-radius: 16px !important;
-      }
-      .kpiMatrixHead{ font-size: 10px; }
-      .kpiMatrix .kpiLabel{ font-size: 10px; }
-      .kpiMatrix .kpiValue{ font-size: 22px; }
-      .kpiMatrix .kpiSub{ font-size: 10px; }
-
-      .kpiFutIconCol{
-        width: 34px; height: 34px; flex-basis: 34px;
-      }
-      .kpiFutIconCol svg{ width: 20px; height: 20px; }
-
-      .kpiGsrRow{ gap: 10px; }
-      .kpiGsrRow .kpiCard{ min-height: 88px; border-radius: 16px !important; }
-      .kpiGsrRow .kpiValue{ font-size: 20px !important; }
+    .itemName span{
+      font-size: 11px;
+      color: rgba(255,255,255,.58);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .right{ text-align: right; }
+    .muted{ color: rgba(255,255,255,.62); }
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1px;
+      white-space: nowrap;
     }
 
-    @media (max-width: 390px){
-      .kpiMatrix .kpiValue{ font-size: 20px; }
-      .kpiGsrRow .kpiValue{ font-size: 19px !important; }
+    .listWrap{
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
+    .listMin{ min-width: 860px; }
+
+    .pulse {
+      animation: mmPulse 650ms ease;
+    }
+    @keyframes mmPulse {
+      0% { box-shadow: none; }
+      35% { box-shadow: 0 0 0 4px rgba(142,200,255,.16), 0 18px 60px rgba(0,0,0,.35); }
+      100% { box-shadow: none; }
+    }
+
+    .status{
+      font-size: 12px;
+      color: var(--m-subtext);
+      min-height: 18px;
+      margin-top: 10px;
+    }
+    .status.bad{ color: rgba(248,113,113,.95); }
+    .status.good{ color: rgba(52,211,153,.95); }
+    .status.warn{ color: rgba(251,191,36,.95); }
+
+    .actionRow{
+      margin-top: 12px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .locked{
+      position: relative;
+      filter: blur(0);
+    }
+    .locked[data-locked="true"]{
+      filter: blur(0.2px);
+    }
+    .lockOverlay{
+      display: none;
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      text-align: center;
+      color: rgba(255,255,255,.88);
+      font-size: 13px;
+    }
+    .locked[data-locked="true"] .lockOverlay{ display: flex; }
   </style>
 </head>
 
-<body>
-  <!-- =========================================================
-       FIXED FULL-WIDTH TOP TICKER (ABOVE EVERYTHING)
-       ========================================================= -->
-  <div class="ticker" role="region" aria-label="Live prices ticker">
-    <div class="tickerInner">
-      <div class="tickerViewport">
-        <div class="tickerTrack" id="tickerTrack">
-          <div class="tickerGroup" id="tickerLiveGroup">
-            <span class="tickItem">
-              <span class="tickLabel">GSR</span>
-              <span class="tickValue" id="sbGsr">—</span>
-            </span>
-            <span class="tickSep">•</span>
-            <span class="tickItem">
-              <span class="tickLabel">Δ</span>
-              <span class="tickValue" id="sbDelta">—</span>
-            </span>
-            <span class="tickSep">•</span>
-            <span class="tickItem">
-              <span class="tickLabel">UPDATED</span>
-              <span class="tickValue" id="sbUpdated">—</span>
-            </span>
-            <span class="tickSep">•</span>
-            <span class="tickItem">
-              <span class="tickLabel">GOLD</span>
-              <span class="tickValue" id="sbGold">—</span>
-            </span>
-            <span class="tickSep">•</span>
-            <span class="tickItem">
-              <span class="tickLabel">SILVER</span>
-              <span class="tickValue" id="sbSilver">—</span>
-            </span>
-            <span class="tickSep">•</span>
-            <span class="tickItem tickCta">
-              <span class="tickLabel">SIGNALS</span>
-              <span class="tickValue"><a href="/pro">PRO</a> / <a href="/elite">ELITE</a></span>
-            </span>
-            <span class="tickSep">•</span>
+<body class="vaultPage">
+  <div class="meltWrap">
+
+    <!-- Top -->
+    <div class="meltTop">
+      <div class="meltBrand">
+        <div class="meltMark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M6 8h12M7 12h10M8 16h8" stroke="rgba(255,255,255,.88)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="meltBrandText">
+          <b>MetalMetric</b>
+          <span class="mono" id="vaultUpdatedSmall">Vault tool • live spot</span>
+        </div>
+      </div>
+
+      <div class="meltNav">
+        <div class="pillRow" aria-label="Live spot prices (USD per oz t)">
+          <div class="pill" id="pillGold" title="Gold spot price ($/oz t)">
+            <strong>Gold</strong>
+            <span class="mono" id="spotGoldPill">$—</span>
+            <small>/ oz t</small>
+          </div>
+          <div class="pill" id="pillSilver" title="Silver spot price ($/oz t)">
+            <strong>Silver</strong>
+            <span class="mono" id="spotSilverPill">$—</span>
+            <small>/ oz t</small>
+          </div>
+          <div class="pill" id="pillPlatinum" title="Platinum spot price ($/oz t)">
+            <strong>Platinum</strong>
+            <span class="mono" id="spotPlatinumPill">$—</span>
+            <small>/ oz t</small>
+          </div>
+          <div class="pill" title="Tier (stub until entitlements)">
+            <strong>Tier</strong>
+            <span class="mono" id="tierPill">free</span>
+          </div>
+          <div class="pill" title="Data freshness">
+            <strong>Updated</strong>
+            <span class="mono" id="chipUpdated">—</span>
           </div>
         </div>
+
+        <button class="btn" id="btnRefresh" type="button">Refresh spot</button>
+        <a class="btn" href="../melt/index.html">Melt</a>
+        <a class="btn" href="../index.html">Dashboard</a>
       </div>
     </div>
-  </div>
 
-  <!-- =========================================================
-       NAV BANNER (buttons unchanged)
-       ========================================================= -->
-  <div class="navBannerSticky" id="navSticky" role="navigation" aria-label="Primary navigation">
-    <div class="navBannerSurface">
-      <div class="navBanner shell">
-        <div class="navTabs" id="navTabs">
-          <a class="navTab" href="#pricing">Pricing</a>
-          <a class="navTab navTab--pro" href="/pro">Pro</a>
-          <a class="navTab navTab--elite" href="/elite">Elite</a>
-          <a class="navTab" href="/melt">Melt Calculator</a>
-         <a class="navTab" href="/vault">Vault</a>
+    <!-- Hero -->
+    <div class="meltHero">
+      <h1>Vault Tracker</h1>
+      <p>
+        Track bullion + jewelry melt value live using spot. Premium-ready scaffolding for market premiums, exports, alerts, and Pro/Elite gating.
+      </p>
+    </div>
 
-          <button id="themeToggle" class="navTab" type="button" aria-pressed="false" title="Switch theme">
-            <span class="ttIcon ttIconMoon" aria-hidden="true" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M21 14.4A8.5 8.5 0 0 1 9.6 3a7 7 0 1 0 11.4 11.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <span class="ttIcon ttIconSun" aria-hidden="true" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </span>
-            <span class="ttLabel">—</span>
-          </button>
-
-          <button id="refreshBtn" class="navTab" type="button">Refresh</button>
+    <div class="meltGrid">
+      <!-- INPUT CARD -->
+      <section class="card" aria-label="Add item">
+        <div class="cardHeader">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="rgba(255,255,255,.72)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Add Item
+          </h2>
+          <button class="btn" id="btnReset" type="button">Reset</button>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <main class="shell">
-    <header class="topbar">
-      <div class="titleBlock">
-        <div class="brandLockup">
-          <img class="brandMark" src="/metalmetric-mark.svg" alt="MetalMetric" width="36" height="36" />
-          <div class="brandStack">
-            <div class="brandRow">
-              <h1 class="brandName">MetalMetric</h1>
-              <span class="brandBadge">Premium Signals</span>
+        <div class="cardBody">
+          <div class="field">
+            <label for="label">Label</label>
+            <input class="control" id="label" placeholder='e.g., "1 oz Gold Eagle" or "14k ring, 5g"' />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="metal">Metal</label>
+              <select class="control" id="metal">
+                <option value="gold">Gold</option>
+                <option value="silver">Silver</option>
+                <option value="platinum">Platinum</option>
+              </select>
             </div>
-            <p class="sub brandSub">Gold-to-Silver Ratio dashboard — Alerts when it matters. Not when it moves.</p>
-            <p class="metaLine brandMeta">
-              <span class="muted">Last updated:</span> <span id="lastUpdatedHuman">—</span>
-              <span class="dot">•</span>
-              <span class="muted">UTC date:</span> <span id="utcDate">—</span>
-            </p>
+
+            <div class="field">
+              <label for="itemType">Item type</label>
+              <select class="control" id="itemType">
+                <option value="bullion">Bullion</option>
+                <option value="coin">Coin</option>
+                <option value="bar">Bar</option>
+                <option value="jewelry">Jewelry</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="weightValue">Weight</label>
+              <input class="control mono" id="weightValue" inputmode="decimal" type="number" min="0" step="0.01" placeholder="e.g., 31.1" />
+            </div>
+
+            <div class="field">
+              <label for="weightUnit">Unit</label>
+              <select class="control" id="weightUnit">
+                <option value="g" selected>g</option>
+                <option value="oz">oz t</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="purityPreset">Purity preset</label>
+              <select class="control" id="purityPreset">
+                <option value="">Select…</option>
+                <option value="0.999">.999 (Fine)</option>
+                <option value="0.9167">22k (0.9167)</option>
+                <option value="0.900">0.900</option>
+                <option value="0.750">18k (0.750)</option>
+                <option value="0.585">14k (0.585)</option>
+                <option value="0.417">10k (0.417)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="purity">Purity (0–1)</label>
+              <input class="control mono" id="purity" inputmode="decimal" type="number" min="0" max="1" step="0.001" placeholder="e.g., 0.999" />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label for="premiumPct">Premium % (optional, for market value)</label>
+            <input class="control mono" id="premiumPct" inputmode="decimal" type="number" min="0" step="0.01" placeholder="e.g., 6.5" />
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label for="notes">Notes (optional)</label>
+            <textarea class="control" id="notes" placeholder="Anything you want to remember about this item…"></textarea>
+          </div>
+
+          <div class="status" id="statusText">Fetching spot…</div>
+
+          <div class="actionRow">
+            <button class="btn btnPrimary" id="btnAdd" type="button">Add to Vault</button>
+          </div>
+
+          <div class="status muted" style="margin-top:10px;">
+            Jewelry defaults to melt. Bullion/coins can use Premium % later for market valuation + Pro/Elite tools.
           </div>
         </div>
-      </div>
-    </header>
+      </section>
 
-    <!-- =========================================================
-         KPI MATRIX: Spot (left) + Futures (right)
-         Futures are now clean like Spot (no overlap possible)
-         ========================================================= -->
-    <section class="kpiMatrix" aria-label="Spot and futures prices">
-      <!-- SPOT (LEFT) -->
-      <div class="kpiMatrixCol kpiMatrixCol--spot">
-        <div class="kpiMatrixHead">Spot</div>
-
-        <div class="kpiCard kpiCard--coinGold">
-          <div class="kpiLabel">GOLD (SPOT USD)</div>
-          <div class="kpiValue" id="gold">—</div>
-          <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="fetchedAt">—</span></div>
-        </div>
-
-        <div class="kpiCard kpiCard--coinSilver">
-          <div class="kpiLabel">SILVER (SPOT USD)</div>
-          <div class="kpiValue" id="silver">—</div>
-          <div class="kpiSub"><span class="muted">Source:</span> <span id="source">—</span></div>
-        </div>
-
-        <div class="kpiCard kpiCard--coinPlatinum">
-          <div class="kpiLabel">PLATINUM (SPOT USD)</div>
-          <div class="kpiValue" id="platinum">—</div>
-          <div class="kpiSub"><span class="muted">Source:</span> <span id="platinumSource">—</span></div>
-        </div>
-      </div>
-
-      <!-- FUTURES (RIGHT) -->
-      <div class="kpiMatrixCol kpiMatrixCol--futures">
-        <div class="kpiMatrixHead">Futures</div>
-
-        <div class="kpiCard kpiCard--futures">
-          <div class="kpiFutIconCol kpiFutIconCol--gold" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- OUTPUT CARD -->
+      <section class="card" aria-label="Vault summary">
+        <div class="cardHeader">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 14l5-5 4 4 7-7" stroke="rgba(142,200,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 7v6h-6" stroke="rgba(142,200,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-          </div>
-          <div class="kpiFutBody">
-            <div class="kpiLabel">GOLD (FUTURES USD)</div>
-            <div class="kpiValue" id="futGold">—</div>
-            <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
-          </div>
-        </div>
-
-        <div class="kpiCard kpiCard--futures">
-          <div class="kpiFutIconCol kpiFutIconCol--silver" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="kpiFutBody">
-            <div class="kpiLabel">SILVER (FUTURES USD)</div>
-            <div class="kpiValue" id="futSilver">—</div>
-            <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
+            Vault Value
+          </h2>
+          <div class="pill" title="Price basis">
+            <strong>USD</strong>
+            <span class="mono">/ oz t</span>
           </div>
         </div>
 
-        <div class="kpiCard kpiCard--futures">
-          <div class="kpiFutIconCol kpiFutIconCol--platinum" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="kpiFutBody">
-            <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
-            <div class="kpiValue" id="futPlatinum">—</div>
-            <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="kpiGsrRow" aria-label="Gold-to-Silver Ratio">
-      <div class="kpiCard kpiCard--mini">
-        <div class="kpiLabel">GSR (SPOT)</div>
-        <div class="kpiValue" id="gsr">—</div>
-        <div class="kpiSub">
-          <span class="muted">Δ vs prev:</span>
-          <span id="deltaAbs">—</span>
-          <span class="muted"> (</span><span id="deltaPct">—</span><span class="muted">)</span>
-        </div>
-      </div>
-
-      <div class="kpiCard kpiCard--mini">
-        <div class="kpiLabel">GSR (FUTURES)</div>
-        <div class="kpiValue" id="futGsr">—</div>
-        <div class="kpiSub"><span class="muted">Market time:</span> <span id="futMarketTime">—</span></div>
-      </div>
-    </section>
-
-    <!-- controls/charts/pricing/footer remain as your current file -->
-    <section class="controls">
-      <div class="segmented" role="tablist" aria-label="Range">
-        <button class="segBtn isActive" data-range="1M">1M</button>
-        <button class="segBtn" data-range="3M">3M</button>
-        <button class="segBtn" data-range="6M">6M</button>
-        <button class="segBtn" data-range="1Y">1Y</button>
-        <button class="segBtn" data-range="MAX">MAX</button>
-      </div>
-      <div class="toggles">
-        <label class="toggle"><input type="checkbox" id="showGold" checked> <span>Gold</span></label>
-        <label class="toggle"><input type="checkbox" id="showSilver" checked> <span>Silver</span></label>
-        <label class="toggle"><input type="checkbox" id="showGsr" checked> <span>GSR</span></label>
-      </div>
-    </section>
-
-    <section class="card" id="chartsCard">
-      <div class="cardHead cardHead--charts">
-        <div class="cardTitle">Charts</div>
-        <div class="cardMeta" id="rangeLabel">—</div>
-
-        <div class="chartTools">
-          <button id="chartsResetZoomBtn" class="iconBtn" type="button" title="Reset zoom" aria-label="Reset zoom">⟲</button>
-          <button id="chartsExpandBtn" class="iconBtn" type="button" title="Expand charts" aria-label="Expand charts">⤢</button>
-          <button id="chartsCloseBtn" class="iconBtn hidden" type="button" title="Close" aria-label="Close charts">✕</button>
-        </div>
-      </div>
-
-      <div id="chartsLockOverlay" class="chartsLockOverlay hidden" aria-hidden="true">
-        <div class="lockTitle">Interactive charts are Pro+</div>
-        <div class="lockSub">Zoom, pan, synced crosshair, and insights.</div>
-        <div class="lockActions">
-          <a class="lockBtn" href="#pricing">Upgrade</a>
-          <button id="lockDismissBtn" class="lockBtn lockBtn--ghost" type="button">Not now</button>
-        </div>
-      </div>
-
-      <div id="pointDetails" class="pointDetails hidden" role="status" aria-live="polite"></div>
-
-      <div id="emptyState" class="emptyState hidden">
-        <div class="emptyTitle">No history yet</div>
-        <div class="emptySub">Your database has only one data point. Run backfill (or let cron run daily).</div>
-      </div>
-
-      <div id="chartsWrap" class="chartsWrap">
-        <div class="chartBlock" id="chartGsr">
-          <div class="chartHeader">
-            <div class="chartName">GSR</div>
-            <div class="chartHint muted">ratio</div>
-          </div>
-          <div class="chartCanvasWrap">
-            <canvas id="chartGsrCanvas" class="chartCanvas"></canvas>
+        <div class="resultHero" id="kpiTotal">
+          <div class="label">Total Vault Value (Live)</div>
+          <div class="value mono" id="totalValue">$—</div>
+          <div class="sub mono">
+            <span id="summaryLine">—</span>
+            <span id="deltaLine" class="deltaFlat">Δ —</span>
           </div>
         </div>
 
-        <div class="chartBlock" id="chartGold">
-          <div class="chartHeader">
-            <div class="chartName">Gold Spot (USD)</div>
-            <div class="chartHint muted">close</div>
+        <div class="kpiRow">
+          <div class="kpi">
+            <div class="k">Pure oz</div>
+            <div class="v mono" id="kPureAll">—</div>
+            <div class="s mono" id="kPureSub">Au — • Ag — • Pt —</div>
           </div>
-          <div class="chartCanvasWrap">
-            <canvas id="chartGoldCanvas" class="chartCanvas"></canvas>
+          <div class="kpi">
+            <div class="k">Breakdown</div>
+            <div class="v mono" id="kBreakdown">—</div>
+            <div class="s mono">Gold / Silver / Platinum</div>
+          </div>
+          <div class="kpi locked" id="kpiLocked" data-locked="false" data-requires="pro">
+            <div class="k">Retention hook</div>
+            <div class="v mono" id="kHook">Value pulse</div>
+            <div class="s mono">Updates every 60s</div>
+            <div class="lockOverlay">
+              Pro unlocks deeper analytics (history, “since added”, alerts).
+            </div>
           </div>
         </div>
 
-        <div class="chartBlock" id="chartSilver">
-          <div class="chartHeader">
-            <div class="chartName">Silver Spot (USD)</div>
-            <div class="chartHint muted">close</div>
+        <div class="cardBody" style="padding-top: 0;">
+          <div class="field" style="margin-top: 6px;">
+            <label>Vault Items</label>
           </div>
-          <div class="chartCanvasWrap">
-            <canvas id="chartSilverCanvas" class="chartCanvas"></canvas>
+
+          <div class="listWrap" aria-label="Vault items list">
+            <div class="list listMin" id="list">
+              <div class="listRow listHead">
+                <div>Item</div>
+                <div>Metal</div>
+                <div class="right mono">Pure oz</div>
+                <div class="right mono">Melt</div>
+                <div class="right mono">Market</div>
+                <div class="right">Action</div>
+              </div>
+
+              <div class="listRow" id="emptyRow">
+                <div class="muted" style="grid-column: 1 / -1;">Loading…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status muted" style="margin-top:10px;">
+            Live valuation recalculates using <span class="mono">/api/spot</span>. Items persist in DB via <span class="mono">/api/vault_items</span>.
           </div>
         </div>
-      </div>
+      </section>
+    </div>
 
-      <details class="details">
-        <summary>Show history table</summary>
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date (UTC)</th>
-                <th>GSR</th>
-                <th>Gold</th>
-                <th>Silver</th>
-              </tr>
-            </thead>
-            <tbody id="historyTable"></tbody>
-          </table>
-        </div>
-      </details>
-    </section>
+  </div>
 
-    <section class="card" id="pricing" aria-label="Pricing">
-      <div class="cardHead">
-        <div>
-          <div class="cardTitle">Pricing</div>
-          <div class="cardMeta">Upgrade for signals, alerts, and premium tools</div>
-        </div>
-      </div>
-
-      <div class="pricingHeroSimple">
-        <div class="pricingEyebrow">SUBSCRIPTIONS • COMING NEXT</div>
-        <h2 class="pricingHeadline">Plans that grow with you</h2>
-        <p class="pricingLead">
-          Free gives you the live ratio + history. Pro and Elite add signals, alerts, and research tools built to reduce noise and speed up decisions.
-        </p>
-      </div>
-
-      <div class="pricingGrid3" role="list">
-        <article class="priceCard priceCard--free" role="listitem" aria-label="Free plan">
-          <div class="priceTop">
-            <div class="priceIcon" aria-hidden="true"></div>
-            <div class="pricePlan">Free</div>
-            <div class="priceTagline">Clean dashboard for tracking GSR.</div>
-          </div>
-          <div class="priceAmountRow">
-            <div class="priceAmount">$0</div>
-            <div class="pricePer">/mo</div>
-          </div>
-          <a class="priceBtn priceBtn--ghost" href="/">Use MetalMetric for free</a>
-          <ul class="priceList">
-            <li>Live refresh + stored DB history</li>
-            <li>Charts + range selection</li>
-            <li>History table</li>
-          </ul>
-          <div class="priceFootnote">No signup required.</div>
-        </article>
-
-        <article class="priceCard priceCard--pro" role="listitem" aria-label="Pro plan">
-          <div class="priceTop">
-            <div class="priceIcon priceIcon--pro" aria-hidden="true"></div>
-            <div class="pricePlan">Pro</div>
-            <div class="priceTagline">Signals + tools that make metals actionable.</div>
-          </div>
-          <div class="priceAmountRow">
-            <div class="priceAmount">$9</div>
-            <div class="pricePer">/mo</div>
-          </div>
-
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="priceBtn mmCheckoutBtn" href="#" data-checkout-plan="pro" data-checkout-interval="monthly">
-              Get Pro (Monthly)
-            </a>
-            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly" href="#" data-checkout-plan="pro" data-checkout-interval="yearly">
-              Get Pro (Yearly)
-            </a>
-          </div>
-
-          <ul class="priceList">
-            <li>Buy/Sell Score + 10 smart alerts</li>
-            <li>Smart Melt Value Calculator (jewelry/coins)</li>
-            <li>Hidden Assets Vault + inflation category alerts</li>
-          </ul>
-          <div class="priceFootnote">Best for consistent weekly decision-making.</div>
-        </article>
-
-        <article class="priceCard priceCard--elite" role="listitem" aria-label="Elite plan">
-          <div class="priceTop">
-            <div class="priceIcon priceIcon--elite" aria-hidden="true"></div>
-            <div class="pricePlan">Elite</div>
-            <div class="priceTagline">System tools + workflows for power users.</div>
-          </div>
-          <div class="priceAmountRow">
-            <div class="priceAmount">$19</div>
-            <div class="pricePer">/mo</div>
-          </div>
-
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a class="priceBtn mmCheckoutBtn" href="#" data-checkout-plan="elite" data-checkout-interval="monthly">
-              Get Elite (Monthly)
-            </a>
-            <a class="priceBtn mmCheckoutBtn mmCheckoutBtn--yearly" href="#" data-checkout-plan="elite" data-checkout-interval="yearly">
-              Get Elite (Yearly)
-            </a>
-          </div>
-
-          <ul class="priceList">
-            <li>50 alerts + percentiles + confidence scoring</li>
-            <li>Scenario + ladder + CSV export (research suite)</li>
-            <li>Inflation-proof envelopes + hedge-linked goals + jewelry scanner</li>
-          </ul>
-          <div class="priceFootnote">Built for serious allocation + timing.</div>
-        </article>
-      </div>
-
-      <div class="pricingLegal muted">
-        *Usage limits apply. Prices shown don’t include applicable tax.
-      </div>
-    </section>
-
-    <footer class="footer">
-      <span class="muted">Tip:</span> If numbers don’t update after a deploy, hard refresh and clear the service worker cache.
-    </footer>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
-
-  <!-- Chart theme helper (your current logic) -->
-  <script>
-    (function(){
-      function isDark(){
-        return (document.documentElement.getAttribute("data-theme") || "light").toLowerCase() === "dark";
-      }
-      function applyChartTheme(){
-        if (!window.Chart || !Chart.getChart) return false;
-        const dark = isDark();
-        const tick = dark ? "rgba(255,255,255,.78)" : "rgba(17,17,20,.72)";
-        const grid = dark ? "rgba(255,255,255,.08)" : "rgba(17,17,20,.10)";
-        const title = dark ? "rgba(255,255,255,.88)" : "rgba(17,17,20,.86)";
-        Chart.defaults.color = tick;
-        Chart.defaults.borderColor = grid;
-        const ids = ["chartGsrCanvas","chartGoldCanvas","chartSilverCanvas"];
-        let found = 0;
-        ids.forEach(id => {
-          const c = document.getElementById(id);
-          if (!c) return;
-          const chart = Chart.getChart(c);
-          if (!chart) return;
-          found++;
-          if (chart.options && chart.options.scales){
-            Object.values(chart.options.scales).forEach(sc => {
-              sc.ticks = sc.ticks || {};
-              sc.grid = sc.grid || {};
-              sc.border = sc.border || {};
-              sc.ticks.color = tick;
-              sc.grid.color = grid;
-              sc.border.color = grid;
-              sc.title = sc.title || {};
-              sc.title.color = title;
-            });
-          }
-          chart.options.plugins = chart.options.plugins || {};
-          chart.options.plugins.legend = chart.options.plugins.legend || {};
-          chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-          chart.options.plugins.legend.labels.color = tick;
-          chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
-          chart.options.plugins.tooltip.titleColor = dark ? "rgba(255,255,255,.92)" : "rgba(17,17,20,.92)";
-          chart.options.plugins.tooltip.bodyColor  = dark ? "rgba(255,255,255,.86)" : "rgba(17,17,20,.86)";
-          chart.options.plugins.tooltip.backgroundColor = dark ? "rgba(0,0,0,.78)" : "rgba(255,255,255,.92)";
-          chart.options.plugins.tooltip.borderColor = dark ? "rgba(255,255,255,.12)" : "rgba(17,17,20,.10)";
-          chart.options.plugins.tooltip.borderWidth = 1;
-          chart.update("none");
-          try { if (chart.draw) chart.draw(); } catch(e) {}
-        });
-        return found > 0;
-      }
-      function scheduleApply(){
-        try { applyChartTheme(); } catch(e) {}
-        try { requestAnimationFrame(() => { try { applyChartTheme(); } catch(e) {} }); } catch(e) {}
-        setTimeout(() => { try { applyChartTheme(); } catch(e) {} }, 120);
-        setTimeout(() => { try { applyChartTheme(); } catch(e) {} }, 350);
-      }
-      window.addEventListener("load", () => {
-        let tries = 0;
-        const t = setInterval(() => {
-          tries++;
-          const ok = applyChartTheme();
-          if (ok || tries > 20) clearInterval(t);
-        }, 250);
-      });
-      try{
-        const mo = new MutationObserver((muts) => {
-          for (const m of muts){
-            if (m.type === "attributes" && m.attributeName === "data-theme"){
-              scheduleApply();
-              break;
-            }
-          }
-        });
-        mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-      }catch(e){}
-      window.mmApplyChartTheme = scheduleApply;
-    })();
-  </script>
-
-  <script defer src="/app.js"></script>
-
-  <!-- THEME TOGGLE -->
-  <script>
-    (function(){
-      const KEY = "mm_theme";
-      const root = document.documentElement;
-      const btn = document.getElementById("themeToggle");
-      const label = btn ? btn.querySelector(".ttLabel") : null;
-      const moon = btn ? btn.querySelector(".ttIconMoon") : null;
-      const sun  = btn ? btn.querySelector(".ttIconSun")  : null;
-
-      const getTheme = () => {
-        const t = (root.getAttribute("data-theme") || "").toLowerCase();
-        return (t === "dark" || t === "light") ? t : "light";
-      };
-
-      const apply = (theme) => {
-        root.setAttribute("data-theme", theme);
-        const isDark = theme === "dark";
-        if (btn) btn.setAttribute("aria-pressed", isDark ? "true" : "false");
-        if (label) label.textContent = isDark ? "Light" : "Dark";
-        if (moon) moon.style.display = isDark ? "none" : "inline-flex";
-        if (sun)  sun.style.display  = isDark ? "inline-flex" : "none";
-        if (btn) btn.title = isDark ? "Switch to Light" : "Switch to Dark";
-        try { localStorage.setItem(KEY, theme); } catch(e) {}
-        try { if (window.mmApplyChartTheme) window.mmApplyChartTheme(); } catch(e) {}
-      };
-
-      apply(getTheme());
-
-      if (btn){
-        btn.addEventListener("click", () => {
-          const next = (getTheme() === "dark") ? "light" : "dark";
-          apply(next);
-          setTimeout(() => { try { window.mmApplyChartTheme && window.mmApplyChartTheme(); } catch(e) {} }, 250);
-        });
-      }
-    })();
-  </script>
-
-  <!-- STRIPE CHECKOUT WIRING (guarded) -->
   <script>
     (function () {
-      try {
-        if (window.__mmStripeCheckoutWired) return;
-        window.__mmStripeCheckoutWired = true;
+      "use strict";
 
-        const btns = Array.from(document.querySelectorAll("[data-checkout-plan][data-checkout-interval]"));
-        if (!btns.length) return;
+      const OZ_TROY_IN_G = 31.1034768;
 
-        async function go(plan, interval, el){
-          const original = el ? el.textContent : "";
-          try{
-            if (el) {
-              el.setAttribute("aria-busy", "true");
-              el.style.pointerEvents = "none";
-              el.textContent = "Redirecting…";
-            }
+      const el = (id) => document.getElementById(id);
 
-            const res = await fetch("/api/create_checkout_session", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ plan, interval })
-            });
+      const pillGold = el("pillGold");
+      const pillSilver = el("pillSilver");
+      const pillPlatinum = el("pillPlatinum");
 
-            const text = await res.text();
-            let data = null;
-            try { data = JSON.parse(text); } catch {}
+      const spotGoldPill = el("spotGoldPill");
+      const spotSilverPill = el("spotSilverPill");
+      const spotPlatinumPill = el("spotPlatinumPill");
 
-            if (!res.ok || !data?.ok || !data?.url) {
-              throw new Error((data && (data.error || data.message)) || `Checkout failed (${res.status})`);
-            }
+      const chipUpdated = el("chipUpdated");
+      const tierPill = el("tierPill");
+      const vaultUpdatedSmall = el("vaultUpdatedSmall");
 
-            window.location.href = data.url;
-          } finally {
-            if (el) {
-              el.removeAttribute("aria-busy");
-              el.style.pointerEvents = "";
-              el.textContent = original;
-            }
-          }
+      const btnRefresh = el("btnRefresh");
+      const btnReset = el("btnReset");
+      const btnAdd = el("btnAdd");
+
+      const labelInput = el("label");
+      const metalSelect = el("metal");
+      const itemTypeSelect = el("itemType");
+      const weightValueInput = el("weightValue");
+      const weightUnitSelect = el("weightUnit");
+      const purityPresetSelect = el("purityPreset");
+      const purityInput = el("purity");
+      const premiumPctInput = el("premiumPct");
+      const notesInput = el("notes");
+
+      const statusText = el("statusText");
+
+      const kpiTotal = el("kpiTotal");
+      const totalValueEl = el("totalValue");
+      const summaryLineEl = el("summaryLine");
+      const deltaLineEl = el("deltaLine");
+
+      const kPureAll = el("kPureAll");
+      const kPureSub = el("kPureSub");
+      const kBreakdown = el("kBreakdown");
+
+      const listEl = el("list");
+      const emptyRow = el("emptyRow");
+
+      // --- Helpers
+      function num(v) {
+        if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+        if (v == null) return NaN;
+        const s = String(v).trim().replace(/,/g, "");
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : NaN;
+      }
+
+      const money = (v) => {
+        const n = num(v);
+        if (!Number.isFinite(n)) return "$—";
+        return n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+      const fmt4 = (v) => Number.isFinite(num(v)) ? num(v).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
+
+      function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+      function escapeHtml(s) {
+        return String(s || "")
+          .replaceAll("&","&amp;")
+          .replaceAll("<","&lt;")
+          .replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;")
+          .replaceAll("'","&#039;");
+      }
+
+      function setStatus(msg, kind) {
+        statusText.textContent = msg;
+        statusText.classList.remove("bad", "good", "warn");
+        if (kind) statusText.classList.add(kind);
+      }
+
+      function getTier() {
+        return (localStorage.getItem("mm_tier") || "free").toLowerCase();
+      }
+
+      function highlightActiveMetalPill(metal) {
+        pillGold.classList.toggle("isActive", metal === "gold");
+        pillSilver.classList.toggle("isActive", metal === "silver");
+        pillPlatinum.classList.toggle("isActive", metal === "platinum");
+      }
+
+      function formatUpdated(v) {
+        if (!v) return null;
+        const s = String(v);
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+        }
+        return s;
+      }
+
+      function weightToOzTroy(weightValue, unit) {
+        const w = num(weightValue);
+        if (!Number.isFinite(w) || w <= 0) return null;
+        return unit === "oz" ? w : (w / OZ_TROY_IN_G);
+      }
+
+      function computeItemValuation(item, spot) {
+        const metal = item.metal;
+        const spotPerOz = spot?.[metal]?.usd;
+        if (!Number.isFinite(num(spotPerOz))) return { melt: null, market: null, pureOz: null };
+
+        const purity = clamp(num(item.purity || 0), 0, 1);
+        const ozTroy = weightToOzTroy(item.weight_value, item.weight_unit);
+        if (!ozTroy) return { melt: null, market: null, pureOz: null };
+
+        const pureOz = ozTroy * purity;
+        const melt = pureOz * num(spotPerOz);
+
+        const premPct = num(item.premium_pct);
+        const hasPrem = Number.isFinite(premPct);
+        const market = hasPrem ? (melt * (1 + premPct / 100)) : melt;
+
+        return { melt, market, pureOz, premPct: hasPrem ? premPct : null };
+      }
+
+      async function fetchAny(path) {
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const text = await res.text();
+
+        let data;
+        try { data = JSON.parse(text); }
+        catch (e) {
+          const err = new Error(`Non-JSON from ${path}: ${text.slice(0, 160)}`);
+          err.status = res.status;
+          err.payload = text;
+          throw err;
         }
 
-        btns.forEach((a) => {
-          a.addEventListener("click", (e) => {
-            e.preventDefault();
-            const plan = a.getAttribute("data-checkout-plan");
-            const interval = a.getAttribute("data-checkout-interval");
-            if (!plan || !interval) return;
-            go(plan, interval, a).catch((err) => {
-              console.warn("[stripe] checkout error:", err);
-              alert(err?.message || "Checkout failed. Please try again.");
-            });
+        if (!res.ok) {
+          const msg = (data && data.error) ? String(data.error) : `HTTP ${res.status}`;
+          const err = new Error(msg);
+          err.status = res.status;
+          err.payload = data;
+          throw err;
+        }
+        return data;
+      }
+
+      function pullSpotFromKnownShape(obj) {
+        if (!obj || typeof obj !== "object") return { ok: false, err: "Invalid response" };
+
+        const apiErr = (obj.ok === false)
+          ? (obj.error ? String(obj.error) : "Spot returned ok:false")
+          : null;
+
+        const gold = [obj.gold_usd, obj?.normalized?.gold, obj.gold, obj?.raw?.gold].map(num).find(Number.isFinite);
+        const silver = [obj.silver_usd, obj?.normalized?.silver, obj.silver, obj?.raw?.silver].map(num).find(Number.isFinite);
+
+        const platinum = [
+          obj.platinum_usd,
+          obj?.normalized?.platinum,
+          obj.xpt_usd,
+          obj.xpt,
+          obj.platinum,
+          obj?.raw?.platinum
+        ].map(num).find(Number.isFinite);
+
+        const updatedRaw =
+          obj.fetched_at_utc ||
+          obj.updated_at ||
+          obj.updatedAt ||
+          obj.date_utc ||
+          obj.date ||
+          null;
+
+        const anyFound = (gold != null) || (silver != null) || (platinum != null);
+        if (!anyFound && apiErr) return { ok: false, err: apiErr };
+
+        return {
+          ok: true,
+          g: Number.isFinite(gold) ? gold : null,
+          s: Number.isFinite(silver) ? silver : null,
+          p: Number.isFinite(platinum) ? platinum : null,
+          updatedRaw,
+          apiErr
+        };
+      }
+
+      function unwrap(v) {
+        if (!v) return null;
+        if (Array.isArray(v)) return v[v.length - 1] || null;
+        if (typeof v === "object") {
+          if (Array.isArray(v.rows)) return v.rows[v.rows.length - 1] || null;
+          if (Array.isArray(v.data)) return v.data[v.data.length - 1] || null;
+          if (Array.isArray(v.results)) return v.results[v.results.length - 1] || null;
+          if (v.latest && typeof v.latest === "object") return v.latest;
+        }
+        return v;
+      }
+
+      async function fetchSpots() {
+        setStatus("Fetching live spot…", "");
+
+        try {
+          const [spotRes, latestRes] = await Promise.allSettled([
+            fetchAny("/api/spot"),
+            fetchAny("/api/latest")
+          ]);
+
+          const spotRaw = (spotRes.status === "fulfilled") ? spotRes.value : null;
+          const latestRaw = (latestRes.status === "fulfilled") ? latestRes.value : null;
+
+          const spot = pullSpotFromKnownShape(unwrap(spotRaw));
+          const latest = pullSpotFromKnownShape(unwrap(latestRaw));
+
+          if (spot.ok) {
+            if (spot.g != null) state.spots.gold = spot.g;
+            if (spot.s != null) state.spots.silver = spot.s;
+            if (spot.p != null) state.spots.platinum = spot.p;
+            if (spot.updatedRaw) state.updatedAt = formatUpdated(spot.updatedRaw);
+            if (spot.apiErr) setStatus("Spot warning: " + spot.apiErr, "warn");
+          }
+
+          if (latest.ok) {
+            if (state.spots.gold == null && latest.g != null) state.spots.gold = latest.g;
+            if (state.spots.silver == null && latest.s != null) state.spots.silver = latest.s;
+            if (state.spots.platinum == null && latest.p != null) state.spots.platinum = latest.p;
+            if (!state.updatedAt && latest.updatedRaw) state.updatedAt = formatUpdated(latest.updatedRaw);
+          }
+
+          if (!state.updatedAt) state.updatedAt = new Date().toISOString();
+          updateSpotHeaderUI();
+
+          const active = state.spots.gold || state.spots.silver || state.spots.platinum;
+          if (Number.isFinite(num(active))) setStatus("Live spot loaded. Ready.", "good");
+          else setStatus("Live spot unavailable. Try refresh.", "warn");
+
+          renderAll();
+        } catch (e) {
+          console.error("[vault] fetchSpots failed:", e);
+          updateSpotHeaderUI();
+          setStatus("Spot fetch failed: " + (e?.message || String(e)), "bad");
+          renderAll();
+        }
+      }
+
+      async function postVault(actionBody) {
+        const res = await fetch("/api/vault_items", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(actionBody)
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+        return j;
+      }
+
+      async function loadVaultItems() {
+        const j = await fetchAny("/api/vault_items?limit=500");
+        state.items = Array.isArray(j.items) ? j.items : [];
+      }
+
+      function updateSpotHeaderUI() {
+        highlightActiveMetalPill(state.activeMetalForPills());
+
+        spotGoldPill.textContent = money(state.spots.gold);
+        spotSilverPill.textContent = money(state.spots.silver);
+        spotPlatinumPill.textContent = money(state.spots.platinum);
+
+        chipUpdated.textContent = state.updatedAt || "—";
+        vaultUpdatedSmall.textContent = state.updatedAt ? ("Updated • " + state.updatedAt) : "Vault tool • live spot";
+
+        tierPill.textContent = getTier();
+      }
+
+      function buildSpotNormalized() {
+        return {
+          gold: { usd: state.spots.gold },
+          silver: { usd: state.spots.silver },
+          platinum: { usd: state.spots.platinum },
+        };
+      }
+
+      function renderAll() {
+        const spot = buildSpotNormalized();
+
+        let totals = { gold: 0, silver: 0, platinum: 0 };
+        let pureOz = { gold: 0, silver: 0, platinum: 0 };
+        let totalMarket = 0;
+
+        const rows = [];
+
+        for (const item of state.items) {
+          const v = computeItemValuation(item, spot);
+          const m = item.metal;
+
+          if (Number.isFinite(num(v.market))) {
+            totalMarket += num(v.market);
+            totals[m] += num(v.market);
+          }
+          if (Number.isFinite(num(v.pureOz))) pureOz[m] += num(v.pureOz);
+
+          const metalBadge =
+            m === "gold" ? `<span class="badge mono" style="border-color: rgba(245,200,90,.22); background: rgba(245,200,90,.08);">${escapeHtml(m)}</span>` :
+            m === "silver" ? `<span class="badge mono" style="border-color: rgba(210,220,232,.22); background: rgba(210,220,232,.08);">${escapeHtml(m)}</span>` :
+            `<span class="badge mono" style="border-color: rgba(180,195,255,.22); background: rgba(180,195,255,.08);">${escapeHtml(m)}</span>`;
+
+          const sub = [
+            item.item_type ? escapeHtml(item.item_type) : "",
+            item.notes ? escapeHtml(item.notes) : ""
+          ].filter(Boolean).join(" • ");
+
+          rows.push(`
+            <div class="listRow" data-id="${escapeHtml(item.id)}">
+              <div class="itemName">
+                <b>${escapeHtml(item.label || "—")}</b>
+                <span class="mono">${sub || "&nbsp;"}</span>
+              </div>
+              <div>${metalBadge}</div>
+              <div class="right mono">${fmt4(v.pureOz)}</div>
+              <div class="right mono">${money(v.melt)}</div>
+              <div class="right mono">${money(v.market)}</div>
+              <div class="right">
+                <button class="btn btnDanger" type="button" data-del="${escapeHtml(item.id)}">Delete</button>
+              </div>
+            </div>
+          `);
+        }
+
+        const children = Array.from(listEl.children);
+        children.slice(1).forEach(n => n.remove());
+
+        if (rows.length) {
+          emptyRow.style.display = "none";
+          listEl.insertAdjacentHTML("beforeend", rows.join(""));
+        } else {
+          emptyRow.style.display = "";
+          emptyRow.querySelector("div").textContent = "No items yet. Add your first one.";
+        }
+
+        listEl.querySelectorAll("[data-del]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const id = btn.getAttribute("data-del");
+            if (!id) return;
+            if (!confirm("Delete this item?")) return;
+            btn.disabled = true;
+            try {
+              await postVault({ action: "delete", id });
+              await refreshVaultOnly();
+              renderAll();
+            } catch (e) {
+              alert(String(e.message || e));
+            } finally {
+              btn.disabled = false;
+            }
           });
         });
-      } catch (e) {
-        console.warn("[stripe] wiring failed:", e);
-      }
-    })();
-  </script>
 
-  <!-- FUTURES-DERIVED KPI UPDATER -->
-  <script>
-    (function(){
-      const $ = (id) => document.getElementById(id);
+        totalValueEl.textContent = money(totalMarket);
 
-      const toNum = (v) => {
-        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
-        return Number.isFinite(n) ? n : NaN;
-      };
+        const allPure = pureOz.gold + pureOz.silver + pureOz.platinum;
+        kPureAll.textContent = fmt4(allPure);
+        kPureSub.textContent = `Au ${fmt4(pureOz.gold)} • Ag ${fmt4(pureOz.silver)} • Pt ${fmt4(pureOz.platinum)}`;
 
-      const money = (v) => {
-        const n = toNum(v);
-        if (!Number.isFinite(n)) return "—";
-        return n.toLocaleString(undefined, {
-          style: "currency",
-          currency: "USD",
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
-      };
+        kBreakdown.textContent = `${money(totals.gold)} / ${money(totals.silver)} / ${money(totals.platinum)}`;
 
-      const fmtGsr = (v) => {
-        const n = toNum(v);
-        return Number.isFinite(n) ? n.toFixed(2) : "—";
-      };
+        summaryLineEl.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"} • updates every 60s`;
 
-      const fmtIsoUtc = (iso) => {
-        if (!iso) return "—";
-        try{
-          const d = new Date(iso);
-          if (isNaN(d.getTime())) return String(iso);
-          return d.toISOString().replace("T"," ").replace("Z"," UTC");
-        }catch{
-          return String(iso);
-        }
-      };
+        if (state.lastTotal != null && Number.isFinite(num(totalMarket))) {
+          const d = num(totalMarket) - num(state.lastTotal);
+          const abs = Math.abs(d);
+          const cls = abs < 0.01 ? "deltaFlat" : (d > 0 ? "deltaUp" : "deltaDown");
+          deltaLineEl.className = cls;
+          deltaLineEl.textContent = abs < 0.01 ? "Δ —" : `Δ ${money(d)}`;
 
-      async function fetchJsonNoStore(path){
-        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
-        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch { throw new Error(`Non-JSON from ${path}`); }
-        if (!res.ok || data?.ok === false) throw new Error(data?.error ? String(data.error) : `HTTP ${res.status}`);
-        return data;
-      }
-
-      function setText(id, val){
-        const el = $(id);
-        if (el) el.textContent = val;
-      }
-
-      async function refreshFutures(){
-        const data = await fetchJsonNoStore("/api/futures?symbols=GC=F,SI=F,PL=F");
-
-        setText("futGold", money(data.gold_usd));
-        setText("futSilver", money(data.silver_usd));
-        setText("futPlatinum", money(data.platinum_usd));
-        setText("futGsr", fmtGsr(data.gsr));
-
-        setText("futFetchedAt", fmtIsoUtc(data.fetched_at_utc));
-        setText("futSource", data.source ? String(data.source) : "—");
-        setText("futPlatinumSource", data.source ? String(data.source) : "—");
-
-        const mDate = data?.market?.date ? String(data.market.date) : "";
-        const mTime = data?.market?.time ? String(data.market.time) : "";
-        setText("futMarketTime", (mDate || mTime) ? `${mDate} ${mTime}`.trim() : "—");
-      }
-
-      async function refreshFuturesSafe(){
-        try { await refreshFutures(); }
-        catch(e){ console.warn("[index] futures refresh failed:", e); }
-      }
-
-      window.addEventListener("load", refreshFuturesSafe);
-
-      const btn = $("refreshBtn");
-      if (btn) btn.addEventListener("click", refreshFuturesSafe);
-
-      setInterval(refreshFuturesSafe, 60000);
-    })();
-  </script>
-
-  <!-- SPOT PLATINUM KPI UPDATER -->
-  <script>
-    (function(){
-      const $ = (id) => document.getElementById(id);
-
-      const toNum = (v) => {
-        const n = (typeof v === "number") ? v : (v == null ? NaN : Number(v));
-        return Number.isFinite(n) ? n : NaN;
-      };
-
-      const money = (v) => {
-        const n = toNum(v);
-        if (!Number.isFinite(n)) return "—";
-        return n.toLocaleString(undefined, {
-          style: "currency",
-          currency: "USD",
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
-      };
-
-      async function fetchJsonNoStore(path){
-        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
-        const res = await fetch(url, { cache: "no-store", headers: { "Accept": "application/json" } });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch { throw new Error(`Non-JSON from ${path}`); }
-        if (!res.ok || data?.ok === false) throw new Error(data?.error ? String(data.error) : `HTTP ${res.status}`);
-        return data;
-      }
-
-      function setText(id, val){
-        const el = $(id);
-        if (el) el.textContent = val;
-      }
-
-      async function refreshSpotPlatinum(){
-        const data = await fetchJsonNoStore("/api/platinum_live");
-        const pt = (data && (data.platinum_usd ?? data.platinum ?? data.xpt_usd)) ?? null;
-        setText("platinum", money(pt));
-        setText("platinumSource", data?.source ? String(data.source) : "—");
-      }
-
-      async function refreshSpotPlatinumSafe(){
-        try { await refreshSpotPlatinum(); }
-        catch(e){ console.warn("[index] spot platinum refresh failed:", e); }
-      }
-
-      window.addEventListener("load", refreshSpotPlatinumSafe);
-
-      const btn = $("refreshBtn");
-      if (btn) btn.addEventListener("click", refreshSpotPlatinumSafe);
-    })();
-  </script>
-
-  <!-- =========================================================
-       TICKER: seamless continuous loop (RESTORED)
-       ========================================================= -->
-  <script>
-    (function(){
-      const $ = (id) => document.getElementById(id);
-      const track = $("tickerTrack");
-      const live = $("tickerLiveGroup");
-      if (!track || !live) return;
-
-      const viewport = track.closest(".tickerViewport");
-      if (!viewport) return;
-
-      const readText = (id) => {
-        const el = $(id);
-        const t = (el && el.textContent || "").trim();
-        return t && t !== "—" ? t : "—";
-      };
-      const setText = (id, val) => {
-        const el = $(id);
-        if (el) el.textContent = val;
-      };
-      const computeDeltaLine = () => {
-        const abs = readText("deltaAbs");
-        const pct = readText("deltaPct");
-        if (abs === "—" && pct === "—") return "—";
-        if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
-        return abs !== "—" ? abs : pct;
-      };
-      const stripCloneIds = (node) => {
-        node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
-      };
-
-      function sync(){
-        setText("sbGold", readText("gold"));
-        setText("sbSilver", readText("silver"));
-        setText("sbGsr", readText("gsr"));
-        setText("sbDelta", computeDeltaLine());
-        setText("sbUpdated", readText("lastUpdatedHuman"));
-      }
-
-      function buildSeamless(){
-        track.classList.remove("isReady");
-        track.querySelectorAll(".tickerClone, .tickerHalfClone").forEach(n => n.remove());
-
-        const vp = Math.max(0, viewport.clientWidth || 0);
-        const pad = 40;
-        let guard = 0;
-
-        while (track.scrollWidth < (vp + pad) && guard < 60) {
-          const c = live.cloneNode(true);
-          c.classList.add("tickerHalfClone");
-          c.setAttribute("aria-hidden","true");
-          c.removeAttribute("id");
-          stripCloneIds(c);
-          track.appendChild(c);
-          guard++;
+          if (abs > 0.01) {
+            kpiTotal.classList.remove("pulse");
+            void kpiTotal.offsetWidth;
+            kpiTotal.classList.add("pulse");
+          }
+        } else {
+          deltaLineEl.className = "deltaFlat";
+          deltaLineEl.textContent = "Δ —";
         }
 
-        const firstHalf = Array.from(track.children);
-        const frag = document.createDocumentFragment();
-        firstHalf.forEach(el => {
-          const c = el.cloneNode(true);
-          c.classList.add("tickerClone");
-          c.setAttribute("aria-hidden","true");
-          c.removeAttribute("id");
-          stripCloneIds(c);
-          frag.appendChild(c);
-        });
-        track.appendChild(frag);
+        state.lastTotal = totalMarket;
 
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          track.classList.add("isReady");
-        }));
+        const tier = getTier();
+        const locked = (tier === "free");
+        const kpiLocked = el("kpiLocked");
+        kpiLocked.setAttribute("data-locked", locked ? "true" : "false");
       }
 
-      sync();
-      buildSeamless();
+      const state = {
+        items: [],
+        spots: { gold: null, silver: null, platinum: null },
+        updatedAt: null,
+        lastTotal: null,
+        activeMetalForPills: () => "gold"
+      };
 
-      window.addEventListener("load", () => {
-        sync();
-        buildSeamless();
-        setTimeout(buildSeamless, 200);
+      purityPresetSelect.addEventListener("change", () => {
+        if (purityPresetSelect.value) purityInput.value = purityPresetSelect.value;
       });
 
-      window.addEventListener("resize", buildSeamless);
+      btnRefresh.addEventListener("click", fetchSpots);
 
-      const mo = new MutationObserver(() => sync());
-      ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
-        const el = $(id);
-        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
+      btnReset.addEventListener("click", () => {
+        labelInput.value = "";
+        metalSelect.value = "gold";
+        itemTypeSelect.value = "bullion";
+        weightValueInput.value = "";
+        weightUnitSelect.value = "g";
+        purityPresetSelect.value = "";
+        purityInput.value = "";
+        premiumPctInput.value = "";
+        notesInput.value = "";
+        setStatus("Reset.", "");
       });
 
-      setInterval(sync, 1200);
-    })();
-  </script>
+      btnAdd.addEventListener("click", async () => {
+        const payload = {
+          action: "create",
+          label: (labelInput.value || "").trim(),
+          metal: metalSelect.value,
+          item_type: itemTypeSelect.value,
+          weight_value: num(weightValueInput.value),
+          weight_unit: weightUnitSelect.value,
+          purity: num(purityInput.value),
+          premium_pct: (premiumPctInput.value || "").trim() === "" ? null : num(premiumPctInput.value),
+          notes: (notesInput.value || "").trim(),
+          source: "manual"
+        };
 
-  <!-- NAV AUTO-HIDE -->
-  <script>
-    (function(){
-      const nav = document.getElementById("navSticky");
-      if (!nav) return;
-
-      let lastY = window.scrollY || 0;
-      let hidden = false;
-
-      function setHidden(v){
-        if (v === hidden) return;
-        hidden = v;
-        nav.classList.toggle("mmNavHidden", hidden);
-      }
-
-      function onScroll(){
-        const y = window.scrollY || 0;
-        const dy = y - lastY;
-
-        if (y < 40){
-          setHidden(false);
-          lastY = y;
-          return;
+        if (!payload.label) return setStatus("Add a label (what is this item?).", "bad");
+        if (!Number.isFinite(payload.weight_value) || payload.weight_value <= 0) return setStatus("Weight must be a positive number.", "bad");
+        if (!Number.isFinite(payload.purity) || payload.purity <= 0 || payload.purity > 1) return setStatus("Purity must be between 0 and 1.", "bad");
+        if (payload.premium_pct != null && (!Number.isFinite(payload.premium_pct) || payload.premium_pct < 0 || payload.premium_pct > 500)) {
+          return setStatus("Premium % must be a reasonable number (0–500).", "bad");
         }
-        if (Math.abs(dy) < 10){
-          lastY = y;
-          return;
+
+        btnAdd.disabled = true;
+        try {
+          await postVault(payload);
+          setStatus("Added to vault.", "good");
+          labelInput.value = "";
+          weightValueInput.value = "";
+          notesInput.value = "";
+          await refreshVaultOnly();
+          renderAll();
+        } catch (e) {
+          setStatus("Add failed: " + (e?.message || String(e)), "bad");
+        } finally {
+          btnAdd.disabled = false;
         }
-        if (dy > 0) setHidden(true);
-        else setHidden(false);
-
-        lastY = y;
-      }
-
-      window.addEventListener("scroll", onScroll, { passive: true });
-    })();
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
       });
-    }
+
+      async function refreshVaultOnly() {
+        try { await loadVaultItems(); } catch {}
+      }
+
+      async function refreshAll() {
+        tierPill.textContent = getTier();
+        await Promise.allSettled([loadVaultItems(), fetchSpots()]);
+        updateSpotHeaderUI();
+        renderAll();
+      }
+
+      async function pollSpotOnly() {
+        await fetchSpots();
+      }
+
+      (function init() {
+        setStatus("Fetching live spot…", "");
+        refreshAll();
+        setInterval(() => {
+          pollSpotOnly().catch(() => {});
+        }, 60_000);
+      })();
+    })();
   </script>
 </body>
 </html>
