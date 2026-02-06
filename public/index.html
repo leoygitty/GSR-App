@@ -41,144 +41,12 @@
     }
 
     /* =========================================================
-       KPI MATRIX (INDEX ONLY)
-       - Futures LEFT, Spot RIGHT
-       - GSR row underneath in smaller cards
-       - Compact mobile sizing so everything fits
-       (Does NOT touch nav tabs)
-       ========================================================= */
-    .kpiMatrix{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 12px;
-      margin: 18px 0 10px;
-      align-items: start;
-    }
-    .kpiMatrixCol{
-      min-width: 0;
-      display: grid;
-      gap: 12px;
-    }
-    .kpiMatrixHead{
-      font-size: 12px;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 900;
-      padding: 2px 2px 0;
-    }
-    .kpiGsrRow{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 12px;
-      margin: 8px 0 14px;
-      align-items: stretch;
-    }
-    .kpiCard--mini{
-      padding: 12px 12px 11px;
-      border-radius: 16px;
-    }
-
-    @media (max-width: 720px){
-      /* keep TWO columns on mobile (this is the key) */
-      .kpiMatrix{ gap: 8px; margin: 10px 0 8px; }
-      .kpiMatrixCol{ gap: 8px; }
-      .kpiMatrixHead{ font-size: 11px; padding-top: 0; }
-
-      /* Compact “tabs” */
-      .kpiMatrix .kpiCard{
-        padding: 10px 10px 9px !important;
-        border-radius: 14px !important;
-      }
-      .kpiMatrix .kpiLabel{
-        font-size: 10px !important;
-        letter-spacing: .12em !important;
-        margin-bottom: 5px !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .kpiMatrix .kpiValue{
-        font-size: 18px !important;
-        line-height: 1.05 !important;
-        margin-bottom: 4px !important;
-      }
-      .kpiMatrix .kpiSub{
-        font-size: 10.5px !important;
-        line-height: 1.2 !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      /* GSR row: even smaller */
-      .kpiGsrRow{ gap: 8px; margin: 6px 0 12px; }
-      .kpiGsrRow .kpiCard--mini{
-        padding: 9px 10px 8px !important;
-        border-radius: 14px !important;
-      }
-      .kpiGsrRow .kpiCard--mini .kpiValue{
-        font-size: 16px !important;
-      }
-
-      /* Coin ornaments smaller so they don’t force big padding */
-      .kpiMatrix .kpiCard--coinGold .kpiLabel,
-      .kpiMatrix .kpiCard--coinSilver .kpiLabel,
-      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel{
-        padding-left: 36px !important;
-      }
-      .kpiMatrix .kpiCard--coinGold .kpiLabel::before,
-      .kpiMatrix .kpiCard--coinSilver .kpiLabel::before,
-      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel::before{
-        width: 26px !important;
-        height: 26px !important;
-      }
-
-      /* Keep long timestamps from expanding height */
-      #fetchedAt, #source,
-      #futFetchedAt, #futSource,
-      #platinumSource, #futPlatinumSource,
-      #futMarketTime{
-        display: inline-block;
-        max-width: 12ch;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        vertical-align: bottom;
-      }
-    }
-
-    @media (max-width: 390px){
-      .kpiMatrix{ gap: 7px; }
-      .kpiMatrix .kpiValue{ font-size: 17px !important; }
-      .kpiGsrRow .kpiCard--mini .kpiValue{ font-size: 15px !important; }
-
-      .kpiMatrix .kpiCard--coinGold .kpiLabel,
-      .kpiMatrix .kpiCard--coinSilver .kpiLabel,
-      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel{
-        padding-left: 34px !important;
-      }
-      .kpiMatrix .kpiCard--coinGold .kpiLabel::before,
-      .kpiMatrix .kpiCard--coinSilver .kpiLabel::before,
-      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel::before{
-        width: 24px !important;
-        height: 24px !important;
-      }
-    }
-
-    /* =========================================================
        STRIPE CHECKOUT BUTTONS (index only)
-       - Match the Pro/Elite card style
-       - Yearly is slightly darker than Monthly
        ========================================================= */
-
-    /* Pro palette */
     .priceCard--pro{
       --mmBtnMonthly: #2563eb;
       --mmBtnYearly:  #1d4ed8;
     }
-
-    /* Elite palette */
     .priceCard--elite{
       --mmBtnMonthly: #7c3aed;
       --mmBtnYearly:  #6d28d9;
@@ -208,6 +76,158 @@
       outline: 2px solid rgba(255,255,255,.35);
       outline-offset: 2px;
     }
+
+    /* =========================================================
+       KPI MATRIX (INDEX ONLY)
+       - 2 columns on mobile with NO horizontal scroll
+       - Futures left, Spot right
+       - Futures: remove coins, move chart icon to LEFT
+       ========================================================= */
+
+    /* Kill any page-level sideways drift if something mis-measures */
+    html, body { overflow-x: hidden; }
+
+    .kpiMatrix{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 18px 0 12px;
+      align-items: start;
+      width: 100%;
+      max-width: 100%;
+    }
+    .kpiMatrixCol{
+      min-width: 0;             /* critical: prevents overflow in iOS */
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .kpiMatrixHead{
+      font-size: 11px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: var(--muted);
+      padding: 0 2px;
+    }
+    .kpiMatrix .kpiCard{
+      min-width: 0;             /* critical: prevents overflow in iOS */
+      overflow: hidden;         /* clamps any long child text */
+    }
+
+    /* Tighten typography for half-width cards */
+    .kpiMatrix .kpiLabel{
+      font-size: 11px;
+      letter-spacing: .12em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kpiMatrix .kpiValue{
+      font-size: 30px;
+      line-height: 1.05;
+    }
+    .kpiMatrix .kpiSub{
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* FUTURES cards: remove RIGHT icon + remove any coin padding */
+    .kpiMatrix .kpiCard--futures .kpiLabel{
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .kpiMatrix .kpiCard--futures .kpiLabel::after{
+      content: none !important;
+      display: none !important;
+    }
+    .kpiMatrix .kpiCard--futures .kpiLabel::before{
+      content: none !important;
+      display: none !important;
+    }
+
+    /* Left-side chart icon for Futures */
+    .kpiMiniIcon{
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      opacity: .98;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,.22));
+    }
+    .kpiMiniIcon svg{
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+    .kpiMiniIcon--gold{ color: #E0B84A; }
+    .kpiMiniIcon--silver{ color: #C7D0DA; }
+    .kpiMiniIcon--platinum{ color: #B9A7FF; }
+
+    /* GSR row under matrix: compact + no overflow */
+    .kpiGsrRow{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 10px 0 14px;
+      width: 100%;
+      max-width: 100%;
+    }
+    .kpiGsrRow .kpiCard{
+      min-width: 0;
+      overflow: hidden;
+    }
+    .kpiGsrRow .kpiLabel{
+      font-size: 11px;
+      letter-spacing: .12em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kpiGsrRow .kpiValue{
+      font-size: 26px;
+      line-height: 1.05;
+    }
+    .kpiGsrRow .kpiSub{
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Mobile tightening */
+    @media (max-width: 720px){
+      .kpiMatrix{ gap: 10px; margin: 12px 0 10px; }
+      .kpiMatrixCol{ gap: 8px; }
+
+      .kpiMatrix .kpiCard{ padding: 12px 12px 11px; border-radius: 16px; }
+      .kpiMatrixHead{ font-size: 10px; }
+
+      .kpiMatrix .kpiLabel{ font-size: 10px; letter-spacing: .12em; }
+      .kpiMatrix .kpiValue{ font-size: 20px; }
+      .kpiMatrix .kpiSub{ font-size: 10px; }
+
+      .kpiMiniIcon{ width: 16px; height: 16px; }
+      .kpiMiniIcon svg{ width: 16px; height: 16px; }
+
+      .kpiGsrRow{ gap: 10px; }
+      .kpiGsrRow .kpiCard{ padding: 12px 12px 11px; border-radius: 16px; }
+      .kpiGsrRow .kpiLabel{ font-size: 10px; }
+      .kpiGsrRow .kpiValue{ font-size: 20px; }
+      .kpiGsrRow .kpiSub{ font-size: 10px; }
+    }
+
+    @media (max-width: 390px){
+      .kpiMatrix .kpiValue{ font-size: 19px; }
+      .kpiGsrRow .kpiValue{ font-size: 19px; }
+    }
   </style>
 </head>
 
@@ -222,27 +242,27 @@
           <div class="tickerGroup" id="tickerLiveGroup">
             <span class="tickItem">
               <span class="tickLabel">GSR</span>
-              <span class="tickValue" id="sbGsr" data-sb="gsr">—</span>
+              <span class="tickValue" id="sbGsr">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">Δ</span>
-              <span class="tickValue" id="sbDelta" data-sb="delta">—</span>
+              <span class="tickValue" id="sbDelta">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">UPDATED</span>
-              <span class="tickValue" id="sbUpdated" data-sb="updated">—</span>
+              <span class="tickValue" id="sbUpdated">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">GOLD</span>
-              <span class="tickValue" id="sbGold" data-sb="gold">—</span>
+              <span class="tickValue" id="sbGold">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">SILVER</span>
-              <span class="tickValue" id="sbSilver" data-sb="silver">—</span>
+              <span class="tickValue" id="sbSilver">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem tickCta">
@@ -257,7 +277,7 @@
   </div>
 
   <!-- =========================================================
-       NAV BANNER
+       NAV BANNER (UNCHANGED)
        ========================================================= -->
   <div class="navBannerSticky" role="navigation" aria-label="Primary navigation">
     <div class="navBannerSurface">
@@ -311,28 +331,55 @@
     </header>
 
     <!-- =========================================================
-         KPI ORGANIZATION (NO NAV CHANGES)
-         Futures (left) + Spot (right), then GSR row below (smaller)
+         KPI MATRIX
+         Futures (LEFT) + Spot (RIGHT), then GSR row below
          ========================================================= -->
     <section class="kpiMatrix" aria-label="Spot and futures prices">
       <!-- FUTURES (LEFT) -->
       <div class="kpiMatrixCol kpiMatrixCol--futures">
         <div class="kpiMatrixHead">Futures</div>
 
-        <div class="kpiCard kpiCard--coinGold kpiCard--futures">
-          <div class="kpiLabel">GOLD (FUTURES USD)</div>
+        <div class="kpiCard kpiCard--futures">
+          <div class="kpiLabel">
+            <span class="kpiMiniIcon kpiMiniIcon--gold" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            GOLD (FUTURES USD)
+          </div>
           <div class="kpiValue" id="futGold">—</div>
           <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
         </div>
 
-        <div class="kpiCard kpiCard--coinSilver kpiCard--futures">
-          <div class="kpiLabel">SILVER (FUTURES USD)</div>
+        <div class="kpiCard kpiCard--futures">
+          <div class="kpiLabel">
+            <span class="kpiMiniIcon kpiMiniIcon--silver" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            SILVER (FUTURES USD)
+          </div>
           <div class="kpiValue" id="futSilver">—</div>
           <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
         </div>
 
-        <div class="kpiCard kpiCard--coinPlatinum kpiCard--futures">
-          <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
+        <div class="kpiCard kpiCard--futures">
+          <div class="kpiLabel">
+            <span class="kpiMiniIcon kpiMiniIcon--platinum" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            PLATINUM (FUTURES USD)
+          </div>
           <div class="kpiValue" id="futPlatinum">—</div>
           <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
         </div>
@@ -363,13 +410,13 @@
     </section>
 
     <section class="kpiGsrRow" aria-label="Gold-to-Silver Ratio">
-      <div class="kpiCard kpiCard--mini">
+      <div class="kpiCard">
         <div class="kpiLabel">GSR (FUTURES)</div>
         <div class="kpiValue" id="futGsr">—</div>
         <div class="kpiSub"><span class="muted">Market time:</span> <span id="futMarketTime">—</span></div>
       </div>
 
-      <div class="kpiCard kpiCard--mini">
+      <div class="kpiCard">
         <div class="kpiLabel">GSR (SPOT)</div>
         <div class="kpiValue" id="gsr">—</div>
         <div class="kpiSub">
@@ -380,6 +427,7 @@
       </div>
     </section>
 
+    <!-- EVERYTHING BELOW HERE UNCHANGED -->
     <section class="controls">
       <div class="segmented" role="tablist" aria-label="Range">
         <button class="segBtn isActive" data-range="1M">1M</button>
@@ -473,6 +521,7 @@
       </details>
     </section>
 
+    <!-- Pricing + footer unchanged -->
     <section class="card" id="pricing" aria-label="Pricing">
       <div class="cardHead">
         <div>
@@ -899,12 +948,7 @@
     })();
   </script>
 
-  <!-- =========================================================
-       TICKER: seamless continuous loop (no pause/restart)
-       - Builds TWO identical halves so translateX(-50%) is seamless
-       - Sync updates ALL repeated groups via data-sb (so clones stay current)
-       - Only rebuilds structure on load/resize (no rebuild on data updates)
-       ========================================================= -->
+  <!-- TICKER: seamless continuous loop (unchanged) -->
   <script>
     (function(){
       const $ = (id) => document.getElementById(id);
@@ -920,7 +964,10 @@
         const t = (el && el.textContent || "").trim();
         return t && t !== "—" ? t : "—";
       };
-
+      const setText = (id, val) => {
+        const el = $(id);
+        if (el) el.textContent = val;
+      };
       const computeDeltaLine = () => {
         const abs = readText("deltaAbs");
         const pct = readText("deltaPct");
@@ -928,21 +975,16 @@
         if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
         return abs !== "—" ? abs : pct;
       };
-
-      const setAll = (key, val) => {
-        track.querySelectorAll(`[data-sb="${key}"]`).forEach(el => { el.textContent = val; });
-      };
-
       const stripCloneIds = (node) => {
         node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
       };
 
       function sync(){
-        setAll("gold", readText("gold"));
-        setAll("silver", readText("silver"));
-        setAll("gsr", readText("gsr"));
-        setAll("delta", computeDeltaLine());
-        setAll("updated", readText("lastUpdatedHuman"));
+        setText("sbGold", readText("gold"));
+        setText("sbSilver", readText("silver"));
+        setText("sbGsr", readText("gsr"));
+        setText("sbDelta", computeDeltaLine());
+        setText("sbUpdated", readText("lastUpdatedHuman"));
       }
 
       function buildSeamless(){
@@ -950,10 +992,9 @@
         track.querySelectorAll(".tickerClone, .tickerHalfClone").forEach(n => n.remove());
 
         const vp = Math.max(0, viewport.clientWidth || 0);
-        const pad = 40; // buffer to avoid gaps
-        let guard = 0;
+        const pad = 40;
 
-        // Fill first half to at least viewport width
+        let guard = 0;
         while (track.scrollWidth < (vp + pad) && guard < 60) {
           const c = live.cloneNode(true);
           c.classList.add("tickerHalfClone");
@@ -964,7 +1005,6 @@
           guard++;
         }
 
-        // Duplicate the entire first half to create TWO identical halves
         const firstHalf = Array.from(track.children);
         const frag = document.createDocumentFragment();
         firstHalf.forEach(el => {
@@ -977,25 +1017,28 @@
         });
         track.appendChild(frag);
 
-        // After structure exists, push latest values into ALL halves
-        sync();
-
         requestAnimationFrame(() => requestAnimationFrame(() => {
           track.classList.add("isReady");
         }));
       }
 
-      // Init
+      sync();
       buildSeamless();
 
       window.addEventListener("load", () => {
+        sync();
         buildSeamless();
         setTimeout(buildSeamless, 200);
       });
 
       window.addEventListener("resize", buildSeamless);
 
-      // Keep ticker numbers fresh (no rebuild)
+      const mo = new MutationObserver(() => sync());
+      ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
+        const el = $(id);
+        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
+      });
+
       setInterval(sync, 1200);
     })();
   </script>
