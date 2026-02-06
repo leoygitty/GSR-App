@@ -41,6 +41,132 @@
     }
 
     /* =========================================================
+       KPI MATRIX (INDEX ONLY)
+       - Futures LEFT, Spot RIGHT
+       - GSR row underneath in smaller cards
+       - Compact mobile sizing so everything fits
+       (Does NOT touch nav tabs)
+       ========================================================= */
+    .kpiMatrix{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin: 18px 0 10px;
+      align-items: start;
+    }
+    .kpiMatrixCol{
+      min-width: 0;
+      display: grid;
+      gap: 12px;
+    }
+    .kpiMatrixHead{
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 900;
+      padding: 2px 2px 0;
+    }
+    .kpiGsrRow{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin: 8px 0 14px;
+      align-items: stretch;
+    }
+    .kpiCard--mini{
+      padding: 12px 12px 11px;
+      border-radius: 16px;
+    }
+
+    @media (max-width: 720px){
+      /* keep TWO columns on mobile (this is the key) */
+      .kpiMatrix{ gap: 8px; margin: 10px 0 8px; }
+      .kpiMatrixCol{ gap: 8px; }
+      .kpiMatrixHead{ font-size: 11px; padding-top: 0; }
+
+      /* Compact “tabs” */
+      .kpiMatrix .kpiCard{
+        padding: 10px 10px 9px !important;
+        border-radius: 14px !important;
+      }
+      .kpiMatrix .kpiLabel{
+        font-size: 10px !important;
+        letter-spacing: .12em !important;
+        margin-bottom: 5px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .kpiMatrix .kpiValue{
+        font-size: 18px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 4px !important;
+      }
+      .kpiMatrix .kpiSub{
+        font-size: 10.5px !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* GSR row: even smaller */
+      .kpiGsrRow{ gap: 8px; margin: 6px 0 12px; }
+      .kpiGsrRow .kpiCard--mini{
+        padding: 9px 10px 8px !important;
+        border-radius: 14px !important;
+      }
+      .kpiGsrRow .kpiCard--mini .kpiValue{
+        font-size: 16px !important;
+      }
+
+      /* Coin ornaments smaller so they don’t force big padding */
+      .kpiMatrix .kpiCard--coinGold .kpiLabel,
+      .kpiMatrix .kpiCard--coinSilver .kpiLabel,
+      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel{
+        padding-left: 36px !important;
+      }
+      .kpiMatrix .kpiCard--coinGold .kpiLabel::before,
+      .kpiMatrix .kpiCard--coinSilver .kpiLabel::before,
+      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel::before{
+        width: 26px !important;
+        height: 26px !important;
+      }
+
+      /* Keep long timestamps from expanding height */
+      #fetchedAt, #source,
+      #futFetchedAt, #futSource,
+      #platinumSource, #futPlatinumSource,
+      #futMarketTime{
+        display: inline-block;
+        max-width: 12ch;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: bottom;
+      }
+    }
+
+    @media (max-width: 390px){
+      .kpiMatrix{ gap: 7px; }
+      .kpiMatrix .kpiValue{ font-size: 17px !important; }
+      .kpiGsrRow .kpiCard--mini .kpiValue{ font-size: 15px !important; }
+
+      .kpiMatrix .kpiCard--coinGold .kpiLabel,
+      .kpiMatrix .kpiCard--coinSilver .kpiLabel,
+      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel{
+        padding-left: 34px !important;
+      }
+      .kpiMatrix .kpiCard--coinGold .kpiLabel::before,
+      .kpiMatrix .kpiCard--coinSilver .kpiLabel::before,
+      .kpiMatrix .kpiCard--coinPlatinum .kpiLabel::before{
+        width: 24px !important;
+        height: 24px !important;
+      }
+    }
+
+    /* =========================================================
        STRIPE CHECKOUT BUTTONS (index only)
        - Match the Pro/Elite card style
        - Yearly is slightly darker than Monthly
@@ -96,27 +222,27 @@
           <div class="tickerGroup" id="tickerLiveGroup">
             <span class="tickItem">
               <span class="tickLabel">GSR</span>
-              <span class="tickValue" id="sbGsr">—</span>
+              <span class="tickValue" id="sbGsr" data-sb="gsr">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">Δ</span>
-              <span class="tickValue" id="sbDelta">—</span>
+              <span class="tickValue" id="sbDelta" data-sb="delta">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">UPDATED</span>
-              <span class="tickValue" id="sbUpdated">—</span>
+              <span class="tickValue" id="sbUpdated" data-sb="updated">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">GOLD</span>
-              <span class="tickValue" id="sbGold">—</span>
+              <span class="tickValue" id="sbGold" data-sb="gold">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem">
               <span class="tickLabel">SILVER</span>
-              <span class="tickValue" id="sbSilver">—</span>
+              <span class="tickValue" id="sbSilver" data-sb="silver">—</span>
             </span>
             <span class="tickSep">•</span>
             <span class="tickItem tickCta">
@@ -185,8 +311,8 @@
     </header>
 
     <!-- =========================================================
-         NEW KPI ORGANIZATION
-         Futures (left) + Spot (right), then GSR row below
+         KPI ORGANIZATION (NO NAV CHANGES)
+         Futures (left) + Spot (right), then GSR row below (smaller)
          ========================================================= -->
     <section class="kpiMatrix" aria-label="Spot and futures prices">
       <!-- FUTURES (LEFT) -->
@@ -775,8 +901,9 @@
 
   <!-- =========================================================
        TICKER: seamless continuous loop (no pause/restart)
-       - builds TWO identical halves so translateX(-50%) is seamless
-       - does NOT rebuild on KPI text updates (only syncs text)
+       - Builds TWO identical halves so translateX(-50%) is seamless
+       - Sync updates ALL repeated groups via data-sb (so clones stay current)
+       - Only rebuilds structure on load/resize (no rebuild on data updates)
        ========================================================= -->
   <script>
     (function(){
@@ -793,10 +920,7 @@
         const t = (el && el.textContent || "").trim();
         return t && t !== "—" ? t : "—";
       };
-      const setText = (id, val) => {
-        const el = $(id);
-        if (el) el.textContent = val;
-      };
+
       const computeDeltaLine = () => {
         const abs = readText("deltaAbs");
         const pct = readText("deltaPct");
@@ -804,30 +928,32 @@
         if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
         return abs !== "—" ? abs : pct;
       };
+
+      const setAll = (key, val) => {
+        track.querySelectorAll(`[data-sb="${key}"]`).forEach(el => { el.textContent = val; });
+      };
+
       const stripCloneIds = (node) => {
         node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
       };
 
       function sync(){
-        setText("sbGold", readText("gold"));
-        setText("sbSilver", readText("silver"));
-        setText("sbGsr", readText("gsr"));
-        setText("sbDelta", computeDeltaLine());
-        setText("sbUpdated", readText("lastUpdatedHuman"));
+        setAll("gold", readText("gold"));
+        setAll("silver", readText("silver"));
+        setAll("gsr", readText("gsr"));
+        setAll("delta", computeDeltaLine());
+        setAll("updated", readText("lastUpdatedHuman"));
       }
 
       function buildSeamless(){
-        // Restart animation only when rebuilding structure (load/resize)
         track.classList.remove("isReady");
-
-        // Remove previous clones
         track.querySelectorAll(".tickerClone, .tickerHalfClone").forEach(n => n.remove());
 
         const vp = Math.max(0, viewport.clientWidth || 0);
         const pad = 40; // buffer to avoid gaps
-
-        // Build FIRST HALF: live + enough copies to fill >= viewport width
         let guard = 0;
+
+        // Fill first half to at least viewport width
         while (track.scrollWidth < (vp + pad) && guard < 60) {
           const c = live.cloneNode(true);
           c.classList.add("tickerHalfClone");
@@ -851,31 +977,25 @@
         });
         track.appendChild(frag);
 
+        // After structure exists, push latest values into ALL halves
+        sync();
+
         requestAnimationFrame(() => requestAnimationFrame(() => {
           track.classList.add("isReady");
         }));
       }
 
-      // Initial
-      sync();
+      // Init
       buildSeamless();
 
       window.addEventListener("load", () => {
-        sync();
         buildSeamless();
         setTimeout(buildSeamless, 200);
       });
 
       window.addEventListener("resize", buildSeamless);
 
-      // Only sync values on KPI changes (no rebuild = no restart)
-      const mo = new MutationObserver(() => sync());
-      ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
-        const el = $(id);
-        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
-      });
-
-      // keep ticker numbers fresh
+      // Keep ticker numbers fresh (no rebuild)
       setInterval(sync, 1200);
     })();
   </script>
