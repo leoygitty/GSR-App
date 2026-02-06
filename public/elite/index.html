@@ -1,15 +1,68 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GSR Elite — Advanced Signals</title>
+  <title>MetalMetric Elite — Advanced Signals</title>
   <meta name="description" content="Elite adds advanced signals, more alerts, percentiles, scenario tools, and premium inflation + valuation features." />
   <meta name="page-tier" content="elite" />
 
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
+
+  <!-- Prevent flash: apply saved/system theme ASAP -->
+  <script>
+    (function () {
+      try {
+        const KEY = "mm_theme";
+        const saved = localStorage.getItem(KEY);
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = (saved === "dark" || saved === "light") ? saved : (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    /* =========================================================
+       STRIPE CHECKOUT BUTTONS (Elite)
+       - Monthly vs Yearly shades
+       ========================================================= */
+    :root{
+      --mmEliteMonthly: #7c3aed;
+      --mmEliteYearly:  #6d28d9;
+    }
+
+    a.mmCheckoutBtn{
+      display: inline-flex;
+      width: 100%;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,.14);
+      background: var(--mmEliteMonthly);
+      color: #fff !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,.10);
+      transition: transform 160ms ease, filter 160ms ease;
+    }
+    a.mmCheckoutBtn:hover{ filter: brightness(1.06); transform: translateY(-1px); }
+    a.mmCheckoutBtn:active{ filter: brightness(0.98); transform: translateY(0px) scale(0.99); }
+    a.mmCheckoutBtn:focus-visible{ outline: 2px solid rgba(255,255,255,.35); outline-offset: 2px; }
+
+    a.mmCheckoutBtn--yearly{ background: var(--mmEliteYearly); }
+
+    .mmCheckoutRow{
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .mmCheckoutRow a{ flex: 1 1 240px; }
+  </style>
 </head>
 
 <body>
@@ -17,12 +70,29 @@
     <div class="pTop">
       <a class="brandLink" href="/" aria-label="Back to dashboard">
         <span class="brandDot" aria-hidden="true"></span>
-        <span>GSR</span>
+        <span>MetalMetric</span>
       </a>
 
       <div class="pNav">
         <a class="btn2" href="/">Dashboard</a>
         <a class="btn2" href="/pro">View Pro</a>
+
+        <!-- Theme toggle (same storage key as dashboard: mm_theme) -->
+        <button class="btn2" id="themeToggle" type="button" aria-pressed="false" title="Switch theme">
+          <span class="ttIcon ttIconMoon" aria-hidden="true" style="display:none; margin-right:6px;">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M21 14.4A8.5 8.5 0 0 1 9.6 3a7 7 0 1 0 11.4 11.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="ttIcon ttIconSun" aria-hidden="true" style="display:none; margin-right:6px;">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="ttLabel">—</span>
+        </button>
+
         <a class="btn2 elite" href="#get">Get Elite</a>
       </div>
     </div>
@@ -43,20 +113,31 @@
       </p>
 
       <div class="ctaRow" id="get">
-        <a class="btn2 elite" href="#checkout" aria-label="Subscribe to Elite (coming next)">Subscribe to Elite (next)</a>
         <a class="btn2" href="/pro" aria-label="Compare to Pro">Compare to Pro</a>
         <a class="btn2" href="#faq" aria-label="Read FAQs">FAQs</a>
       </div>
 
-      <div class="note" id="checkout">
-        Payments come next. This page is subscription-quality before wiring checkout.
+      <!-- Stripe-ready checkout CTAs -->
+      <div class="mmCheckoutRow" id="checkout" aria-label="Subscribe to Elite">
+        <a class="mmCheckoutBtn" href="#"
+           data-checkout-plan="elite" data-checkout-interval="monthly">
+          Get Elite (Monthly)
+        </a>
+        <a class="mmCheckoutBtn mmCheckoutBtn--yearly" href="#"
+           data-checkout-plan="elite" data-checkout-interval="yearly">
+          Get Elite (Yearly)
+        </a>
+      </div>
+
+      <div class="note">
+        If checkout isn’t wired yet, these buttons will error until <span class="muted">/api/create_checkout_session</span> is live.
+        Once that API exists, this page is already production-ready.
       </div>
 
       <div class="grid2">
         <div class="panel">
           <h3 class="panelTitle">Everything in Pro, plus</h3>
           <ul class="pBullets">
-            <!-- Existing Elite features (keep) -->
             <li><b>50 alerts</b> + percentile triggers (top/bottom X%)</li>
             <li><b>Hold-time alerts</b> (must stay above/below for N minutes)</li>
             <li><b>Weekly premium digest</b> (email summary)</li>
@@ -65,7 +146,6 @@
             <li><b>Scenario tool</b> (implied silver at target GSR)</li>
             <li><b>CSV export</b> (research + portfolio logs)</li>
 
-            <!-- New 1–7 premium upgrades (minus duplicate) -->
             <li><b>Inflation-Proof Envelopes</b> (CPI-adjusted budgets + hedge nudges)</li>
             <li><b>Goal Tracker+</b> (inflation-aware forecasts + projections)</li>
             <li><b>Inflation Alerts+</b> (category CPI insights + reallocation tips)</li>
@@ -192,7 +272,6 @@
               <td class="yes">Included</td>
             </tr>
 
-            <!-- New: 1–7 premium upgrades (minus duplicate category row) -->
             <tr>
               <td>Inflation-Proof Envelope Budgeting</td>
               <td class="no">—</td>
@@ -265,15 +344,113 @@
         <b>Ready for the full toolkit?</b>
         <span>Elite is built for power users and systematic execution.</span>
       </div>
-      <div class="right">
-        <a class="btn2 elite" href="#checkout">Subscribe to Elite (next)</a>
+      <div class="right" style="gap:10px;">
         <a class="btn2" href="/">Back to Dashboard</a>
+        <a class="btn2 elite" href="#checkout">Choose Elite</a>
       </div>
     </section>
 
     <div class="note" style="margin-top:14px;">
-      When you wire payments, these CTAs become checkout links and everything else stays the same.
+      Tip: this page already supports Monthly/Yearly checkout. Once your backend returns a URL, you’re done.
     </div>
   </div>
+
+  <!-- THEME TOGGLE (mm_theme) -->
+  <script>
+    (function(){
+      const KEY = "mm_theme";
+      const root = document.documentElement;
+      const btn = document.getElementById("themeToggle");
+      const label = btn ? btn.querySelector(".ttLabel") : null;
+      const moon = btn ? btn.querySelector(".ttIconMoon") : null;
+      const sun  = btn ? btn.querySelector(".ttIconSun")  : null;
+
+      const getTheme = () => {
+        const t = (root.getAttribute("data-theme") || "").toLowerCase();
+        return (t === "dark" || t === "light") ? t : "light";
+      };
+
+      const apply = (theme) => {
+        root.setAttribute("data-theme", theme);
+        const isDark = theme === "dark";
+        if (btn) btn.setAttribute("aria-pressed", isDark ? "true" : "false");
+        if (label) label.textContent = isDark ? "Light" : "Dark";
+        if (moon) moon.style.display = isDark ? "none" : "inline-flex";
+        if (sun)  sun.style.display  = isDark ? "inline-flex" : "none";
+        if (btn) btn.title = isDark ? "Switch to Light" : "Switch to Dark";
+        try { localStorage.setItem(KEY, theme); } catch(e) {}
+      };
+
+      apply(getTheme());
+
+      if (btn){
+        btn.addEventListener("click", () => {
+          const next = (getTheme() === "dark") ? "light" : "dark";
+          apply(next);
+        });
+      }
+    })();
+  </script>
+
+  <!-- STRIPE CHECKOUT WIRING (guarded) -->
+  <script>
+    (function () {
+      try {
+        if (window.__mmStripeCheckoutWired) return;
+        window.__mmStripeCheckoutWired = true;
+
+        const btns = Array.from(document.querySelectorAll("[data-checkout-plan][data-checkout-interval]"));
+        if (!btns.length) return;
+
+        async function go(plan, interval, el){
+          const original = el ? el.textContent : "";
+          try{
+            if (el) {
+              el.setAttribute("aria-busy", "true");
+              el.style.pointerEvents = "none";
+              el.textContent = "Redirecting…";
+            }
+
+            const res = await fetch("/api/create_checkout_session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ plan, interval })
+            });
+
+            const text = await res.text();
+            let data = null;
+            try { data = JSON.parse(text); } catch {}
+
+            if (!res.ok || !data?.ok || !data?.url) {
+              throw new Error((data && (data.error || data.message)) || `Checkout failed (${res.status})`);
+            }
+
+            window.location.href = data.url;
+          } finally {
+            if (el) {
+              el.removeAttribute("aria-busy");
+              el.style.pointerEvents = "";
+              el.textContent = original;
+            }
+          }
+        }
+
+        btns.forEach((a) => {
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            const plan = a.getAttribute("data-checkout-plan");
+            const interval = a.getAttribute("data-checkout-interval");
+            if (!plan || !interval) return;
+            go(plan, interval, a).catch((err) => {
+              console.warn("[stripe] checkout error:", err);
+              alert(err?.message || "Checkout failed. Please try again.");
+            });
+          });
+        });
+      } catch (e) {
+        console.warn("[stripe] wiring failed:", e);
+      }
+    })();
+  </script>
 </body>
 </html>
