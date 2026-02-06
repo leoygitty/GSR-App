@@ -365,7 +365,24 @@
             <div class="priceAmount">$9</div>
             <div class="pricePer">/mo</div>
           </div>
-          <a class="priceBtn priceBtn--dark" href="/pro">Get Pro plan</a>
+
+          <!-- UPDATED: Stripe checkout buttons (monthly + yearly) -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a class="priceBtn priceBtn--dark"
+               href="#"
+               data-checkout-plan="pro"
+               data-checkout-interval="monthly">
+              Get Pro (Monthly)
+            </a>
+            <a class="priceBtn priceBtn--ghost"
+               href="#"
+               data-checkout-plan="pro"
+               data-checkout-interval="yearly">
+              Get Pro (Yearly)
+            </a>
+          </div>
+          <div class="checkoutMsg muted" style="margin-top:6px;font-size:12px;"></div>
+
           <ul class="priceList">
             <li>Buy/Sell Score + 10 smart alerts</li>
             <li>Smart Melt Value Calculator (jewelry/coins)</li>
@@ -384,7 +401,24 @@
             <div class="priceAmount">$19</div>
             <div class="pricePer">/mo</div>
           </div>
-          <a class="priceBtn priceBtn--dark" href="/elite">Get Elite plan</a>
+
+          <!-- UPDATED: Stripe checkout buttons (monthly + yearly) -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a class="priceBtn priceBtn--dark"
+               href="#"
+               data-checkout-plan="elite"
+               data-checkout-interval="monthly">
+              Get Elite (Monthly)
+            </a>
+            <a class="priceBtn priceBtn--ghost"
+               href="#"
+               data-checkout-plan="elite"
+               data-checkout-interval="yearly">
+              Get Elite (Yearly)
+            </a>
+          </div>
+          <div class="checkoutMsg muted" style="margin-top:6px;font-size:12px;"></div>
+
           <ul class="priceList">
             <li>50 alerts + percentiles + confidence scoring</li>
             <li>Scenario + ladder + CSV export (research suite)</li>
@@ -510,6 +544,78 @@
   </script>
 
   <script defer src="/app.js"></script>
+
+  <!-- =========================================================
+       STRIPE CHECKOUT (Home page pricing buttons)
+       - Uses /api/create_checkout_session
+       - Expects JSON: { ok: true, url: "https://checkout.stripe.com/..." }
+       ========================================================= -->
+  <script>
+    (function () {
+      async function startCheckout(plan, interval, el) {
+        const card = el && el.closest ? el.closest(".priceCard") : null;
+        const msg = card ? card.querySelector(".checkoutMsg") : null;
+
+        try {
+          // UI state
+          if (msg) msg.textContent = "Creating secure checkout…";
+          if (el) {
+            el.dataset._oldText = el.textContent;
+            el.textContent = "Redirecting…";
+            el.style.pointerEvents = "none";
+            el.setAttribute("aria-disabled", "true");
+          }
+
+          const res = await fetch("/api/create_checkout_session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan, interval })
+          });
+
+          const text = await res.text();
+          let data = {};
+          try { data = JSON.parse(text); } catch { data = {}; }
+
+          if (!res.ok || !data.ok || !data.url) {
+            const err = (data && data.error) ? String(data.error) : `Checkout failed (HTTP ${res.status})`;
+            if (msg) msg.textContent = err;
+
+            if (el) {
+              el.textContent = el.dataset._oldText || "Try again";
+              el.style.pointerEvents = "";
+              el.removeAttribute("aria-disabled");
+            }
+            return;
+          }
+
+          window.location.href = data.url;
+        } catch (e) {
+          if (msg) msg.textContent = "Checkout error: " + (e && e.message ? e.message : e);
+          if (el) {
+            el.textContent = el.dataset._oldText || "Try again";
+            el.style.pointerEvents = "";
+            el.removeAttribute("aria-disabled");
+          }
+        }
+      }
+
+      document.addEventListener("click", (e) => {
+        const el = e && e.target && e.target.closest ? e.target.closest("[data-checkout-plan][data-checkout-interval]") : null;
+        if (!el) return;
+
+        e.preventDefault();
+
+        const plan = String(el.dataset.checkoutPlan || "").trim().toLowerCase();
+        const interval = String(el.dataset.checkoutInterval || "").trim().toLowerCase();
+
+        if (!plan || !interval) return;
+        if (plan !== "pro" && plan !== "elite") return;
+        if (interval !== "monthly" && interval !== "yearly") return;
+
+        startCheckout(plan, interval, el);
+      }, true);
+    })();
+  </script>
 
   <!-- =========================================================
        THEME TOGGLE (single button, moon/sun, persistent)
