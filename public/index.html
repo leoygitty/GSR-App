@@ -33,12 +33,8 @@
     /* =========================================================
        Ticker speed override for THIS page only (slower)
        ========================================================= */
-    :root{
-      --tickerSeconds: 64s;
-    }
-    @media (max-width: 720px){
-      :root{ --tickerSeconds: 78s; }
-    }
+    :root{ --tickerSeconds: 64s; }
+    @media (max-width: 720px){ :root{ --tickerSeconds: 78s; } }
 
     /* =========================================================
        STRIPE CHECKOUT BUTTONS (index only)
@@ -66,23 +62,19 @@
     }
 
     /* =========================================================
-       NO HORIZONTAL SCROLL (iOS safe)
+       HARD NO HORIZONTAL SCROLL
        ========================================================= */
-    html, body { overflow-x: hidden; }
+    html, body{ overflow-x: hidden; }
+    main.shell{ max-width: 100%; }
 
     /* =========================================================
-       NAV: tighter under ticker + auto-hide on scroll down
-       (does NOT change nav tabs; just behavior + spacing)
+       NAV: closer under ticker + hide on scroll down, show on scroll up
        ========================================================= */
     .navBannerSticky{
-      /* bring closer to ticker */
-      top: 32px !important;
+      top: 32px !important;               /* directly below ticker */
       transition: transform .18s ease, opacity .18s ease;
       will-change: transform;
     }
-    .navBannerSurface{ padding-top: 0 !important; }
-    .navBanner{ padding-top: 0 !important; padding-bottom: 0 !important; }
-
     .navBannerSticky.mmNavHidden{
       transform: translateY(-120%);
       opacity: 0;
@@ -90,33 +82,33 @@
     }
 
     /* =========================================================
-       HEADER: slightly smaller so more fits above fold (mobile)
+       HEADER: ACTUALLY smaller (stronger selectors + !important)
        ========================================================= */
     @media (max-width: 720px){
-      .brandMark{ width: 30px !important; height: 30px !important; }
-      .brandName{ font-size: 40px !important; line-height: 1.06 !important; }
-      .brandBadge{ font-size: 11px !important; padding: 4px 8px !important; }
-      .brandSub{ font-size: 15px !important; }
-      .topbar{ padding-top: 10px !important; padding-bottom: 8px !important; }
-      .metaLine{ font-size: 12px !important; }
+      img.brandMark{ width: 26px !important; height: 26px !important; }
+      h1.brandName{ font-size: 34px !important; line-height: 1.05 !important; margin: 0 !important; }
+      .brandSub{ font-size: 14px !important; }
+      .brandBadge{ font-size: 10px !important; padding: 3px 7px !important; }
+      header.topbar{ padding-top: 8px !important; padding-bottom: 6px !important; }
+      .metaLine{ font-size: 11px !important; }
     }
 
     /* =========================================================
-       KPI MATRIX: equal columns + equal card heights + icon sizing
+       KPI MATRIX: equal columns + equal widths + clean futures
        ========================================================= */
     .kpiMatrix{
-      display: grid;
+      display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       width: 100%;
       max-width: 100%;
       margin: 14px 0 8px;
-      align-items: start;
+      align-items:start;
     }
     .kpiMatrixCol{
-      min-width: 0; /* critical for iOS */
-      display: flex;
-      flex-direction: column;
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
       gap: 10px;
     }
     .kpiMatrixHead{
@@ -127,73 +119,75 @@
       color: var(--muted);
       padding: 0 2px;
     }
+
+    /* Ensure BOTH columns use identical sizing behavior */
     .kpiMatrix .kpiCard{
       min-width: 0;
       overflow: hidden;
-      /* force equal “tab” height on both columns */
-      min-height: 118px;
+      min-height: 118px;  /* same “tab” height */
     }
 
-    /* Clamp text so nothing pushes width */
+    /* Clamp long lines so nothing pushes layout */
     .kpiMatrix .kpiLabel,
     .kpiMatrix .kpiSub{
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
 
-    /* Tighten typography for half-width cards */
+    /* Typography tuned for half-width cards */
     .kpiMatrix .kpiLabel{ font-size: 11px; letter-spacing: .12em; }
     .kpiMatrix .kpiValue{ font-size: 30px; line-height: 1.05; }
     .kpiMatrix .kpiSub{ font-size: 11px; }
 
-    /* FUTURES: remove any right-side icon + match spot padding-left */
+    /* ===== FUTURES CLEAN LAYOUT (NO OVERLAP) =====
+       Left icon column (same size as coin), right content column
+    */
     .kpiCard--futures{
-      position: relative;
-      padding-left: 62px !important; /* match spot coin-space */
+      display:flex !important;
+      gap: 12px;
+      align-items:flex-start;
     }
-    .kpiCard--futures .kpiLabel::after,
-    .kpiCard--futures .kpiLabel::before{
-      content: none !important;
-      display: none !important;
-    }
-
-    /* Futures “chart coin” — SAME size as spot coins */
-    .futCoin{
-      position: absolute;
-      left: 14px;
-      top: 14px;
+    .kpiFutIconCol{
+      flex: 0 0 36px;
       width: 36px;
       height: 36px;
+      margin-top: 2px;
       border-radius: 999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.10);
       box-shadow: 0 10px 26px rgba(0,0,0,.22);
     }
-    .futCoin svg{ width: 22px; height: 22px; display: block; }
-    .futCoin--gold{ color: #E0B84A; }
-    .futCoin--silver{ color: #C7D0DA; }
-    .futCoin--platinum{ color: #B9A7FF; }
+    .kpiFutIconCol svg{ width: 22px; height: 22px; display:block; }
+    .kpiFutIconCol--gold{ color:#E0B84A; }
+    .kpiFutIconCol--silver{ color:#C7D0DA; }
+    .kpiFutIconCol--platinum{ color:#B9A7FF; }
+
+    .kpiFutBody{
+      min-width: 0;
+      flex: 1;
+    }
 
     /* =========================================================
-       GSR row: smaller “tabs” + aligned + equal sizing
+       GSR row: smaller tabs, aligned bottoms, equal sizing
        ========================================================= */
     .kpiGsrRow{
-      display: grid;
+      display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       width: 100%;
       max-width: 100%;
       margin: 8px 0 12px;
-      align-items: end; /* align bottoms */
+      align-items:end;
     }
     .kpiGsrRow .kpiCard{
-      min-width: 0;
-      overflow: hidden;
-      min-height: 92px;   /* smaller than main KPI cards */
+      min-width:0;
+      overflow:hidden;
+      min-height: 92px;
       padding: 12px 14px 11px !important;
     }
     .kpiGsrRow .kpiLabel{
@@ -206,7 +200,6 @@
     .kpiGsrRow .kpiValue{ font-size: 22px !important; line-height: 1.05; }
     .kpiGsrRow .kpiSub{ font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* Mobile tightening */
     @media (max-width: 720px){
       .kpiMatrix{ gap: 10px; }
       .kpiMatrixCol{ gap: 8px; }
@@ -217,19 +210,14 @@
         border-radius: 16px !important;
       }
       .kpiMatrixHead{ font-size: 10px; }
-
       .kpiMatrix .kpiLabel{ font-size: 10px; }
       .kpiMatrix .kpiValue{ font-size: 22px; }
       .kpiMatrix .kpiSub{ font-size: 10px; }
 
-      .kpiCard--futures{ padding-left: 56px !important; }
-      .futCoin{
-        left: 12px;
-        top: 12px;
-        width: 34px;
-        height: 34px;
+      .kpiFutIconCol{
+        width: 34px; height: 34px; flex-basis: 34px;
       }
-      .futCoin svg{ width: 20px; height: 20px; }
+      .kpiFutIconCol svg{ width: 20px; height: 20px; }
 
       .kpiGsrRow{ gap: 10px; }
       .kpiGsrRow .kpiCard{ min-height: 88px; border-radius: 16px !important; }
@@ -289,7 +277,7 @@
   </div>
 
   <!-- =========================================================
-       NAV BANNER (same buttons; behavior updated)
+       NAV BANNER (buttons unchanged)
        ========================================================= -->
   <div class="navBannerSticky" id="navSticky" role="navigation" aria-label="Primary navigation">
     <div class="navBannerSurface">
@@ -343,8 +331,8 @@
     </header>
 
     <!-- =========================================================
-         KPI MATRIX
-         Spot (left) + Futures (right), then GSR row below
+         KPI MATRIX: Spot (left) + Futures (right)
+         Futures are now clean like Spot (no overlap possible)
          ========================================================= -->
     <section class="kpiMatrix" aria-label="Spot and futures prices">
       <!-- SPOT (LEFT) -->
@@ -375,42 +363,48 @@
         <div class="kpiMatrixHead">Futures</div>
 
         <div class="kpiCard kpiCard--futures">
-          <div class="futCoin futCoin--gold" aria-hidden="true">
+          <div class="kpiFutIconCol kpiFutIconCol--gold" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="kpiLabel">GOLD (FUTURES USD)</div>
-          <div class="kpiValue" id="futGold">—</div>
-          <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
+          <div class="kpiFutBody">
+            <div class="kpiLabel">GOLD (FUTURES USD)</div>
+            <div class="kpiValue" id="futGold">—</div>
+            <div class="kpiSub"><span class="muted">Fetched at:</span> <span id="futFetchedAt">—</span></div>
+          </div>
         </div>
 
         <div class="kpiCard kpiCard--futures">
-          <div class="futCoin futCoin--silver" aria-hidden="true">
+          <div class="kpiFutIconCol kpiFutIconCol--silver" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="kpiLabel">SILVER (FUTURES USD)</div>
-          <div class="kpiValue" id="futSilver">—</div>
-          <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
+          <div class="kpiFutBody">
+            <div class="kpiLabel">SILVER (FUTURES USD)</div>
+            <div class="kpiValue" id="futSilver">—</div>
+            <div class="kpiSub"><span class="muted">Source:</span> <span id="futSource">—</span></div>
+          </div>
         </div>
 
         <div class="kpiCard kpiCard--futures">
-          <div class="futCoin futCoin--platinum" aria-hidden="true">
+          <div class="kpiFutIconCol kpiFutIconCol--platinum" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M6.5 15l4-4 3 3 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
-          <div class="kpiValue" id="futPlatinum">—</div>
-          <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
+          <div class="kpiFutBody">
+            <div class="kpiLabel">PLATINUM (FUTURES USD)</div>
+            <div class="kpiValue" id="futPlatinum">—</div>
+            <div class="kpiSub"><span class="muted">Source:</span> <span id="futPlatinumSource">—</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -433,9 +427,7 @@
       </div>
     </section>
 
-    <!-- =========================================================
-         CONTROLS (unchanged)
-         ========================================================= -->
+    <!-- controls/charts/pricing/footer remain as your current file -->
     <section class="controls">
       <div class="segmented" role="tablist" aria-label="Range">
         <button class="segBtn isActive" data-range="1M">1M</button>
@@ -450,8 +442,6 @@
         <label class="toggle"><input type="checkbox" id="showGsr" checked> <span>GSR</span></label>
       </div>
     </section>
-
-    <!-- ===== charts/pricing/footer/scripts remain exactly as you already had ===== -->
 
     <section class="card" id="chartsCard">
       <div class="cardHead cardHead--charts">
@@ -538,6 +528,7 @@
           <div class="cardMeta">Upgrade for signals, alerts, and premium tools</div>
         </div>
       </div>
+
       <div class="pricingHeroSimple">
         <div class="pricingEyebrow">SUBSCRIPTIONS • COMING NEXT</div>
         <h2 class="pricingHeadline">Plans that grow with you</h2>
@@ -639,7 +630,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.1.0/chartjs-plugin-annotation.min.js"></script>
 
-  <!-- Chart theme helper (UNCHANGED from your current file) -->
+  <!-- Chart theme helper (your current logic) -->
   <script>
     (function(){
       function isDark(){
@@ -719,7 +710,7 @@
 
   <script defer src="/app.js"></script>
 
-  <!-- THEME TOGGLE (UNCHANGED from your current file) -->
+  <!-- THEME TOGGLE -->
   <script>
     (function(){
       const KEY = "mm_theme";
@@ -958,8 +949,103 @@
   </script>
 
   <!-- =========================================================
-       NAV AUTO-HIDE ON SCROLL DOWN / SHOW ON SCROLL UP
+       TICKER: seamless continuous loop (RESTORED)
        ========================================================= -->
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+      const track = $("tickerTrack");
+      const live = $("tickerLiveGroup");
+      if (!track || !live) return;
+
+      const viewport = track.closest(".tickerViewport");
+      if (!viewport) return;
+
+      const readText = (id) => {
+        const el = $(id);
+        const t = (el && el.textContent || "").trim();
+        return t && t !== "—" ? t : "—";
+      };
+      const setText = (id, val) => {
+        const el = $(id);
+        if (el) el.textContent = val;
+      };
+      const computeDeltaLine = () => {
+        const abs = readText("deltaAbs");
+        const pct = readText("deltaPct");
+        if (abs === "—" && pct === "—") return "—";
+        if (abs !== "—" && pct !== "—") return `${abs} (${pct})`;
+        return abs !== "—" ? abs : pct;
+      };
+      const stripCloneIds = (node) => {
+        node.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+      };
+
+      function sync(){
+        setText("sbGold", readText("gold"));
+        setText("sbSilver", readText("silver"));
+        setText("sbGsr", readText("gsr"));
+        setText("sbDelta", computeDeltaLine());
+        setText("sbUpdated", readText("lastUpdatedHuman"));
+      }
+
+      function buildSeamless(){
+        track.classList.remove("isReady");
+        track.querySelectorAll(".tickerClone, .tickerHalfClone").forEach(n => n.remove());
+
+        const vp = Math.max(0, viewport.clientWidth || 0);
+        const pad = 40;
+        let guard = 0;
+
+        while (track.scrollWidth < (vp + pad) && guard < 60) {
+          const c = live.cloneNode(true);
+          c.classList.add("tickerHalfClone");
+          c.setAttribute("aria-hidden","true");
+          c.removeAttribute("id");
+          stripCloneIds(c);
+          track.appendChild(c);
+          guard++;
+        }
+
+        const firstHalf = Array.from(track.children);
+        const frag = document.createDocumentFragment();
+        firstHalf.forEach(el => {
+          const c = el.cloneNode(true);
+          c.classList.add("tickerClone");
+          c.setAttribute("aria-hidden","true");
+          c.removeAttribute("id");
+          stripCloneIds(c);
+          frag.appendChild(c);
+        });
+        track.appendChild(frag);
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          track.classList.add("isReady");
+        }));
+      }
+
+      sync();
+      buildSeamless();
+
+      window.addEventListener("load", () => {
+        sync();
+        buildSeamless();
+        setTimeout(buildSeamless, 200);
+      });
+
+      window.addEventListener("resize", buildSeamless);
+
+      const mo = new MutationObserver(() => sync());
+      ["gold","silver","gsr","deltaAbs","deltaPct","lastUpdatedHuman"].forEach(id => {
+        const el = $(id);
+        if (el) mo.observe(el, { childList: true, characterData: true, subtree: true });
+      });
+
+      setInterval(sync, 1200);
+    })();
+  </script>
+
+  <!-- NAV AUTO-HIDE -->
   <script>
     (function(){
       const nav = document.getElementById("navSticky");
@@ -978,20 +1064,15 @@
         const y = window.scrollY || 0;
         const dy = y - lastY;
 
-        // always show near top
         if (y < 40){
           setHidden(false);
           lastY = y;
           return;
         }
-
-        // ignore tiny jitter
         if (Math.abs(dy) < 10){
           lastY = y;
           return;
         }
-
-        // down = hide, up = show
         if (dy > 0) setHidden(true);
         else setHidden(false);
 
@@ -1002,7 +1083,6 @@
     })();
   </script>
 
-  <!-- TICKER + SW (unchanged from your current file, keep if you already have them) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
