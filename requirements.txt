@@ -1,4 +1,4 @@
 pg8000==1.30.5
 stripe==14.1.0
 requests==2.32.3
-PyJWT==2.8.0
+PyJWT==2.9.0
