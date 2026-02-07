@@ -248,14 +248,20 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.end_headers()
 
-    def do_GET(self):
+        def do_GET(self):
         try:
             token = _get_bearer_token(self.headers)
             if not token:
                 return send_json(self, 401, {"ok": False, "error": "Missing Bearer token"})
 
-            auth = _verify_clerk_jwt(token)
+            try:
+                auth = _verify_clerk_jwt(token)
+            except Exception as e:
+                # IMPORTANT: invalid/misconfigured auth should be 401, not 500
+                return send_json(self, 401, {"ok": False, "error": f"Unauthorized: {str(e)}"})
+
             user_id = auth["sub"]
+
 
             qs = parse_qs(urlparse(self.path).query)
             limit_raw = (qs.get("limit", ["200"])[0] or "200").strip()
@@ -367,14 +373,19 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             return send_json(self, 500, {"ok": False, "error": str(e)})
 
-    def do_POST(self):
+        def do_POST(self):
         try:
             token = _get_bearer_token(self.headers)
             if not token:
                 return send_json(self, 401, {"ok": False, "error": "Missing Bearer token"})
 
-            auth = _verify_clerk_jwt(token)
+            try:
+                auth = _verify_clerk_jwt(token)
+            except Exception as e:
+                return send_json(self, 401, {"ok": False, "error": f"Unauthorized: {str(e)}"})
+
             user_id = auth["sub"]
+
 
             body = _read_json_body(self)
             action = _safe_str(body.get("action"), 32).lower()
