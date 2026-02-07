@@ -1171,12 +1171,25 @@
 
       async function initClerkIfPossible() {
         const pk = getClerkPublishableKey();
-        if (!pk || !window.Clerk) {
-          btnSignIn.style.display = "";
-          btnSignOut.style.display = "none";
-          authPill.style.display = "none";
-          return false;
-        }
+       if (!pk || !window.Clerk) {
+  btnSignIn.style.display = "";
+  btnSignOut.style.display = "none";
+  authPill.style.display = "none";
+
+  // ✅ FIX: make the button do something even when pk is missing
+  btnSignIn.onclick = () => {
+    const cur = (localStorage.getItem("clerk_publishable_key") || "").trim();
+    const next = prompt(
+      "Enter your Clerk Publishable Key (pk_live_... or pk_test_...).\n\nYou can find it in Clerk Dashboard → API Keys.\n\nCurrent:",
+      cur
+    );
+    if (!next) return;
+    localStorage.setItem("clerk_publishable_key", next.trim());
+    location.reload();
+  };
+
+  return false;
+}
 
         try {
           await window.Clerk.load({ publishableKey: pk });
