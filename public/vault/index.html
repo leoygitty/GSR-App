@@ -1,3 +1,4 @@
+<!-- DROP-IN PART 1/2: vault/index.html  (everything ABOVE the <script> tag) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -361,11 +362,10 @@
     .locked[data-locked="true"] .lockOverlay{ display: flex; }
 
     /* =========================================================
-       VAULT RACKS: luxury cabinet + collector shelves (1–3)
+       VAULT RACKS: luxury cabinet + collector shelves (1–4)
        ========================================================= */
-    .vaultRacksWrap{
-      margin-top: 14px;
-    }
+    .vaultRacksWrap{ margin-top: 14px; }
+
     .vaultRacksHead{
       display:flex;
       justify-content: space-between;
@@ -382,6 +382,71 @@
     .vaultRacksHead .hint{
       font-size: 12px;
       color: rgba(255,255,255,.55);
+    }
+
+    /* Filter drawer */
+    .vaultToolsRow{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 10px 0 12px;
+      flex-wrap: wrap;
+    }
+    .drawer{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.22);
+    }
+    .drawerHead{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    }
+    .drawerHead b{
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.74);
+    }
+    .drawerBody{
+      padding: 12px;
+      display:none;
+    }
+    .drawer.isOpen .drawerBody{ display:block; }
+    .drawerGrid{
+      display:grid;
+      grid-template-columns: 1.3fr 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 980px){
+      .drawerGrid{ grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px){
+      .drawerGrid{ grid-template-columns: 1fr; }
+    }
+    .miniHint{
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,.55);
+    }
+    .chipTiny{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+      white-space: nowrap;
     }
 
     .vaultCabinet{
@@ -405,7 +470,6 @@
       opacity:.9;
     }
     .vaultCabinet::after{
-      /* subtle noise overlay */
       content:"";
       position:absolute; inset:0;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
@@ -422,15 +486,131 @@
         inset 0 0 0 1px rgba(0,0,0,.35),
         inset 0 20px 60px rgba(0,0,0,.30);
       pointer-events:none;
+      z-index: 1;
+    }
+
+    /* ===== Door / Wheel Lock animation layer ===== */
+    .vaultDoors{
+      position:absolute;
+      inset: 10px;
+      border-radius: 16px;
+      z-index: 5;
+      pointer-events: none; /* toggled in JS when closed */
+      transform: translateZ(0);
+    }
+    .vaultDoor{
+      position:absolute;
+      top: 0; bottom: 0;
+      width: 52%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 420px at 40% 0%, rgba(255,255,255,.07), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10));
+      box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,.35),
+        0 24px 70px rgba(0,0,0,.55);
+      opacity: 1;
+      will-change: transform, filter;
+    }
+    .vaultDoor::before{
+      content:"";
+      position:absolute; inset: 0;
+      border-radius: 14px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.08), transparent 22%, transparent 78%, rgba(255,255,255,.06)),
+        radial-gradient(800px 320px at 50% -20%, rgba(255,255,255,.08), transparent 62%);
+      opacity: .85;
+      pointer-events:none;
+      mix-blend-mode: screen;
+    }
+    .vaultDoor::after{
+      /* “steel seams” */
+      content:"";
+      position:absolute; inset: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+      opacity: .9;
+    }
+    .vaultDoor.left{
+      left: 0;
+      transform-origin: left center;
+      transform: perspective(900px) rotateY(0deg);
+    }
+    .vaultDoor.right{
+      right: 0;
+      transform-origin: right center;
+      transform: perspective(900px) rotateY(0deg);
+    }
+
+    .vaultWheel{
+      position:absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%,-50%) rotate(0deg);
+      width: 82px; height: 82px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background:
+        radial-gradient(40px 40px at 35% 35%, rgba(255,255,255,.16), transparent 60%),
+        radial-gradient(70px 70px at 65% 65%, rgba(0,0,0,.30), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.18));
+      box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.35);
+      opacity: 1;
+      will-change: transform, opacity;
+    }
+    .vaultWheel::before{
+      content:"";
+      position:absolute; inset: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+    }
+    .vaultWheel .spoke{
+      position:absolute;
+      left: 50%; top: 50%;
+      width: 44px; height: 6px;
+      transform-origin: 0 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(0,0,0,.18));
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 999px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.25);
+    }
+    .vaultWheel .spoke:nth-child(1){ transform: translate(-2px,-50%) rotate(0deg); }
+    .vaultWheel .spoke:nth-child(2){ transform: translate(-2px,-50%) rotate(60deg); }
+    .vaultWheel .spoke:nth-child(3){ transform: translate(-2px,-50%) rotate(120deg); }
+    .vaultWheel .spoke:nth-child(4){ transform: translate(-2px,-50%) rotate(180deg); }
+    .vaultWheel .spoke:nth-child(5){ transform: translate(-2px,-50%) rotate(240deg); }
+    .vaultWheel .spoke:nth-child(6){ transform: translate(-2px,-50%) rotate(300deg); }
+
+    /* Closed state (doors blocking interaction) */
+    .vaultCabinet.isClosed .vaultDoors{ pointer-events: auto; }
+    .vaultCabinet.isClosed .vaultDoor{
+      filter: saturate(1.02) contrast(1.02);
+    }
+
+    /* Open animation */
+    .vaultCabinet.isOpen .vaultDoor.left{
+      transform: perspective(900px) rotateY(-78deg);
+    }
+    .vaultCabinet.isOpen .vaultDoor.right{
+      transform: perspective(900px) rotateY(78deg);
+    }
+    .vaultCabinet.isOpen .vaultWheel{
+      transform: translate(-50%,-50%) rotate(320deg);
+      opacity: .0;
+    }
+    .vaultDoor, .vaultWheel{
+      transition: transform 900ms cubic-bezier(.2,.9,.2,1), opacity 600ms ease, filter 600ms ease;
     }
 
     .rackGrid{
       position: relative;
       display:grid;
-      grid-template-columns: repeat(3, minmax(0,1fr));
+      grid-template-columns: repeat(4, minmax(0,1fr)); /* shelves 1–4 */
       gap: 12px;
       padding: 14px;
-      z-index: 1;
+      z-index: 2;
     }
     @media (max-width: 980px){
       .rackGrid{ grid-template-columns: 1fr; }
@@ -439,8 +619,7 @@
     .rackBay{
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,.10);
-      background:
-        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
+      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
       overflow: hidden;
       min-width: 0;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.22);
@@ -453,26 +632,45 @@
       gap: 10px;
       padding: 10px 12px;
       border-bottom: 1px solid rgba(255,255,255,.08);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
     }
-    .rackPlate{
-      display:flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
+
+    /* Engraved plate label */
+    .rackPlate{ display:flex; flex-direction: column; gap: 6px; min-width: 0; }
     .rackPlate .name{
+      position: relative;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(260px 90px at 30% 0%, rgba(255,255,255,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.20));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -10px 24px rgba(0,0,0,.45);
       font-size: 11px;
-      letter-spacing: .22em;
+      letter-spacing: .24em;
       text-transform: uppercase;
-      font-weight: 850;
+      font-weight: 900;
       white-space: nowrap;
       overflow:hidden;
       text-overflow: ellipsis;
-      display:flex;
-      align-items:center;
-      gap: 8px;
+      color: rgba(255,255,255,.78);
+      text-shadow: 0 1px 0 rgba(0,0,0,.55);
+    }
+    .rackPlate .name::after{
+      /* engraved highlight */
+      content:"";
+      position:absolute; inset: 0;
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.10), transparent 40%, rgba(0,0,0,.18));
+      opacity: .55;
+      pointer-events:none;
+      mix-blend-mode: overlay;
     }
     .rackPlate .sub{
       font-size: 11px;
@@ -481,6 +679,7 @@
       overflow:hidden;
       text-overflow: ellipsis;
     }
+
     .rackLed{
       width: 8px; height: 8px;
       border-radius: 999px;
@@ -491,6 +690,7 @@
     .rackLed.gold{ background: rgba(245,200,90,.82); box-shadow: 0 0 0 4px rgba(245,200,90,.10), 0 0 18px rgba(245,200,90,.18); }
     .rackLed.silver{ background: rgba(210,220,232,.82); box-shadow: 0 0 0 4px rgba(210,220,232,.10), 0 0 18px rgba(210,220,232,.14); }
     .rackLed.platinum{ background: rgba(180,195,255,.82); box-shadow: 0 0 0 4px rgba(180,195,255,.10), 0 0 18px rgba(180,195,255,.16); }
+    .rackLed.neutral{ background: rgba(142,200,255,.70); box-shadow: 0 0 0 4px rgba(142,200,255,.10), 0 0 18px rgba(142,200,255,.16); }
 
     .rackMeta{
       display:flex;
@@ -510,11 +710,9 @@
     .rackShelf{
       position: relative;
       padding: 12px 12px 12px;
-      background:
-        linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.02));
+      background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.02));
     }
 
-    /* Shelf surface + ledge */
     .shelfSurface{
       position: relative;
       border-radius: 14px;
@@ -529,8 +727,7 @@
     .shelfSurface::before{
       content:"";
       position:absolute; inset:0;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.06), transparent 20%, transparent 80%, rgba(255,255,255,.04));
+      background: linear-gradient(90deg, rgba(255,255,255,.06), transparent 20%, transparent 80%, rgba(255,255,255,.04));
       opacity:.8;
       pointer-events:none;
     }
@@ -540,21 +737,16 @@
       margin-top: 10px;
       height: 10px;
       border-radius: 999px;
-      background:
-        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.42));
+      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.42));
       border: 1px solid rgba(255,255,255,.08);
       box-shadow: 0 10px 24px rgba(0,0,0,.42);
     }
 
-    /* Slot grid (inventory feel) */
     .slotGrid{
       display:grid;
       grid-template-columns: repeat(4, minmax(0,1fr));
       gap: 10px;
       min-height: 220px;
-    }
-    @media (max-width: 980px){
-      .slotGrid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
     }
     @media (max-width: 520px){
       .slotGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
@@ -593,7 +785,7 @@
     }
 
     /* =========================================================
-       ITEM “OBJECTS” (2)
+       ITEM “OBJECTS”
        ========================================================= */
     .vaultItem{
       width: 100%;
@@ -663,7 +855,6 @@
       white-space: nowrap;
     }
 
-    /* Bar / Coin / Jewelry skins */
     .skinBar::before,
     .skinCoin::before,
     .skinJewelry::before{
@@ -672,15 +863,12 @@
       pointer-events:none;
       opacity: .95;
     }
-
     .skinBar::before{
       background:
         radial-gradient(240px 110px at 30% 0%, rgba(255,255,255,.14), transparent 60%),
         linear-gradient(135deg, rgba(255,255,255,.08), rgba(0,0,0,.12));
     }
-    .skinCoin{
-      border-radius: 16px;
-    }
+    .skinCoin{ border-radius: 16px; }
     .skinCoin::before{
       background:
         radial-gradient(70px 70px at 35% 35%, rgba(255,255,255,.18), transparent 60%),
@@ -697,7 +885,7 @@
     .metalGlowPlatinum{ box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(180,195,255,.10), 0 0 18px rgba(180,195,255,.07); }
 
     /* =========================================================
-       INSPECT MODAL (4)
+       INSPECT MODAL
        ========================================================= */
     .mmModalBack{
       position: fixed;
@@ -1020,15 +1208,88 @@
         <div class="cardBody" style="padding-top: 0;">
           <div class="vaultRacksWrap">
             <div class="vaultRacksHead">
-              <div class="title">Vault Racks</div>
-              <div class="hint">Tip: drag items between shelves (order saves).</div>
+              <div>
+                <div class="title">Vault Racks</div>
+                <div class="hint">Tip: drag items between shelves (order saves).</div>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                <button class="btn" id="btnVaultToggle" type="button" title="Open/Close the vault doors">Open vault</button>
+                <button class="btn" id="btnFilterToggle" type="button" title="Search & filter your vault">Search / Filter</button>
+              </div>
             </div>
 
-            <div class="vaultCabinet" id="vaultCabinet">
+            <!-- Search / Filter Drawer -->
+            <div class="drawer" id="filterDrawer" aria-label="Search and filter drawer">
+              <div class="drawerHead">
+                <b>Drawer</b>
+                <span class="chipTiny mono" id="filterChip">No filter</span>
+              </div>
+              <div class="drawerBody">
+                <div class="drawerGrid">
+                  <div class="field">
+                    <label for="filterQuery">Search</label>
+                    <input class="control" id="filterQuery" placeholder='Label, notes, ".999", "Eagle", "ring"...' />
+                  </div>
+
+                  <div class="field">
+                    <label for="filterMetal">Metal</label>
+                    <select class="control" id="filterMetal">
+                      <option value="">All</option>
+                      <option value="gold">Gold</option>
+                      <option value="silver">Silver</option>
+                      <option value="platinum">Platinum</option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="filterType">Item type</label>
+                    <select class="control" id="filterType">
+                      <option value="">All</option>
+                      <option value="bullion">Bullion</option>
+                      <option value="coin">Coin</option>
+                      <option value="bar">Bar</option>
+                      <option value="jewelry">Jewelry</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="filterShelf">Shelf</label>
+                    <select class="control" id="filterShelf">
+                      <option value="">All</option>
+                      <option value="Gold">Gold shelf</option>
+                      <option value="Silver">Silver shelf</option>
+                      <option value="Platinum">Platinum shelf</option>
+                      <option value="Overflow">Shelf 4 (Overflow)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="miniHint">
+                  Filter affects what’s shown + totals. Drag/drop still saves slot positions to the DB.
+                </div>
+
+                <div class="actionRow" style="justify-content:flex-start; margin-top:10px;">
+                  <button class="btn" id="btnFilterClear" type="button">Clear</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="vaultCabinet isClosed" id="vaultCabinet">
               <div class="vaultCabinetFrame" aria-hidden="true"></div>
 
+              <!-- Doors + wheel lock overlay -->
+              <div class="vaultDoors" aria-hidden="true">
+                <div class="vaultDoor left"></div>
+                <div class="vaultDoor right"></div>
+                <div class="vaultWheel">
+                  <span class="spoke"></span><span class="spoke"></span><span class="spoke"></span>
+                  <span class="spoke"></span><span class="spoke"></span><span class="spoke"></span>
+                </div>
+              </div>
+
               <div class="rackGrid" id="rackGrid">
-                <!-- Gold shelf -->
+                <!-- Shelf 1: Gold -->
                 <div class="rackBay" data-shelf="Gold">
                   <div class="rackBayTop">
                     <div class="rackPlate">
@@ -1048,7 +1309,7 @@
                   </div>
                 </div>
 
-                <!-- Silver shelf -->
+                <!-- Shelf 2: Silver -->
                 <div class="rackBay" data-shelf="Silver">
                   <div class="rackBayTop">
                     <div class="rackPlate">
@@ -1068,7 +1329,7 @@
                   </div>
                 </div>
 
-                <!-- Platinum shelf -->
+                <!-- Shelf 3: Platinum -->
                 <div class="rackBay" data-shelf="Platinum">
                   <div class="rackBayTop">
                     <div class="rackPlate">
@@ -1083,6 +1344,26 @@
                   <div class="rackShelf">
                     <div class="shelfSurface">
                       <div class="slotGrid" id="gridPlatinum"></div>
+                    </div>
+                    <div class="shelfLedge" aria-hidden="true"></div>
+                  </div>
+                </div>
+
+                <!-- Shelf 4: Overflow / Mixed -->
+                <div class="rackBay" data-shelf="Overflow">
+                  <div class="rackBayTop">
+                    <div class="rackPlate">
+                      <div class="name"><span class="rackLed neutral" aria-hidden="true"></span> SHELF 4 — OVERFLOW</div>
+                      <div class="sub mono" id="metaOverflow">—</div>
+                    </div>
+                    <div class="rackMeta">
+                      <span class="chip mono" id="sumOverflow">$—</span>
+                      <span class="chip mono" id="capOverflow">0/12</span>
+                    </div>
+                  </div>
+                  <div class="rackShelf">
+                    <div class="shelfSurface">
+                      <div class="slotGrid" id="gridOverflow"></div>
                     </div>
                     <div class="shelfLedge" aria-hidden="true"></div>
                   </div>
@@ -1147,7 +1428,7 @@
       </div>
     </div>
   </div>
-
+<!-- DROP-IN PART 2/2: vault/index.html  (the <script> + closing tags) -->
   <script>
     (function () {
       "use strict";
@@ -1161,35 +1442,29 @@
       const authLabel = document.getElementById("authLabel");
 
       function getClerkPublishableKey() {
-        // OPTION A: hardcode it here:
-        // return "pk_live_XXXXXXXXXXXXXXXXXXXXXXXX";
-
-        // OPTION B: store it in localStorage once:
-        // localStorage.setItem("clerk_publishable_key","pk_live_...");
         return (localStorage.getItem("clerk_publishable_key") || "").trim();
       }
 
       async function initClerkIfPossible() {
         const pk = getClerkPublishableKey();
-       if (!pk || !window.Clerk) {
-  btnSignIn.style.display = "";
-  btnSignOut.style.display = "none";
-  authPill.style.display = "none";
+        if (!pk || !window.Clerk) {
+          btnSignIn.style.display = "";
+          btnSignOut.style.display = "none";
+          authPill.style.display = "none";
 
-  // ✅ FIX: make the button do something even when pk is missing
-  btnSignIn.onclick = () => {
-    const cur = (localStorage.getItem("clerk_publishable_key") || "").trim();
-    const next = prompt(
-      "Enter your Clerk Publishable Key (pk_live_... or pk_test_...).\n\nYou can find it in Clerk Dashboard → API Keys.\n\nCurrent:",
-      cur
-    );
-    if (!next) return;
-    localStorage.setItem("clerk_publishable_key", next.trim());
-    location.reload();
-  };
+          btnSignIn.onclick = () => {
+            const cur = (localStorage.getItem("clerk_publishable_key") || "").trim();
+            const next = prompt(
+              "Enter your Clerk Publishable Key (pk_live_... or pk_test_...).\n\nYou can find it in Clerk Dashboard → API Keys.\n\nCurrent:",
+              cur
+            );
+            if (!next) return;
+            localStorage.setItem("clerk_publishable_key", next.trim());
+            location.reload();
+          };
 
-  return false;
-}
+          return false;
+        }
 
         try {
           await window.Clerk.load({ publishableKey: pk });
@@ -1289,18 +1564,36 @@
       const kBreakdown = el("kBreakdown");
 
       // Racks
+      const vaultCabinet = el("vaultCabinet");
+      const btnVaultToggle = el("btnVaultToggle");
+      const btnFilterToggle = el("btnFilterToggle");
+      const filterDrawer = el("filterDrawer");
+      const filterChip = el("filterChip");
+      const filterQuery = el("filterQuery");
+      const filterMetal = el("filterMetal");
+      const filterType = el("filterType");
+      const filterShelf = el("filterShelf");
+      const btnFilterClear = el("btnFilterClear");
+
       const gridGold = el("gridGold");
       const gridSilver = el("gridSilver");
       const gridPlatinum = el("gridPlatinum");
+      const gridOverflow = el("gridOverflow");
+
       const sumGold = el("sumGold");
       const sumSilver = el("sumSilver");
       const sumPlatinum = el("sumPlatinum");
+      const sumOverflow = el("sumOverflow");
+
       const capGold = el("capGold");
       const capSilver = el("capSilver");
       const capPlatinum = el("capPlatinum");
+      const capOverflow = el("capOverflow");
+
       const metaGold = el("metaGold");
       const metaSilver = el("metaSilver");
       const metaPlatinum = el("metaPlatinum");
+      const metaOverflow = el("metaOverflow");
 
       // Inspect modal
       const inspectBack = el("inspectBack");
@@ -1564,11 +1857,20 @@
         };
       }
 
+      // ---- Shelves 1–4
+      const SHELF_CAP = 12;
+      const SHELVES = ["Gold","Silver","Platinum","Overflow"];
+
       function shelfNameForMetal(metal){
         if (metal === "gold") return "Gold";
         if (metal === "silver") return "Silver";
         if (metal === "platinum") return "Platinum";
-        return "Gold";
+        return "Overflow";
+      }
+
+      function normalizedShelf(item){
+        const s = (item && item.shelf_section) ? String(item.shelf_section) : shelfNameForMetal(item?.metal);
+        return SHELVES.includes(s) ? s : "Overflow";
       }
 
       function itemSkin(item){
@@ -1594,8 +1896,106 @@
         return `${wText}${u} • ${p}`;
       }
 
-      // --- Drag/drop state ---
-      const SHELF_CAP = 12;
+      // ----------------------------
+      // Door open/close animation
+      // ----------------------------
+      function setVaultOpen(isOpen){
+        state.vaultOpen = !!isOpen;
+        vaultCabinet.classList.toggle("isOpen", state.vaultOpen);
+        vaultCabinet.classList.toggle("isClosed", !state.vaultOpen);
+        btnVaultToggle.textContent = state.vaultOpen ? "Close vault" : "Open vault";
+        // persist preference
+        try { localStorage.setItem("mm_vault_open", state.vaultOpen ? "1" : "0"); } catch {}
+      }
+
+      btnVaultToggle.addEventListener("click", () => {
+        setVaultOpen(!state.vaultOpen);
+      });
+
+      // Also open on click anywhere on doors when closed (nice “tap to open”)
+      vaultCabinet.addEventListener("click", () => {
+        if (!state.vaultOpen) setVaultOpen(true);
+      });
+
+      // ----------------------------
+      // Search / Filter drawer
+      // ----------------------------
+      function setDrawerOpen(v){
+        state.filterOpen = !!v;
+        filterDrawer.classList.toggle("isOpen", state.filterOpen);
+      }
+
+      btnFilterToggle.addEventListener("click", () => setDrawerOpen(!state.filterOpen));
+
+      function normalizeQuery(q){
+        return String(q || "").trim().toLowerCase();
+      }
+
+      function computeFilterChip(){
+        const parts = [];
+        const q = normalizeQuery(state.filter.q);
+        if (q) parts.push(`q:"${q.length > 18 ? q.slice(0,18)+"…" : q}"`);
+        if (state.filter.metal) parts.push(state.filter.metal);
+        if (state.filter.type) parts.push(state.filter.type);
+        if (state.filter.shelf) parts.push(state.filter.shelf);
+        return parts.length ? parts.join(" • ") : "No filter";
+      }
+
+      function setFilter(next){
+        state.filter = Object.assign({}, state.filter, next);
+        filterChip.textContent = computeFilterChip();
+        renderAll();
+      }
+
+      filterQuery.addEventListener("input", () => setFilter({ q: filterQuery.value }));
+      filterMetal.addEventListener("change", () => setFilter({ metal: filterMetal.value }));
+      filterType.addEventListener("change", () => setFilter({ type: filterType.value }));
+      filterShelf.addEventListener("change", () => setFilter({ shelf: filterShelf.value }));
+
+      btnFilterClear.addEventListener("click", () => {
+        filterQuery.value = "";
+        filterMetal.value = "";
+        filterType.value = "";
+        filterShelf.value = "";
+        setFilter({ q:"", metal:"", type:"", shelf:"" });
+      });
+
+      function passesFilter(it){
+        const q = normalizeQuery(state.filter.q);
+        const m = (state.filter.metal || "").trim().toLowerCase();
+        const t = (state.filter.type || "").trim().toLowerCase();
+        const s = (state.filter.shelf || "").trim();
+
+        if (m && String(it.metal || "").toLowerCase() !== m) return false;
+        if (t && String(it.item_type || "").toLowerCase() !== t) return false;
+        if (s && normalizedShelf(it) !== s) return false;
+
+        if (q){
+          const hay = [
+            it.label,
+            it.notes,
+            it.item_type,
+            it.metal,
+            String(it.purity ?? ""),
+            String(it.weight_value ?? ""),
+            String(it.weight_unit ?? ""),
+          ].join(" ").toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      }
+
+      function visibleItems(){
+        return state.items.filter(passesFilter);
+      }
+
+      function filterIsActive(){
+        return !!(normalizeQuery(state.filter.q) || state.filter.metal || state.filter.type || state.filter.shelf);
+      }
+
+      // ----------------------------
+      // Drag/drop state
+      // ----------------------------
       let draggingId = null;
 
       function setSlotOver(el, v){
@@ -1612,10 +2012,7 @@
           s.setAttribute("data-slot", String(i));
           s.innerHTML = `<div class="slotEmptyHint">Drop</div>`;
 
-          s.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            setSlotOver(s, true);
-          });
+          s.addEventListener("dragover", (e) => { e.preventDefault(); setSlotOver(s, true); });
           s.addEventListener("dragleave", () => setSlotOver(s, false));
           s.addEventListener("drop", async (e) => {
             e.preventDefault();
@@ -1636,7 +2033,8 @@
       }
 
       function itemsOnShelf(shelf){
-        return state.items.filter(it => (it.shelf_section || shelfNameForMetal(it.metal)) === shelf);
+        const list = visibleItems(); // drawer affects what we render + totals
+        return list.filter(it => normalizedShelf(it) === shelf);
       }
 
       function slotMapForShelf(shelf){
@@ -1653,13 +2051,12 @@
         const b = findItemById(bId);
         if (!a || !b) return;
 
-        const aShelf = a.shelf_section || shelfNameForMetal(a.metal);
-        const bShelf = b.shelf_section || shelfNameForMetal(b.metal);
+        const aShelf = normalizedShelf(a);
+        const bShelf = normalizedShelf(b);
 
         const aSlot = (a.shelf_slot == null) ? null : parseInt(a.shelf_slot, 10);
         const bSlot = (b.shelf_slot == null) ? null : parseInt(b.shelf_slot, 10);
 
-        // swap
         await postVault({ action: "update", id: a.id, shelf_section: bShelf, shelf_slot: bSlot });
         await postVault({ action: "update", id: b.id, shelf_section: aShelf, shelf_slot: aSlot });
       }
@@ -1668,10 +2065,9 @@
         const item = findItemById(id);
         if (!item) return;
 
-        const targetShelf = String(shelf || "Gold");
+        const targetShelf = SHELVES.includes(String(shelf)) ? String(shelf) : "Overflow";
         const targetSlot = clamp(parseInt(slot,10) || 0, 0, SHELF_CAP-1);
 
-        // if occupied: swap
         const map = slotMapForShelf(targetShelf);
         const occupant = map.get(targetSlot);
         if (occupant && String(occupant.id) !== String(id)){
@@ -1703,7 +2099,7 @@
         if (!item) return;
         state.inspectingId = String(item.id);
 
-        const shelf = item.shelf_section || shelfNameForMetal(item.metal);
+        const shelf = normalizedShelf(item);
         const slot = (item.shelf_slot == null) ? "—" : String(item.shelf_slot);
 
         insTitle.textContent = item.label || "—";
@@ -1787,11 +2183,9 @@
 
         const map = slotMapForShelf(shelf);
 
-        // Fill slots with items (if slot missing, place in next available)
         const used = new Set(Array.from(map.keys()));
         const loose = itemsOnShelf(shelf).filter(it => it.shelf_slot == null || !Number.isFinite(parseInt(it.shelf_slot,10)));
 
-        // allocate loose into empty slots (local-only, but we’ll save once user drags or opens inspect)
         let cursor = 0;
         for (const it of loose){
           while (used.has(cursor) && cursor < SHELF_CAP) cursor++;
@@ -1809,7 +2203,6 @@
           const v = computeItemValuation(it, spot);
           const badge = (it.item_type || "item").toUpperCase();
 
-          // object card
           const div = document.createElement("div");
           div.className = `vaultItem ${itemSkin(it)} ${metalGlow(it.metal)}`;
           div.setAttribute("draggable", "true");
@@ -1841,7 +2234,6 @@
           slotEl.innerHTML = "";
           slotEl.appendChild(div);
 
-          // Allow dropping onto occupied slot to swap
           slotEl.addEventListener("dragover", (e) => { e.preventDefault(); setSlotOver(slotEl, true); });
           slotEl.addEventListener("dragleave", () => setSlotOver(slotEl, false));
           slotEl.addEventListener("drop", async (e) => {
@@ -1859,21 +2251,21 @@
 
       function renderAll() {
         const spot = buildSpotNormalized();
+        const vis = visibleItems();
 
         let totals = { gold: 0, silver: 0, platinum: 0 };
         let pureOz = { gold: 0, silver: 0, platinum: 0 };
         let totalMarket = 0;
 
-        // Totals
-        for (const item of state.items) {
+        for (const item of vis) {
           const v = computeItemValuation(item, spot);
           const m = item.metal;
 
           if (Number.isFinite(num(v.market))) {
             totalMarket += num(v.market);
-            totals[m] += num(v.market);
+            if (totals[m] != null) totals[m] += num(v.market);
           }
-          if (Number.isFinite(num(v.pureOz))) pureOz[m] += num(v.pureOz);
+          if (Number.isFinite(num(v.pureOz)) && pureOz[m] != null) pureOz[m] += num(v.pureOz);
         }
 
         totalValueEl.textContent = money(totalMarket);
@@ -1884,7 +2276,10 @@
 
         kBreakdown.textContent = `${money(totals.gold)} / ${money(totals.silver)} / ${money(totals.platinum)}`;
 
-        summaryLineEl.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"} • drag to organize • updates every 60s`;
+        const countText = `${vis.length} item${vis.length === 1 ? "" : "s"}`;
+        summaryLineEl.textContent = filterIsActive()
+          ? `${countText} • filtered view • drag to organize • updates every 60s`
+          : `${countText} • drag to organize • updates every 60s`;
 
         if (state.lastTotal != null && Number.isFinite(num(totalMarket))) {
           const d = num(totalMarket) - num(state.lastTotal);
@@ -1910,27 +2305,41 @@
         const kpiLocked = el("kpiLocked");
         kpiLocked.setAttribute("data-locked", locked ? "true" : "false");
 
-        // Shelf summaries
-        sumGold.textContent = money(totals.gold);
-        sumSilver.textContent = money(totals.silver);
-        sumPlatinum.textContent = money(totals.platinum);
+        // Shelf summaries (counts + shelf totals)
+        function shelfTotals(shelf){
+          let sum = 0;
+          for (const it of itemsOnShelf(shelf)){
+            const v = computeItemValuation(it, spot);
+            if (Number.isFinite(num(v.market))) sum += num(v.market);
+          }
+          return sum;
+        }
+
+        sumGold.textContent = money(shelfTotals("Gold"));
+        sumSilver.textContent = money(shelfTotals("Silver"));
+        sumPlatinum.textContent = money(shelfTotals("Platinum"));
+        sumOverflow.textContent = money(shelfTotals("Overflow"));
 
         const gCount = itemsOnShelf("Gold").length;
         const sCount = itemsOnShelf("Silver").length;
         const pCount = itemsOnShelf("Platinum").length;
+        const oCount = itemsOnShelf("Overflow").length;
 
         capGold.textContent = `${gCount}/${SHELF_CAP}`;
         capSilver.textContent = `${sCount}/${SHELF_CAP}`;
         capPlatinum.textContent = `${pCount}/${SHELF_CAP}`;
+        capOverflow.textContent = `${oCount}/${SHELF_CAP}`;
 
         metaGold.textContent = `Au items • ${fmt4(pureOz.gold)} oz`;
         metaSilver.textContent = `Ag items • ${fmt4(pureOz.silver)} oz`;
         metaPlatinum.textContent = `Pt items • ${fmt4(pureOz.platinum)} oz`;
+        metaOverflow.textContent = `Mixed storage • ${oCount} item${oCount === 1 ? "" : "s"}`;
 
         // Render shelves
         renderShelfGrid(gridGold, "Gold", spot);
         renderShelfGrid(gridSilver, "Silver", spot);
         renderShelfGrid(gridPlatinum, "Platinum", spot);
+        renderShelfGrid(gridOverflow, "Overflow", spot);
       }
 
       const state = {
@@ -1939,7 +2348,10 @@
         updatedAt: null,
         lastTotal: null,
         inspectingId: null,
-        activeMetalForPills: () => "gold"
+        activeMetalForPills: () => "gold",
+        vaultOpen: false,
+        filterOpen: false,
+        filter: { q:"", metal:"", type:"", shelf:"" }
       };
 
       purityPresetSelect.addEventListener("change", () => {
@@ -2025,7 +2437,20 @@
         await new Promise((r) => setTimeout(r, 0));
         await initClerkIfPossible();
 
+        // Restore vault open state
+        const savedOpen = (localStorage.getItem("mm_vault_open") || "0") === "1";
+        setVaultOpen(savedOpen);
+
+        // Drawer default closed, chip correct
+        filterChip.textContent = "No filter";
+
         await refreshAll();
+
+        // Optional: a tiny “unlock moment” once on first load (still respecting saved state)
+        if (!savedOpen){
+          // quick wheel jiggle without opening (subtle)
+          // (no-op; leaving simple to avoid over-animating)
+        }
 
         setInterval(() => { fetchSpots().catch(() => {}); }, 60_000);
       })();
