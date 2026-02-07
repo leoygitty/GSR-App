@@ -1453,18 +1453,26 @@
           authPill.style.display = "none";
 
           btnSignIn.onclick = () => {
-            const cur = (localStorage.getItem("clerk_publishable_key") || "").trim();
-            const next = prompt(
-              "Enter your Clerk Publishable Key (pk_live_... or pk_test_...).\n\nYou can find it in Clerk Dashboard → API Keys.\n\nCurrent:",
-              cur
-            );
-            if (!next) return;
-            localStorage.setItem("clerk_publishable_key", next.trim());
-            location.reload();
-          };
+    const curPk = (localStorage.getItem("clerk_publishable_key") || "").trim();
+    const nextPk = prompt(
+      "Enter your Clerk Publishable Key (pk_live_... or pk_test_...).\n\nClerk Dashboard → API Keys",
+      curPk
+    );
+    if (!nextPk) return;
+    localStorage.setItem("clerk_publishable_key", nextPk.trim());
 
-          return false;
-        }
+    const curTpl = (localStorage.getItem("clerk_jwt_template") || "").trim();
+    const nextTpl = prompt(
+      "Optional: Enter your Clerk JWT Template name (leave blank if you didn't create one).\n\nClerk Dashboard → JWT Templates",
+      curTpl
+    );
+    if (nextTpl !== null) {
+      localStorage.setItem("clerk_jwt_template", nextTpl.trim());
+    }
+
+    location.reload();
+  };
+
 
         try {
           await window.Clerk.load({ publishableKey: pk });
@@ -1509,16 +1517,32 @@
         }
       }
 
-      async function getBearerToken() {
+            async function getBearerToken() {
         try {
           if (!window.Clerk) return null;
+
+          // Wait briefly for session to exist (Clerk can be "loaded" but session not hydrated yet)
+          for (let i = 0; i < 8; i++) {
+            if (window.Clerk.session) break;
+            await new Promise((r) => setTimeout(r, 120));
+          }
           if (!window.Clerk.session) return null;
-          const tok = await window.Clerk.session.getToken();
+
+          // OPTIONAL: use a JWT template name if you configured one in Clerk
+          // Set once in console or via localStorage:
+          // localStorage.setItem("clerk_jwt_template", "YOUR_TEMPLATE_NAME");
+          const template = (localStorage.getItem("clerk_jwt_template") || "").trim();
+
+          const tok = template
+            ? await window.Clerk.session.getToken({ template })
+            : await window.Clerk.session.getToken();
+
           return tok || null;
         } catch {
           return null;
         }
       }
+
 
       // ----------------------------
       // Existing app code
