@@ -41,7 +41,7 @@
         var(--m-bg);
       color: var(--m-text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      overflow-x: hidden; /* hard prevent page horizontal scroll */
+      overflow-x: hidden;
     }
 
     body.vaultPage a{ color: inherit; text-decoration: none; }
@@ -55,7 +55,6 @@
       padding: 28px 18px 60px;
     }
 
-    /* Top bar (same as Melt) */
     .meltTop{
       display: flex;
       align-items: center;
@@ -159,7 +158,6 @@
       transform: none !important;
     }
 
-    /* Hero (same vibe as Melt) */
     .meltHero{
       margin: 12px 0 22px;
       padding: 18px 18px 0;
@@ -176,7 +174,6 @@
       line-height: 1.45;
     }
 
-    /* Layout grid */
     .meltGrid{
       display: grid;
       grid-template-columns: 420px 1fr;
@@ -215,7 +212,6 @@
     }
     .cardBody{ padding: 16px; }
 
-    /* Form controls (from Melt) */
     .row{
       display: grid;
       grid-template-columns: 1fr 160px;
@@ -256,7 +252,6 @@
     select.control{ padding-right: 34px; }
     textarea.control{ min-height: 84px; resize: vertical; }
 
-    /* Summary hero (reuse Melt output hero styling) */
     .resultHero{
       padding: 18px 16px 12px;
       background: linear-gradient(180deg, rgba(142,200,255,.10), rgba(255,255,255,.00));
@@ -310,7 +305,6 @@
     .kpi .v{ margin-top: 6px; font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
     .kpi .s{ margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.62); }
 
-    /* Vault list styled like coinGrid (premium list, no ugly table) */
     .list{
       margin-top: 12px;
       border-radius: 14px;
@@ -370,17 +364,13 @@
       white-space: nowrap;
     }
 
-    /* Make list horizontally scroll INSIDE card only on small screens */
     .listWrap{
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
     .listMin{ min-width: 860px; }
 
-    /* Addictive pulse (premium) */
-    .pulse {
-      animation: mmPulse 650ms ease;
-    }
+    .pulse { animation: mmPulse 650ms ease; }
     @keyframes mmPulse {
       0% { box-shadow: none; }
       35% { box-shadow: 0 0 0 4px rgba(142,200,255,.16), 0 18px 60px rgba(0,0,0,.35); }
@@ -407,14 +397,8 @@
       width: 100%;
     }
 
-    /* Small “Pro/Elite lock” scaffolding (future) */
-    .locked{
-      position: relative;
-      filter: blur(0);
-    }
-    .locked[data-locked="true"]{
-      filter: blur(0.2px);
-    }
+    .locked{ position: relative; filter: blur(0); }
+    .locked[data-locked="true"]{ filter: blur(0.2px); }
     .lockOverlay{
       display: none;
       position: absolute;
@@ -433,6 +417,9 @@
     }
     .locked[data-locked="true"] .lockOverlay{ display: flex; }
   </style>
+
+  <!-- Clerk JS (frontend auth) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
 </head>
 
 <body class="vaultPage">
@@ -477,9 +464,20 @@
             <strong>Updated</strong>
             <span class="mono" id="chipUpdated">—</span>
           </div>
+
+          <!-- Auth pill -->
+          <div class="pill" id="authPill" title="Account" style="display:none;">
+            <strong>Account</strong>
+            <span class="mono" id="authLabel">—</span>
+          </div>
         </div>
 
         <button class="btn" id="btnRefresh" type="button">Refresh spot</button>
+
+        <!-- Auth buttons -->
+        <button class="btn btnPrimary" id="btnSignIn" type="button" style="display:none;">Sign in</button>
+        <button class="btn" id="btnSignOut" type="button" style="display:none;">Sign out</button>
+
         <a class="btn" href="../melt/index.html">Melt</a>
         <a class="btn" href="../index.html">Dashboard</a>
       </div>
@@ -672,8 +670,91 @@
     (function () {
       "use strict";
 
-      const OZ_TROY_IN_G = 31.1034768;
+      // ----------------------------
+      // Clerk Auth (frontend)
+      // ----------------------------
+      const btnSignIn = document.getElementById("btnSignIn");
+      const btnSignOut = document.getElementById("btnSignOut");
+      const authPill = document.getElementById("authPill");
+      const authLabel = document.getElementById("authLabel");
 
+      function getClerkPublishableKey() {
+        // OPTION A: hardcode it here:
+        // return "pk_live_XXXXXXXXXXXXXXXXXXXXXXXX";
+
+        // OPTION B: store it in localStorage once:
+        // localStorage.setItem("clerk_publishable_key","pk_live_...");
+        return (localStorage.getItem("clerk_publishable_key") || "").trim();
+      }
+
+      async function initClerkIfPossible() {
+        const pk = getClerkPublishableKey();
+        if (!pk || !window.Clerk) {
+          // No key = no auth. We'll still allow spot UI, but vault API will fail.
+          btnSignIn.style.display = "";
+          btnSignOut.style.display = "none";
+          authPill.style.display = "none";
+          return false;
+        }
+
+        try {
+          await window.Clerk.load({ publishableKey: pk });
+
+          // Buttons
+          btnSignIn.style.display = window.Clerk.user ? "none" : "";
+          btnSignOut.style.display = window.Clerk.user ? "" : "none";
+
+          btnSignIn.onclick = () => window.Clerk.openSignIn({});
+          btnSignOut.onclick = async () => {
+            try { await window.Clerk.signOut(); } catch {}
+            location.reload();
+          };
+
+          // Subscribe to auth changes
+          window.Clerk.addListener(() => {
+            btnSignIn.style.display = window.Clerk.user ? "none" : "";
+            btnSignOut.style.display = window.Clerk.user ? "" : "none";
+
+            if (window.Clerk.user) {
+              const email = (window.Clerk.user.primaryEmailAddress && window.Clerk.user.primaryEmailAddress.emailAddress) || "";
+              authLabel.textContent: null;
+            }
+          });
+
+          // Set initial pill
+          if (window.Clerk.user) {
+            const email = (window.Clerk.user.primaryEmailAddress && window.Clerk.user.primaryEmailAddress.emailAddress) || "";
+            authLabel.textContent = email ? email : ("User " + String(window.Clerk.user.id || "").slice(0, 8));
+            authPill.style.display = "";
+          } else {
+            authPill.style.display = "none";
+          }
+
+          return true;
+        } catch (e) {
+          console.warn("[vault] Clerk init failed:", e);
+          btnSignIn.style.display = "";
+          btnSignOut.style.display = "none";
+          authPill.style.display = "none";
+          return false;
+        }
+      }
+
+      async function getBearerToken() {
+        try {
+          if (!window.Clerk) return null;
+          if (!window.Clerk.session) return null;
+          const tok = await window.Clerk.session.getToken();
+          return tok || null;
+        } catch {
+          return null;
+        }
+      }
+
+      // ----------------------------
+      // Existing app code
+      // ----------------------------
+      const OZ_TROY_IN_G = 31.1034768;
       const el = (id) => document.getElementById(id);
 
       const pillGold = el("pillGold");
@@ -716,7 +797,6 @@
       const listEl = el("list");
       const emptyRow = el("emptyRow");
 
-      // --- Helpers
       function num(v) {
         if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
         if (v == null) return NaN;
@@ -815,6 +895,24 @@
           err.payload = data;
           throw err;
         }
+        return data;
+      }
+
+      // Authenticated fetch for vault endpoints
+      async function fetchVault(path, init) {
+        const tok = await getBearerToken();
+        if (!tok) {
+          throw new Error("Please sign in to use Vault.");
+        }
+        const headers = Object.assign({}, (init && init.headers) ? init.headers : {});
+        headers["Authorization"] = "Bearer " + tok;
+        headers["Accept"] = headers["Accept"] || "application/json";
+        const url = path + (path.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        const res = await fetch(url, Object.assign({}, init || {}, { headers, cache: "no-store" }));
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = { ok:false, error: text.slice(0,200) }; }
+        if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
         return data;
       }
 
@@ -917,18 +1015,16 @@
       }
 
       async function postVault(actionBody) {
-        const res = await fetch("/api/vault_items", {
+        const j = await fetchVault("/api/vault_items", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(actionBody)
         });
-        const j = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
         return j;
       }
 
       async function loadVaultItems() {
-        const j = await fetchAny("/api/vault_items?limit=500");
+        const j = await fetchVault("/api/vault_items?limit=500");
         state.items = Array.isArray(j.items) ? j.items : [];
       }
 
@@ -956,7 +1052,6 @@
       function renderAll() {
         const spot = buildSpotNormalized();
 
-        // Compute totals
         let totals = { gold: 0, silver: 0, platinum: 0 };
         let pureOz = { gold: 0, silver: 0, platinum: 0 };
         let totalMarket = 0;
@@ -1000,8 +1095,6 @@
           `);
         }
 
-        // List
-        // Remove old rows (keep header as first)
         const children = Array.from(listEl.children);
         children.slice(1).forEach(n => n.remove());
 
@@ -1013,7 +1106,6 @@
           emptyRow.querySelector("div").textContent = "No items yet. Add your first one.";
         }
 
-        // Wire delete
         listEl.querySelectorAll("[data-del]").forEach(btn => {
           btn.addEventListener("click", async () => {
             const id = btn.getAttribute("data-del");
@@ -1032,7 +1124,6 @@
           });
         });
 
-        // KPIs
         totalValueEl.textContent = money(totalMarket);
 
         const allPure = pureOz.gold + pureOz.silver + pureOz.platinum;
@@ -1043,7 +1134,6 @@
 
         summaryLineEl.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"} • updates every 60s`;
 
-        // Delta + pulse
         if (state.lastTotal != null && Number.isFinite(num(totalMarket))) {
           const d = num(totalMarket) - num(state.lastTotal);
           const abs = Math.abs(d);
@@ -1063,26 +1153,20 @@
 
         state.lastTotal = totalMarket;
 
-        // Future gating stub example
         const tier = getTier();
-        const locked = (tier === "free"); // later: real entitlements
+        const locked = (tier === "free");
         const kpiLocked = el("kpiLocked");
         kpiLocked.setAttribute("data-locked", locked ? "true" : "false");
       }
 
-      // --- State
       const state = {
         items: [],
         spots: { gold: null, silver: null, platinum: null },
         updatedAt: null,
         lastTotal: null,
-        activeMetalForPills: () => {
-          // pick a default highlight; if user last added metal, we could store it later
-          return "gold";
-        }
+        activeMetalForPills: () => "gold"
       };
 
-      // --- Events
       purityPresetSelect.addEventListener("change", () => {
         if (purityPresetSelect.value) purityInput.value = purityPresetSelect.value;
       });
@@ -1127,7 +1211,6 @@
         try {
           await postVault(payload);
           setStatus("Added to vault.", "good");
-          // Clear lightly
           labelInput.value = "";
           weightValueInput.value = "";
           notesInput.value = "";
@@ -1141,30 +1224,36 @@
       });
 
       async function refreshVaultOnly() {
-        try { await loadVaultItems(); } catch {}
+        try {
+          await loadVaultItems();
+        } catch (e) {
+          // If not signed in, keep it friendly instead of spamming errors
+          setStatus(e?.message ? String(e.message) : "Sign in to load vault items.", "warn");
+          state.items = [];
+        }
       }
 
       async function refreshAll() {
         tierPill.textContent = getTier();
-        await Promise.allSettled([loadVaultItems(), fetchSpots()]);
+        await Promise.allSettled([refreshVaultOnly(), fetchSpots()]);
         updateSpotHeaderUI();
         renderAll();
       }
 
       async function pollSpotOnly() {
-        // spot-only refresh to make it feel real-time
         await fetchSpots();
       }
 
-      // --- Init
-      (function init() {
+      (async function init() {
         setStatus("Fetching live spot…", "");
-        refreshAll();
 
-        // Poll every 60s for “value pulse”
-        setInterval(() => {
-          pollSpotOnly().catch(() => {});
-        }, 60_000);
+        // Wait for Clerk script to be present
+        await new Promise((r) => setTimeout(r, 0));
+        await initClerkIfPossible();
+
+        await refreshAll();
+
+        setInterval(() => { pollSpotOnly().catch(() => {}); }, 60_000);
       })();
     })();
   </script>
