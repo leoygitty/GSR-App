@@ -11,9 +11,6 @@ except Exception:
     from api._utils import db_connect, send_json
 
 # ---- JWT / Clerk verification helpers ----
-# IMPORTANT: add these to requirements.txt:
-# PyJWT==2.9.0
-# requests==2.32.3
 try:
     import jwt  # PyJWT
     import requests
@@ -90,15 +87,36 @@ def _default_accent_for_metal(metal: str):
     return None
 
 
+def _default_section_for_item_type(item_type: str):
+    t = (item_type or "").lower()
+    if t == "coin":
+        return "Coins"
+    if t in ("bullion", "bar"):
+        return "Bullion"
+    if t == "jewelry":
+        return "Jewelry"
+    return "Main"
+
+
 # ----------------------------
 # DB bootstrap / migrations
 # ----------------------------
+def _try_exec(cur, sql: str):
+    try:
+        cur.execute(sql)
+        return True
+    except Exception:
+        return False
+
+
 def ensure_table(conn):
     """
-    Makes vault_items self-healing on new DBs.
-    If you already have the table, this is a no-op.
+    Creates the table if missing. If it already exists, runs small additive migrations
+    (ALTER TABLE ADD COLUMN) so you don't get stuck on an old schema.
     """
     cur = conn.cursor()
+
+    # Create base table (safe on new DBs)
     cur.execute(
         """
         create table if not exists vault_items (
@@ -116,26 +134,28 @@ def ensure_table(conn):
           shelf_section text null,
           shelf_slot integer null,
           accent text null,
+          qty integer not null default 1,
           created_at timestamptz not null default now()
         );
         """
     )
 
+    # Additive migrations for older DBs (ignore failures)
+    _try_exec(cur, "alter table vault_items add column if not exists shelf_section text null;")
+    _try_exec(cur, "alter table vault_items add column if not exists shelf_slot integer null;")
+    _try_exec(cur, "alter table vault_items add column if not exists accent text null;")
+    _try_exec(cur, "alter table vault_items add column if not exists qty integer not null default 1;")
+    _try_exec(cur, "alter table vault_items add column if not exists created_at timestamptz not null default now();")
+
     # Helpful indexes
-    cur.execute(
-        "create index if not exists vault_items_user_created_idx on vault_items (user_id, created_at desc);"
-    )
-    cur.execute(
-        "create index if not exists vault_items_user_shelf_idx on vault_items (user_id, shelf_section, shelf_slot);"
-    )
+    _try_exec(cur, "create index if not exists vault_items_user_created_idx on vault_items (user_id, created_at desc);")
+    _try_exec(cur, "create index if not exists vault_items_user_shelf_idx on vault_items (user_id, shelf_section, shelf_slot);")
+    _try_exec(cur, "create index if not exists vault_items_user_type_idx on vault_items (user_id, item_type);")
+
     conn.commit()
 
 
 def _next_shelf_slot(cur, user_id: str, shelf_section: str):
-    """
-    Auto-assign a shelf slot if none is provided.
-    This makes the "virtual shelf" ordering work immediately.
-    """
     cur.execute(
         """
         select coalesce(max(shelf_slot), -1) + 1
@@ -162,7 +182,7 @@ def _fetch_jwks(jwks_url: str, ttl_seconds: int = 3600):
         return _JWKS_CACHE["keys"]
 
     if not requests:
-        raise RuntimeError("Missing dependency 'requests' (add requests + PyJWT to requirements.txt)")
+        raise RuntimeError("Missing dependency 'requests'")
 
     r = requests.get(jwks_url, timeout=8)
     r.raise_for_status()
@@ -177,15 +197,14 @@ def _fetch_jwks(jwks_url: str, ttl_seconds: int = 3600):
 
 def _verify_clerk_jwt(token: str):
     if not jwt:
-        raise RuntimeError("Missing dependency 'PyJWT' (add requests + PyJWT to requirements.txt)")
+        raise RuntimeError("Missing dependency 'PyJWT'")
 
     jwks_url = (os.environ.get("CLERK_JWKS_URL") or "").strip()
     if not jwks_url:
         raise RuntimeError("Missing env var CLERK_JWKS_URL")
 
-    # Recommended hardening (set these in Vercel env vars)
-    issuer = (os.environ.get("CLERK_ISSUER") or "").strip()      # e.g. https://<instance>.clerk.accounts.dev
-    audience = (os.environ.get("CLERK_AUDIENCE") or "").strip()  # optional
+    issuer = (os.environ.get("CLERK_ISSUER") or "").strip()
+    audience = (os.environ.get("CLERK_AUDIENCE") or "").strip()
 
     unverified_header = jwt.get_unverified_header(token)
     kid = unverified_header.get("kid")
@@ -223,7 +242,6 @@ def _verify_clerk_jwt(token: str):
 # ----------------------------
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
-        # Same-origin usually doesn't need this, but harmless.
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "authorization, content-type")
@@ -241,35 +259,52 @@ class handler(BaseHTTPRequestHandler):
 
             qs = parse_qs(urlparse(self.path).query)
             limit_raw = (qs.get("limit", ["200"])[0] or "200").strip()
+            section_filter = _safe_str((qs.get("section", [""])[0] or ""), 60)
+            type_filter = _safe_str((qs.get("type", [""])[0] or ""), 32).lower()
+
             try:
                 limit = int(limit_raw)
             except Exception:
                 limit = 200
             limit = _clamp(limit, 1, 500)
 
+            if type_filter and not _is_allowed_item_type(type_filter):
+                return send_json(self, 400, {"ok": False, "error": "Invalid type filter"})
+
             conn = db_connect()
             try:
                 ensure_table(conn)
                 cur = conn.cursor()
 
-                # Premium-ready shelf ordering:
-                # section asc -> slot asc (nulls last) -> created desc for tie-break
+                where = ["user_id = %s"]
+                vals = [user_id]
+
+                if section_filter:
+                    where.append("coalesce(shelf_section, 'Main') = %s")
+                    vals.append(section_filter)
+
+                if type_filter:
+                    where.append("item_type = %s")
+                    vals.append(type_filter)
+
+                vals.append(limit)
+
                 cur.execute(
-                    """
+                    f"""
                     select
                       id, label, metal, item_type,
                       weight_value, weight_unit, purity,
                       premium_pct, notes, source,
-                      shelf_section, shelf_slot, accent, created_at
+                      shelf_section, shelf_slot, accent, qty, created_at
                     from vault_items
-                    where user_id = %s
+                    where {' and '.join(where)}
                     order by
                       coalesce(shelf_section, 'Main') asc,
                       (case when shelf_slot is null then 999999 else shelf_slot end) asc,
                       created_at desc
                     limit %s
                     """,
-                    (user_id, limit),
+                    tuple(vals),
                 )
                 rows = cur.fetchall() or []
 
@@ -290,9 +325,24 @@ class handler(BaseHTTPRequestHandler):
                             "shelf_section": r[10] or "Main",
                             "shelf_slot": int(r[11]) if r[11] is not None else None,
                             "accent": r[12] or None,
-                            "created_at": r[13].isoformat() if r[13] else None,
+                            "qty": int(r[13]) if r[13] is not None else 1,
+                            "created_at": r[14].isoformat() if r[14] else None,
                         }
                     )
+
+                # Section breakdown for UI shelves
+                cur.execute(
+                    """
+                    select coalesce(shelf_section,'Main') as section, count(*)::int
+                    from vault_items
+                    where user_id = %s
+                    group by 1
+                    order by 1 asc
+                    """,
+                    (user_id,),
+                )
+                sec_rows = cur.fetchall() or []
+                sections = [{"section": s, "count": int(c)} for (s, c) in sec_rows]
 
                 return send_json(
                     self,
@@ -301,9 +351,10 @@ class handler(BaseHTTPRequestHandler):
                         "ok": True,
                         "items": items,
                         "meta": {
-                            "tier": "free",  # stub until entitlements
+                            "tier": "free",
                             "count": len(items),
                             "limit": limit,
+                            "sections": sections,
                         },
                     },
                 )
@@ -327,7 +378,7 @@ class handler(BaseHTTPRequestHandler):
 
             body = _read_json_body(self)
             action = _safe_str(body.get("action"), 32).lower()
-            if action not in ("create", "delete", "update"):
+            if action not in ("create", "delete", "update", "reorder"):
                 return send_json(self, 400, {"ok": False, "error": "Invalid action"})
 
             conn = db_connect()
@@ -335,6 +386,9 @@ class handler(BaseHTTPRequestHandler):
                 ensure_table(conn)
                 cur = conn.cursor()
 
+                # ----------------------------
+                # CREATE
+                # ----------------------------
                 if action == "create":
                     label = _safe_str(body.get("label"), 180)
                     metal = _safe_str(body.get("metal"), 32).lower()
@@ -347,7 +401,14 @@ class handler(BaseHTTPRequestHandler):
                     notes = _safe_str(body.get("notes"), 2000)
                     source = _safe_str(body.get("source"), 32) or "manual"
 
-                    shelf_section = _safe_str(body.get("shelf_section"), 60) or "Main"
+                    qty = body.get("qty", None)
+                    try:
+                        qty = int(qty) if qty is not None else 1
+                    except Exception:
+                        qty = 1
+                    qty = _clamp(qty, 1, 100000)
+
+                    shelf_section = _safe_str(body.get("shelf_section"), 60) or ""
                     shelf_slot = body.get("shelf_slot", None)
                     accent = _safe_str(body.get("accent"), 24) or None
 
@@ -364,9 +425,12 @@ class handler(BaseHTTPRequestHandler):
                         return send_json(self, 400, {"ok": False, "error": "weight_value must be > 0"})
                     if purity is None or purity <= 0 or purity > 1:
                         return send_json(self, 400, {"ok": False, "error": "purity must be between 0 and 1"})
-
                     if premium_pct is not None and (premium_pct < 0 or premium_pct > 500):
                         return send_json(self, 400, {"ok": False, "error": "premium_pct out of range (0–500)"})
+
+                    # Default shelf section by item_type if not provided
+                    if not shelf_section:
+                        shelf_section = _default_section_for_item_type(item_type)
 
                     # Shelf slot: clamp or auto-assign next slot
                     if shelf_slot is not None:
@@ -374,9 +438,8 @@ class handler(BaseHTTPRequestHandler):
                             shelf_slot = int(shelf_slot)
                         except Exception:
                             return send_json(self, 400, {"ok": False, "error": "Invalid shelf_slot"})
-                        shelf_slot = _clamp(shelf_slot, 0, 9999)
+                        shelf_slot = _clamp(shelf_slot, 0, 999999)
                     else:
-                        # AUTO-ASSIGN: makes your virtual shelf instantly usable
                         shelf_slot = _next_shelf_slot(cur, user_id, shelf_section)
 
                     # Accent: default to metal accent if not provided
@@ -386,9 +449,9 @@ class handler(BaseHTTPRequestHandler):
                     cur.execute(
                         """
                         insert into vault_items
-                        (user_id, label, metal, item_type, weight_value, weight_unit, purity, premium_pct, notes, source, shelf_section, shelf_slot, accent)
+                        (user_id, label, metal, item_type, weight_value, weight_unit, purity, premium_pct, notes, source, shelf_section, shelf_slot, accent, qty)
                         values
-                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         returning id, created_at
                         """,
                         (
@@ -405,6 +468,7 @@ class handler(BaseHTTPRequestHandler):
                             shelf_section,
                             shelf_slot,
                             accent,
+                            qty,
                         ),
                     )
                     new_id, created_at = cur.fetchone()
@@ -429,37 +493,89 @@ class handler(BaseHTTPRequestHandler):
                                 "shelf_section": shelf_section,
                                 "shelf_slot": shelf_slot,
                                 "accent": accent,
+                                "qty": qty,
                                 "created_at": created_at.isoformat() if created_at else None,
                             },
                         },
                     )
 
+                # ----------------------------
+                # DELETE
+                # ----------------------------
                 if action == "delete":
                     item_id = _safe_str(body.get("id"), 80)
                     if not item_id:
                         return send_json(self, 400, {"ok": False, "error": "Missing id"})
 
-                    cur.execute(
-                        "delete from vault_items where id = %s and user_id = %s",
-                        (item_id, user_id),
-                    )
+                    cur.execute("delete from vault_items where id = %s and user_id = %s", (item_id, user_id))
                     conn.commit()
                     return send_json(self, 200, {"ok": True})
 
-                # action == "update"
+                # ----------------------------
+                # REORDER (batch move / slot updates)
+                # body: { action:"reorder", moves:[{id, shelf_section, shelf_slot}, ...] }
+                # ----------------------------
+                if action == "reorder":
+                    moves = body.get("moves")
+                    if not isinstance(moves, list) or not moves:
+                        return send_json(self, 400, {"ok": False, "error": "moves[] required"})
+
+                    # Update each item (small batch). Keep it simple + safe.
+                    updated = 0
+                    for m in moves[:500]:
+                        iid = _safe_str((m or {}).get("id"), 80)
+                        if not iid:
+                            continue
+                        sec = _safe_str((m or {}).get("shelf_section"), 60) or None
+                        slot = (m or {}).get("shelf_slot", None)
+
+                        if sec is not None and sec.strip() == "":
+                            sec = "Main"
+
+                        if slot is not None:
+                            try:
+                                slot = int(slot)
+                            except Exception:
+                                continue
+                            slot = _clamp(slot, 0, 999999)
+
+                        sets = []
+                        vals = []
+
+                        if sec is not None:
+                            sets.append("shelf_section = %s")
+                            vals.append(sec)
+
+                        if ("shelf_slot" in (m or {})):
+                            sets.append("shelf_slot = %s")
+                            vals.append(slot if slot is not None else None)
+
+                        if not sets:
+                            continue
+
+                        vals.extend([iid, user_id])
+                        cur.execute(
+                            f"update vault_items set {', '.join(sets)} where id = %s and user_id = %s",
+                            tuple(vals),
+                        )
+                        updated += 1
+
+                    conn.commit()
+                    return send_json(self, 200, {"ok": True, "updated": updated})
+
+                # ----------------------------
+                # UPDATE (single item)
+                # ----------------------------
                 item_id = _safe_str(body.get("id"), 80)
                 if not item_id:
                     return send_json(self, 400, {"ok": False, "error": "Missing id"})
 
-                # Update surface (premium-ready):
-                # - shelf_section / shelf_slot: drives virtual shelf layout
-                # - accent: UI styling hook (gold/silver/plat/blue/etc.)
-                # - notes / premium_pct: valuation + retention features
                 shelf_section = _safe_str(body.get("shelf_section"), 60) if ("shelf_section" in body) else None
                 shelf_slot = body.get("shelf_slot", None) if ("shelf_slot" in body) else None
                 accent = _safe_str(body.get("accent"), 24) if ("accent" in body) else None
                 notes = _safe_str(body.get("notes"), 2000) if ("notes" in body) else None
                 premium_pct = _num(body.get("premium_pct")) if ("premium_pct" in body) else None
+                qty = body.get("qty", None) if ("qty" in body) else None
 
                 if shelf_section is not None and shelf_section.strip() == "":
                     shelf_section = "Main"
@@ -469,10 +585,17 @@ class handler(BaseHTTPRequestHandler):
                         shelf_slot = int(shelf_slot)
                     except Exception:
                         return send_json(self, 400, {"ok": False, "error": "Invalid shelf_slot"})
-                    shelf_slot = _clamp(shelf_slot, 0, 9999)
+                    shelf_slot = _clamp(shelf_slot, 0, 999999)
 
                 if premium_pct is not None and (premium_pct < 0 or premium_pct > 500):
                     return send_json(self, 400, {"ok": False, "error": "premium_pct out of range (0–500)"})
+
+                if qty is not None:
+                    try:
+                        qty = int(qty)
+                    except Exception:
+                        return send_json(self, 400, {"ok": False, "error": "Invalid qty"})
+                    qty = _clamp(qty, 1, 100000)
 
                 sets = []
                 vals = []
@@ -482,7 +605,6 @@ class handler(BaseHTTPRequestHandler):
                     vals.append(shelf_section)
 
                 if ("shelf_slot" in body):
-                    # allow setting null explicitly by sending shelf_slot: null
                     sets.append("shelf_slot = %s")
                     vals.append(shelf_slot if shelf_slot is not None else None)
 
@@ -497,6 +619,10 @@ class handler(BaseHTTPRequestHandler):
                 if ("premium_pct" in body):
                     sets.append("premium_pct = %s")
                     vals.append(float(premium_pct) if premium_pct is not None else None)
+
+                if ("qty" in body):
+                    sets.append("qty = %s")
+                    vals.append(qty if qty is not None else 1)
 
                 if not sets:
                     return send_json(self, 400, {"ok": False, "error": "Nothing to update"})
