@@ -235,7 +235,7 @@
       width: 100%;
       border-radius: 12px;
       background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
+      borderborder: 1px solid rgba(255,255,255,.10);
       color: rgba(255,255,255,.90);
       padding: 12px 12px;
       font-size: 14px;
@@ -717,7 +717,10 @@
 
             if (window.Clerk.user) {
               const email = (window.Clerk.user.primaryEmailAddress && window.Clerk.user.primaryEmailAddress.emailAddress) || "";
-              authLabel.textContent: null;
+              authLabel.textContent = email ? email : ("User " + String(window.Clerk.user.id || "").slice(0, 8));
+              authPill.style.display = "";
+            } else {
+              authPill.style.display = "none";
             }
           });
 
