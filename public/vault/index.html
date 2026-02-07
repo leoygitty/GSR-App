@@ -30,6 +30,14 @@
       --m-good: rgba(52, 211, 153, 1);
       --m-bad: rgba(248, 113, 113, 1);
       --m-warn: rgba(251, 191, 36, 1);
+
+      /* “vault cabinet” palette */
+      --v-steelA: rgba(255,255,255,.07);
+      --v-steelB: rgba(255,255,255,.03);
+      --v-steelEdge: rgba(255,255,255,.12);
+      --v-ledge: rgba(0,0,0,.32);
+      --v-woodA: rgba(82, 62, 38, .28);
+      --v-woodB: rgba(30, 24, 18, .24);
     }
 
     body.vaultPage{
@@ -305,6 +313,13 @@
     .kpi .v{ margin-top: 6px; font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
     .kpi .s{ margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.62); }
 
+    .pulse { animation: mmPulse 650ms ease; }
+    @keyframes mmPulse {
+      0% { box-shadow: none; }
+      35% { box-shadow: 0 0 0 4px rgba(142,200,255,.16), 0 18px 60px rgba(0,0,0,.35); }
+      100% { box-shadow: none; }
+    }
+
     .status{
       font-size: 12px;
       color: var(--m-subtext);
@@ -325,217 +340,6 @@
       width: 100%;
     }
 
-    .pulse { animation: mmPulse 650ms ease; }
-    @keyframes mmPulse {
-      0% { box-shadow: none; }
-      35% { box-shadow: 0 0 0 4px rgba(142,200,255,.16), 0 18px 60px rgba(0,0,0,.35); }
-      100% { box-shadow: none; }
-    }
-
-    /* ===========================
-       SHELVES GRID (DRAG/DROP)
-       =========================== */
-    .shelvesWrap{
-      padding: 0 16px 16px;
-    }
-
-    .shelvesTopRow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
-      padding: 12px 0 10px;
-    }
-    .shelvesHint{
-      color: rgba(255,255,255,.62);
-      font-size: 12px;
-    }
-
-    .shelvesGrid{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      align-items:start;
-    }
-    @media (max-width: 980px){
-      .shelvesGrid{ grid-template-columns: 1fr; }
-    }
-
-    .shelf{
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.16);
-      overflow:hidden;
-      min-width:0;
-      box-shadow: 0 12px 36px rgba(0,0,0,.30);
-    }
-
-    .shelfHead{
-      padding: 12px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-    }
-
-    .shelfTitle{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .shelfTitle b{
-      font-size: 12px;
-      letter-spacing: .22em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,.82);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .shelfTitle span{
-      font-size: 11px;
-      color: rgba(255,255,255,.58);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .shelfTotals{
-      display:flex;
-      flex-direction:column;
-      align-items:flex-end;
-      gap:2px;
-      min-width: 0;
-    }
-    .shelfTotals .t1{ font-size: 12px; font-weight: 720; }
-    .shelfTotals .t2{ font-size: 11px; color: rgba(255,255,255,.58); }
-
-    .shelfBody{
-      padding: 10px;
-      min-height: 86px;
-    }
-
-    .dropZone{
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-      min-height: 66px;
-      border-radius: 14px;
-      padding: 8px;
-      border: 1px dashed rgba(255,255,255,.12);
-      background: rgba(255,255,255,.02);
-      transition: background .12s ease, border-color .12s ease;
-    }
-    .dropZone.isOver{
-      border-color: rgba(142,200,255,.40);
-      background: rgba(142,200,255,.06);
-    }
-
-    .vaultCard{
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      padding: 10px 10px;
-      cursor: grab;
-      user-select:none;
-      min-width:0;
-      box-shadow: 0 10px 26px rgba(0,0,0,.22);
-      transition: transform .10s ease, border-color .12s ease, background .12s ease, opacity .12s ease;
-    }
-    .vaultCard:active{ cursor: grabbing; }
-    .vaultCard:hover{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.05); transform: translateY(-1px); }
-
-    .vaultCard.isDragging{
-      opacity: .55;
-      transform: scale(.99);
-    }
-
-    .vaultCardTop{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:10px;
-      min-width:0;
-    }
-    .vaultCardName{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .vaultCardName b{
-      font-size: 13px;
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .vaultCardName span{
-      font-size: 11px;
-      color: rgba(255,255,255,.58);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .vaultCardMeta{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .metaPill{
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.18);
-      padding: 7px 8px;
-      min-width:0;
-    }
-    .metaPill .k{ font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.55); }
-    .metaPill .v{ margin-top: 2px; font-size: 12px; font-weight: 720; }
-
-    .vaultCardActions{
-      display:flex;
-      gap:6px;
-      align-items:center;
-      justify-content:flex-end;
-      margin-top: 8px;
-    }
-
-    .miniBtn{
-      appearance:none;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.88);
-      padding: 6px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      cursor:pointer;
-      transition: background .12s ease, border-color .12s ease, transform .10s ease;
-    }
-    .miniBtn:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
-    .miniBtn:active{ transform: translateY(0); }
-    .miniBtn--danger{
-      border-color: rgba(248,113,113,.28);
-      background: rgba(248,113,113,.10);
-    }
-    .miniBtn--danger:hover{
-      border-color: rgba(248,113,113,.45);
-      background: rgba(248,113,113,.14);
-    }
-
-    .emptyShelf{
-      color: rgba(255,255,255,.58);
-      font-size: 12px;
-      padding: 12px 10px;
-      text-align:center;
-    }
-
-    /* Retention hook overlay (kept) */
     .locked{ position: relative; filter: blur(0); }
     .locked[data-locked="true"]{ filter: blur(0.2px); }
     .lockOverlay{
@@ -555,6 +359,445 @@
       font-size: 13px;
     }
     .locked[data-locked="true"] .lockOverlay{ display: flex; }
+
+    /* =========================================================
+       VAULT RACKS: luxury cabinet + collector shelves (1–3)
+       ========================================================= */
+    .vaultRacksWrap{
+      margin-top: 14px;
+    }
+    .vaultRacksHead{
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin: 6px 0 10px;
+    }
+    .vaultRacksHead .title{
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.70);
+    }
+    .vaultRacksHead .hint{
+      font-size: 12px;
+      color: rgba(255,255,255,.55);
+    }
+
+    .vaultCabinet{
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(1200px 520px at 30% 0%, rgba(142,200,255,.06), transparent 60%),
+        radial-gradient(900px 520px at 70% 0%, rgba(245,200,90,.05), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: 0 24px 80px rgba(0,0,0,.52);
+      overflow: hidden;
+    }
+    .vaultCabinet::before{
+      content:"";
+      position:absolute; inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.05), transparent 20%, transparent 80%, rgba(255,255,255,.05)),
+        radial-gradient(900px 420px at 50% -20%, rgba(255,255,255,.06), transparent 65%);
+      pointer-events:none;
+      opacity:.9;
+    }
+    .vaultCabinet::after{
+      /* subtle noise overlay */
+      content:"";
+      position:absolute; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity:.18;
+      pointer-events:none;
+    }
+
+    .vaultCabinetFrame{
+      position:absolute; inset: 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,.35),
+        inset 0 20px 60px rgba(0,0,0,.30);
+      pointer-events:none;
+    }
+
+    .rackGrid{
+      position: relative;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 12px;
+      padding: 14px;
+      z-index: 1;
+    }
+    @media (max-width: 980px){
+      .rackGrid{ grid-template-columns: 1fr; }
+    }
+
+    .rackBay{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.10));
+      overflow: hidden;
+      min-width: 0;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.22);
+    }
+
+    .rackBayTop{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .rackPlate{
+      display:flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .rackPlate .name{
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .rackPlate .sub{
+      font-size: 11px;
+      color: rgba(255,255,255,.58);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .rackLed{
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.22);
+      box-shadow: 0 0 0 4px rgba(255,255,255,.04);
+      flex: 0 0 auto;
+    }
+    .rackLed.gold{ background: rgba(245,200,90,.82); box-shadow: 0 0 0 4px rgba(245,200,90,.10), 0 0 18px rgba(245,200,90,.18); }
+    .rackLed.silver{ background: rgba(210,220,232,.82); box-shadow: 0 0 0 4px rgba(210,220,232,.10), 0 0 18px rgba(210,220,232,.14); }
+    .rackLed.platinum{ background: rgba(180,195,255,.82); box-shadow: 0 0 0 4px rgba(180,195,255,.10), 0 0 18px rgba(180,195,255,.16); }
+
+    .rackMeta{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      color: rgba(255,255,255,.70);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .rackMeta .chip{
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+    }
+
+    .rackShelf{
+      position: relative;
+      padding: 12px 12px 12px;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.02));
+    }
+
+    /* Shelf surface + ledge */
+    .shelfSurface{
+      position: relative;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(600px 240px at 50% 0%, rgba(255,255,255,.05), transparent 60%),
+        linear-gradient(180deg, var(--v-steelA), var(--v-steelB));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -18px 40px rgba(0,0,0,.35);
+      overflow: hidden;
+      padding: 10px;
+    }
+    .shelfSurface::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.06), transparent 20%, transparent 80%, rgba(255,255,255,.04));
+      opacity:.8;
+      pointer-events:none;
+    }
+    .shelfLedge{
+      content:"";
+      position: relative;
+      margin-top: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.42));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 10px 24px rgba(0,0,0,.42);
+    }
+
+    /* Slot grid (inventory feel) */
+    .slotGrid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 10px;
+      min-height: 220px;
+    }
+    @media (max-width: 980px){
+      .slotGrid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+    }
+    @media (max-width: 520px){
+      .slotGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+    }
+
+    .slot{
+      position: relative;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.14);
+      background: rgba(0,0,0,.14);
+      min-height: 74px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: border-color .12s ease, background .12s ease, transform .12s ease;
+      user-select: none;
+    }
+    .slot::after{
+      content:"";
+      position:absolute; inset: 0;
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+      pointer-events:none;
+      opacity:.8;
+    }
+    .slotEmptyHint{
+      font-size: 11px;
+      color: rgba(255,255,255,.45);
+      letter-spacing: .08em;
+    }
+    .slot.isOver{
+      border-color: rgba(142,200,255,.45);
+      background: rgba(142,200,255,.08);
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 4px rgba(142,200,255,.10);
+    }
+
+    /* =========================================================
+       ITEM “OBJECTS” (2)
+       ========================================================= */
+    .vaultItem{
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      cursor: grab;
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .vaultItem:active{ cursor: grabbing; }
+    .vaultItem.isDragging{
+      opacity: .72;
+      transform: scale(.98);
+    }
+    .vaultItemTop{
+      padding: 8px 9px 6px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .vaultItemName{
+      font-size: 11px;
+      font-weight: 780;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .vaultItemBadge{
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: rgba(255,255,255,.78);
+      flex: 0 0 auto;
+    }
+    .vaultItemMid{
+      padding: 0 9px 8px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .vaultItemStamp{
+      font-size: 10px;
+      color: rgba(255,255,255,.60);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .vaultItemValue{
+      font-size: 11px;
+      font-weight: 800;
+      color: rgba(255,255,255,.86);
+      white-space: nowrap;
+    }
+
+    /* Bar / Coin / Jewelry skins */
+    .skinBar::before,
+    .skinCoin::before,
+    .skinJewelry::before{
+      content:"";
+      position:absolute; inset:0;
+      pointer-events:none;
+      opacity: .95;
+    }
+
+    .skinBar::before{
+      background:
+        radial-gradient(240px 110px at 30% 0%, rgba(255,255,255,.14), transparent 60%),
+        linear-gradient(135deg, rgba(255,255,255,.08), rgba(0,0,0,.12));
+    }
+    .skinCoin{
+      border-radius: 16px;
+    }
+    .skinCoin::before{
+      background:
+        radial-gradient(70px 70px at 35% 35%, rgba(255,255,255,.18), transparent 60%),
+        radial-gradient(120px 120px at 65% 65%, rgba(0,0,0,.22), transparent 58%);
+    }
+    .skinJewelry::before{
+      background:
+        radial-gradient(200px 120px at 50% 10%, rgba(255,255,255,.12), transparent 65%),
+        linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.05));
+    }
+
+    .metalGlowGold{ box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(245,200,90,.10), 0 0 18px rgba(245,200,90,.08); }
+    .metalGlowSilver{ box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(210,220,232,.10), 0 0 18px rgba(210,220,232,.06); }
+    .metalGlowPlatinum{ box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(180,195,255,.10), 0 0 18px rgba(180,195,255,.07); }
+
+    /* =========================================================
+       INSPECT MODAL (4)
+       ========================================================= */
+    .mmModalBack{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .mmModalBack.isOpen{ display:flex; }
+    .mmModal{
+      width: min(860px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 26px 110px rgba(0,0,0,.62);
+      overflow: hidden;
+    }
+    .mmModalHead{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .mmModalTitle{
+      display:flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .mmModalTitle b{
+      font-size: 14px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mmModalTitle span{
+      font-size: 12px;
+      color: rgba(255,255,255,.62);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mmModalBody{
+      padding: 16px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 820px){
+      .mmModalBody{ grid-template-columns: 1fr; }
+    }
+    .mmInspectCard{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      padding: 12px;
+      min-width: 0;
+    }
+    .mmPhoto{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(520px 220px at 30% 0%, rgba(142,200,255,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      height: 210px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      user-select:none;
+    }
+    .mmKV{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 12px;
+      align-items: baseline;
+      font-size: 12px;
+      color: rgba(255,255,255,.70);
+    }
+    .mmKV b{ color: rgba(255,255,255,.90); font-weight: 800; }
+    .mmModalFoot{
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display:flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
   </style>
 
   <!-- Clerk JS (frontend auth) -->
@@ -626,7 +869,7 @@
     <div class="meltHero">
       <h1>Vault Tracker</h1>
       <p>
-        Track bullion + jewelry melt value live using spot. Drag cards between shelves to organize your vault.
+        Track bullion + jewelry melt value live using spot. Drag items between shelves to organize your vault.
       </p>
     </div>
 
@@ -723,7 +966,7 @@
           </div>
 
           <div class="status muted" style="margin-top:10px;">
-            Jewelry defaults to melt. Drag items between shelves to organize.
+            Jewelry defaults to melt. Bullion/coins can use Premium % later for market valuation + Pro/Elite tools.
           </div>
         </div>
       </section>
@@ -774,26 +1017,135 @@
           </div>
         </div>
 
-        <!-- Shelves UI -->
-        <div class="shelvesWrap">
-          <div class="shelvesTopRow">
-            <div class="field" style="margin:0;">
-              <label style="margin:0;">Shelves</label>
+        <div class="cardBody" style="padding-top: 0;">
+          <div class="vaultRacksWrap">
+            <div class="vaultRacksHead">
+              <div class="title">Vault Racks</div>
+              <div class="hint">Tip: drag items between shelves (order saves).</div>
             </div>
-            <div class="shelvesHint">Tip: drag cards between shelves (order is saved locally).</div>
-          </div>
 
-          <div class="shelvesGrid" id="shelvesGrid" aria-label="Vault shelves grid">
-            <!-- JS renders shelves -->
-          </div>
+            <div class="vaultCabinet" id="vaultCabinet">
+              <div class="vaultCabinetFrame" aria-hidden="true"></div>
 
-          <div class="status muted" style="margin-top:10px;">
-            Live valuation recalculates using <span class="mono">/api/spot</span>. Items persist in DB via <span class="mono">/api/vault_items</span>.
+              <div class="rackGrid" id="rackGrid">
+                <!-- Gold shelf -->
+                <div class="rackBay" data-shelf="Gold">
+                  <div class="rackBayTop">
+                    <div class="rackPlate">
+                      <div class="name"><span class="rackLed gold" aria-hidden="true"></span> GOLD SHELF</div>
+                      <div class="sub mono" id="metaGold">—</div>
+                    </div>
+                    <div class="rackMeta">
+                      <span class="chip mono" id="sumGold">$—</span>
+                      <span class="chip mono" id="capGold">0/12</span>
+                    </div>
+                  </div>
+                  <div class="rackShelf">
+                    <div class="shelfSurface">
+                      <div class="slotGrid" id="gridGold"></div>
+                    </div>
+                    <div class="shelfLedge" aria-hidden="true"></div>
+                  </div>
+                </div>
+
+                <!-- Silver shelf -->
+                <div class="rackBay" data-shelf="Silver">
+                  <div class="rackBayTop">
+                    <div class="rackPlate">
+                      <div class="name"><span class="rackLed silver" aria-hidden="true"></span> SILVER SHELF</div>
+                      <div class="sub mono" id="metaSilver">—</div>
+                    </div>
+                    <div class="rackMeta">
+                      <span class="chip mono" id="sumSilver">$—</span>
+                      <span class="chip mono" id="capSilver">0/12</span>
+                    </div>
+                  </div>
+                  <div class="rackShelf">
+                    <div class="shelfSurface">
+                      <div class="slotGrid" id="gridSilver"></div>
+                    </div>
+                    <div class="shelfLedge" aria-hidden="true"></div>
+                  </div>
+                </div>
+
+                <!-- Platinum shelf -->
+                <div class="rackBay" data-shelf="Platinum">
+                  <div class="rackBayTop">
+                    <div class="rackPlate">
+                      <div class="name"><span class="rackLed platinum" aria-hidden="true"></span> PLATINUM SHELF</div>
+                      <div class="sub mono" id="metaPlatinum">—</div>
+                    </div>
+                    <div class="rackMeta">
+                      <span class="chip mono" id="sumPlatinum">$—</span>
+                      <span class="chip mono" id="capPlatinum">0/12</span>
+                    </div>
+                  </div>
+                  <div class="rackShelf">
+                    <div class="shelfSurface">
+                      <div class="slotGrid" id="gridPlatinum"></div>
+                    </div>
+                    <div class="shelfLedge" aria-hidden="true"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="status muted" style="margin-top:10px;">
+              Live valuation recalculates using <span class="mono">/api/spot</span>. Items persist in DB via <span class="mono">/api/vault_items</span>.
+            </div>
           </div>
         </div>
       </section>
     </div>
 
+  </div>
+
+  <!-- Inspect modal -->
+  <div class="mmModalBack" id="inspectBack" aria-hidden="true">
+    <div class="mmModal" role="dialog" aria-modal="true" aria-label="Inspect item">
+      <div class="mmModalHead">
+        <div class="mmModalTitle">
+          <b id="insTitle">—</b>
+          <span class="mono" id="insSub">—</span>
+        </div>
+        <button class="btn" id="insClose" type="button">Close</button>
+      </div>
+      <div class="mmModalBody">
+        <div class="mmInspectCard">
+          <div class="mmPhoto" id="insPhoto">Photo (Pro/Elite)</div>
+          <div class="status muted" style="margin-top:10px;">
+            Add photos + certificates as a Pro/Elite upgrade.
+          </div>
+        </div>
+
+        <div class="mmInspectCard">
+          <div class="field">
+            <label>Valuation</label>
+          </div>
+          <div class="mmKV" style="margin-top:6px;">
+            <div>Melt</div><b class="mono" id="insMelt">$—</b>
+            <div>Market</div><b class="mono" id="insMarket">$—</b>
+            <div>Pure oz</div><b class="mono" id="insPure">—</b>
+            <div>Premium %</div><b class="mono" id="insPrem">—</b>
+            <div>Added</div><b class="mono" id="insAdded">—</b>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label for="insPremiumEdit">Edit Premium %</label>
+            <input class="control mono" id="insPremiumEdit" inputmode="decimal" type="number" min="0" step="0.01" placeholder="e.g., 6.5" />
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label for="insNotesEdit">Notes</label>
+            <textarea class="control" id="insNotesEdit" placeholder="Notes…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="mmModalFoot">
+        <button class="btn btnDanger" id="insDelete" type="button">Delete</button>
+        <button class="btn btnPrimary" id="insSave" type="button">Save changes</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -881,7 +1233,7 @@
       }
 
       // ----------------------------
-      // Core app
+      // Existing app code
       // ----------------------------
       const OZ_TROY_IN_G = 31.1034768;
       const el = (id) => document.getElementById(id);
@@ -923,7 +1275,34 @@
       const kPureSub = el("kPureSub");
       const kBreakdown = el("kBreakdown");
 
-      const shelvesGrid = el("shelvesGrid");
+      // Racks
+      const gridGold = el("gridGold");
+      const gridSilver = el("gridSilver");
+      const gridPlatinum = el("gridPlatinum");
+      const sumGold = el("sumGold");
+      const sumSilver = el("sumSilver");
+      const sumPlatinum = el("sumPlatinum");
+      const capGold = el("capGold");
+      const capSilver = el("capSilver");
+      const capPlatinum = el("capPlatinum");
+      const metaGold = el("metaGold");
+      const metaSilver = el("metaSilver");
+      const metaPlatinum = el("metaPlatinum");
+
+      // Inspect modal
+      const inspectBack = el("inspectBack");
+      const insClose = el("insClose");
+      const insTitle = el("insTitle");
+      const insSub = el("insSub");
+      const insMelt = el("insMelt");
+      const insMarket = el("insMarket");
+      const insPure = el("insPure");
+      const insPrem = el("insPrem");
+      const insAdded = el("insAdded");
+      const insNotesEdit = el("insNotesEdit");
+      const insPremiumEdit = el("insPremiumEdit");
+      const insSave = el("insSave");
+      const insDelete = el("insDelete");
 
       function num(v) {
         if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
@@ -939,7 +1318,6 @@
         return n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
       };
       const fmt4 = (v) => Number.isFinite(num(v)) ? num(v).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—";
-
       function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 
       function escapeHtml(s) {
@@ -1026,7 +1404,6 @@
         return data;
       }
 
-      // Authenticated fetch for vault endpoints
       async function fetchVault(path, init) {
         const tok = await getBearerToken();
         if (!tok) throw new Error("Please sign in to use Vault.");
@@ -1040,19 +1417,6 @@
         try { data = JSON.parse(text); } catch { data = { ok:false, error: text.slice(0,200) }; }
         if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
         return data;
-      }
-
-      async function postVault(actionBody) {
-        return await fetchVault("/api/vault_items", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(actionBody)
-        });
-      }
-
-      async function loadVaultItems() {
-        const j = await fetchVault("/api/vault_items?limit=500");
-        state.items = Array.isArray(j.items) ? j.items : [];
       }
 
       function pullSpotFromKnownShape(obj) {
@@ -1153,6 +1517,19 @@
         }
       }
 
+      async function postVault(actionBody) {
+        return await fetchVault("/api/vault_items", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(actionBody)
+        });
+      }
+
+      async function loadVaultItems() {
+        const j = await fetchVault("/api/vault_items?limit=500");
+        state.items = Array.isArray(j.items) ? j.items : [];
+      }
+
       function updateSpotHeaderUI() {
         highlightActiveMetalPill(state.activeMetalForPills());
 
@@ -1174,147 +1551,299 @@
         };
       }
 
-      // ----------------------------
-      // Shelves layout persistence (local)
-      // ----------------------------
-      const LAYOUT_KEY = "mm_vault_shelves_v1";
-      const SHELVES = [
-        { id: "gold",     label: "Gold Shelf",     sub: "Au items",     metalHint: "gold" },
-        { id: "silver",   label: "Silver Shelf",   sub: "Ag items",     metalHint: "silver" },
-        { id: "platinum", label: "Platinum Shelf", sub: "Pt items",     metalHint: "platinum" },
-      ];
-
-      function safeJsonParse(s) {
-        try { return JSON.parse(s); } catch { return null; }
+      function shelfNameForMetal(metal){
+        if (metal === "gold") return "Gold";
+        if (metal === "silver") return "Silver";
+        if (metal === "platinum") return "Platinum";
+        return "Gold";
       }
 
-      function loadLayout() {
-        const raw = localStorage.getItem(LAYOUT_KEY);
-        const obj = safeJsonParse(raw || "");
-        const base = { shelves: { gold: [], silver: [], platinum: [] } };
-        if (!obj || typeof obj !== "object") return base;
-        if (!obj.shelves || typeof obj.shelves !== "object") return base;
-
-        // sanitize arrays
-        const out = { shelves: { gold: [], silver: [], platinum: [] } };
-        ["gold","silver","platinum"].forEach(k => {
-          const a = obj.shelves[k];
-          out.shelves[k] = Array.isArray(a) ? a.map(String) : [];
-        });
-        return out;
+      function itemSkin(item){
+        const t = (item.item_type || "").toLowerCase();
+        if (t === "coin") return "skinCoin";
+        if (t === "jewelry") return "skinJewelry";
+        if (t === "bar" || t === "bullion") return "skinBar";
+        return "skinBar";
       }
 
-      function saveLayout() {
-        try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout)); } catch {}
+      function metalGlow(metal){
+        if (metal === "gold") return "metalGlowGold";
+        if (metal === "silver") return "metalGlowSilver";
+        return "metalGlowPlatinum";
       }
 
-      function ensureLayoutCoversItems() {
-        const ids = state.items.map(it => String(it.id));
-
-        // build set of used ids
-        const used = new Set();
-        ["gold","silver","platinum"].forEach(sid => {
-          state.layout.shelves[sid] = (state.layout.shelves[sid] || []).filter(id => {
-            const ok = ids.includes(id) && !used.has(id);
-            if (ok) used.add(id);
-            return ok;
-          });
-        });
-
-        // add any missing items to a default shelf based on metal
-        for (const it of state.items) {
-          const id = String(it.id);
-          if (used.has(id)) continue;
-          const m = (it.metal || "").toLowerCase();
-          const shelfId = (m === "gold" || m === "silver" || m === "platinum") ? m : "gold";
-          state.layout.shelves[shelfId].push(id);
-          used.add(id);
-        }
-
-        saveLayout();
+      function stampForItem(item){
+        const purity = Number.isFinite(num(item.purity)) ? num(item.purity) : null;
+        const p = (purity != null) ? (purity >= 0.99 ? ".999" : String(purity.toFixed(3))) : "—";
+        const w = Number.isFinite(num(item.weight_value)) ? num(item.weight_value) : null;
+        const u = item.weight_unit === "oz" ? "oz t" : "g";
+        const wText = (w != null) ? (u === "g" ? w.toFixed(2) : w.toFixed(3)) : "—";
+        return `${wText}${u} • ${p}`;
       }
 
-      function getShelfIdForItemId(itemId) {
-        const id = String(itemId);
-        for (const k of ["gold","silver","platinum"]) {
-          if ((state.layout.shelves[k] || []).includes(id)) return k;
-        }
-        return "gold";
-      }
-
-      // HTML5 DnD
+      // --- Drag/drop state ---
+      const SHELF_CAP = 12;
       let draggingId = null;
 
-      function onDragStartCard(e) {
-        const id = e.currentTarget && e.currentTarget.getAttribute("data-id");
-        if (!id) return;
-        draggingId = String(id);
-        e.dataTransfer.effectAllowed = "move";
-        try { e.dataTransfer.setData("text/plain", draggingId); } catch {}
-        e.currentTarget.classList.add("isDragging");
-      }
-      function onDragEndCard(e) {
-        draggingId = null;
-        e.currentTarget.classList.remove("isDragging");
-        document.querySelectorAll(".dropZone.isOver").forEach(n => n.classList.remove("isOver"));
+      function setSlotOver(el, v){
+        if (!el) return;
+        el.classList.toggle("isOver", !!v);
       }
 
-      function getCardElementsInZone(zone) {
-        return Array.from(zone.querySelectorAll(".vaultCard[data-id]"));
-      }
+      function buildEmptySlots(container, shelf, cap){
+        container.innerHTML = "";
+        for (let i=0; i<cap; i++){
+          const s = document.createElement("div");
+          s.className = "slot";
+          s.setAttribute("data-shelf", shelf);
+          s.setAttribute("data-slot", String(i));
+          s.innerHTML = `<div class="slotEmptyHint">Drop</div>`;
 
-      function findDropIndex(zone, clientY) {
-        const cards = getCardElementsInZone(zone).filter(c => !c.classList.contains("isDragging"));
-        if (!cards.length) return 0;
+          s.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            setSlotOver(s, true);
+          });
+          s.addEventListener("dragleave", () => setSlotOver(s, false));
+          s.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            setSlotOver(s, false);
+            const id = draggingId;
+            if (!id) return;
+            const toShelf = s.getAttribute("data-shelf");
+            const toSlot = parseInt(s.getAttribute("data-slot") || "0", 10);
+            await moveItemTo(id, toShelf, toSlot);
+          });
 
-        for (let i = 0; i < cards.length; i++) {
-          const r = cards[i].getBoundingClientRect();
-          const mid = r.top + r.height / 2;
-          if (clientY < mid) return i;
+          container.appendChild(s);
         }
-        return cards.length;
       }
 
-      function moveItemToShelfAtIndex(itemId, toShelf, toIndex) {
-        const id = String(itemId);
-        const fromShelf = getShelfIdForItemId(id);
-        if (!state.layout.shelves[fromShelf]) state.layout.shelves[fromShelf] = [];
-        if (!state.layout.shelves[toShelf]) state.layout.shelves[toShelf] = [];
-
-        // remove from all shelves just to be safe
-        ["gold","silver","platinum"].forEach(k => {
-          state.layout.shelves[k] = (state.layout.shelves[k] || []).filter(x => String(x) !== id);
-        });
-
-        const arr = state.layout.shelves[toShelf];
-        const idx = Math.max(0, Math.min(arr.length, Number(toIndex) || 0));
-        arr.splice(idx, 0, id);
-
-        saveLayout();
+      function findItemById(id){
+        return state.items.find(x => String(x.id) === String(id)) || null;
       }
 
-      function wireDropZone(zone, shelfId) {
-        zone.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          zone.classList.add("isOver");
-          e.dataTransfer.dropEffect = "move";
-        });
-        zone.addEventListener("dragleave", () => zone.classList.remove("isOver"));
-        zone.addEventListener("drop", (e) => {
-          e.preventDefault();
-          zone.classList.remove("isOver");
-          const id = draggingId || (function(){ try { return e.dataTransfer.getData("text/plain"); } catch { return ""; } })();
-          if (!id) return;
+      function itemsOnShelf(shelf){
+        return state.items.filter(it => (it.shelf_section || shelfNameForMetal(it.metal)) === shelf);
+      }
 
-          const idx = findDropIndex(zone, e.clientY);
-          moveItemToShelfAtIndex(id, shelfId, idx);
+      function slotMapForShelf(shelf){
+        const map = new Map();
+        for (const it of itemsOnShelf(shelf)){
+          const slot = (it.shelf_slot == null) ? null : parseInt(it.shelf_slot, 10);
+          if (Number.isFinite(slot)) map.set(slot, it);
+        }
+        return map;
+      }
+
+      async function swapSlots(aId, bId){
+        const a = findItemById(aId);
+        const b = findItemById(bId);
+        if (!a || !b) return;
+
+        const aShelf = a.shelf_section || shelfNameForMetal(a.metal);
+        const bShelf = b.shelf_section || shelfNameForMetal(b.metal);
+
+        const aSlot = (a.shelf_slot == null) ? null : parseInt(a.shelf_slot, 10);
+        const bSlot = (b.shelf_slot == null) ? null : parseInt(b.shelf_slot, 10);
+
+        // swap
+        await postVault({ action: "update", id: a.id, shelf_section: bShelf, shelf_slot: bSlot });
+        await postVault({ action: "update", id: b.id, shelf_section: aShelf, shelf_slot: aSlot });
+      }
+
+      async function moveItemTo(id, shelf, slot){
+        const item = findItemById(id);
+        if (!item) return;
+
+        const targetShelf = String(shelf || "Gold");
+        const targetSlot = clamp(parseInt(slot,10) || 0, 0, SHELF_CAP-1);
+
+        // if occupied: swap
+        const map = slotMapForShelf(targetShelf);
+        const occupant = map.get(targetSlot);
+        if (occupant && String(occupant.id) !== String(id)){
+          try{
+            setStatus("Reordering…", "");
+            await swapSlots(id, occupant.id);
+          }catch(e){
+            setStatus("Move failed: " + (e?.message || String(e)), "bad");
+          }finally{
+            await refreshVaultOnly();
+            renderAll();
+          }
+          return;
+        }
+
+        try{
+          setStatus("Saving shelf position…", "");
+          await postVault({ action: "update", id: item.id, shelf_section: targetShelf, shelf_slot: targetSlot });
+          await refreshVaultOnly();
+          setStatus("Saved.", "good");
+        }catch(e){
+          setStatus("Move failed: " + (e?.message || String(e)), "bad");
+        }finally{
           renderAll();
-        });
+        }
       }
 
-      // ----------------------------
-      // Render
-      // ----------------------------
+      function openInspect(item, valuation){
+        if (!item) return;
+        state.inspectingId = String(item.id);
+
+        const shelf = item.shelf_section || shelfNameForMetal(item.metal);
+        const slot = (item.shelf_slot == null) ? "—" : String(item.shelf_slot);
+
+        insTitle.textContent = item.label || "—";
+        insSub.textContent = `${(item.metal || "—").toUpperCase()} • ${item.item_type || "—"} • Shelf ${shelf} • Slot ${slot}`;
+
+        insMelt.textContent = money(valuation?.melt);
+        insMarket.textContent = money(valuation?.market);
+        insPure.textContent = fmt4(valuation?.pureOz);
+        insPrem.textContent = (valuation?.premPct == null) ? "—" : String(valuation.premPct.toFixed(2));
+        insAdded.textContent = item.created_at ? formatUpdated(item.created_at) : "—";
+
+        insNotesEdit.value = item.notes || "";
+        insPremiumEdit.value = (item.premium_pct == null || !Number.isFinite(num(item.premium_pct))) ? "" : String(num(item.premium_pct));
+
+        inspectBack.classList.add("isOpen");
+        inspectBack.setAttribute("aria-hidden", "false");
+      }
+
+      function closeInspect(){
+        inspectBack.classList.remove("isOpen");
+        inspectBack.setAttribute("aria-hidden", "true");
+        state.inspectingId = null;
+      }
+
+      insClose.addEventListener("click", closeInspect);
+      inspectBack.addEventListener("click", (e) => {
+        if (e.target === inspectBack) closeInspect();
+      });
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && inspectBack.classList.contains("isOpen")) closeInspect();
+      });
+
+      insSave.addEventListener("click", async () => {
+        const id = state.inspectingId;
+        if (!id) return;
+
+        const premRaw = (insPremiumEdit.value || "").trim();
+        const prem = premRaw === "" ? null : num(premRaw);
+        const notes = (insNotesEdit.value || "").trim();
+
+        if (prem != null && (!Number.isFinite(prem) || prem < 0 || prem > 500)){
+          alert("Premium % must be 0–500.");
+          return;
+        }
+
+        insSave.disabled = true;
+        try{
+          await postVault({ action: "update", id, premium_pct: prem, notes });
+          await refreshVaultOnly();
+          setStatus("Saved item changes.", "good");
+          renderAll();
+          closeInspect();
+        }catch(e){
+          alert(e?.message || String(e));
+        }finally{
+          insSave.disabled = false;
+        }
+      });
+
+      insDelete.addEventListener("click", async () => {
+        const id = state.inspectingId;
+        if (!id) return;
+        if (!confirm("Delete this item?")) return;
+
+        insDelete.disabled = true;
+        try{
+          await postVault({ action: "delete", id });
+          await refreshVaultOnly();
+          setStatus("Deleted.", "good");
+          renderAll();
+          closeInspect();
+        }catch(e){
+          alert(e?.message || String(e));
+        }finally{
+          insDelete.disabled = false;
+        }
+      });
+
+      function renderShelfGrid(container, shelf, spot){
+        buildEmptySlots(container, shelf, SHELF_CAP);
+
+        const map = slotMapForShelf(shelf);
+
+        // Fill slots with items (if slot missing, place in next available)
+        const used = new Set(Array.from(map.keys()));
+        const loose = itemsOnShelf(shelf).filter(it => it.shelf_slot == null || !Number.isFinite(parseInt(it.shelf_slot,10)));
+
+        // allocate loose into empty slots (local-only, but we’ll save once user drags or opens inspect)
+        let cursor = 0;
+        for (const it of loose){
+          while (used.has(cursor) && cursor < SHELF_CAP) cursor++;
+          if (cursor >= SHELF_CAP) break;
+          map.set(cursor, it);
+          used.add(cursor);
+          cursor++;
+        }
+
+        for (const [slot, it] of map.entries()){
+          if (slot < 0 || slot >= SHELF_CAP) continue;
+          const slotEl = container.querySelector(`.slot[data-shelf="${shelf}"][data-slot="${slot}"]`);
+          if (!slotEl) continue;
+
+          const v = computeItemValuation(it, spot);
+          const badge = (it.item_type || "item").toUpperCase();
+
+          // object card
+          const div = document.createElement("div");
+          div.className = `vaultItem ${itemSkin(it)} ${metalGlow(it.metal)}`;
+          div.setAttribute("draggable", "true");
+          div.setAttribute("data-id", String(it.id));
+          div.setAttribute("title", "Drag to move • Click to inspect");
+
+          div.innerHTML = `
+            <div class="vaultItemTop">
+              <div class="vaultItemName">${escapeHtml(it.label || "—")}</div>
+              <div class="vaultItemBadge">${escapeHtml(badge)}</div>
+            </div>
+            <div class="vaultItemMid">
+              <div class="vaultItemStamp mono">${escapeHtml(stampForItem(it))}</div>
+              <div class="vaultItemValue mono">${escapeHtml(money(v.market))}</div>
+            </div>
+          `;
+
+          div.addEventListener("dragstart", () => {
+            draggingId = String(it.id);
+            div.classList.add("isDragging");
+          });
+          div.addEventListener("dragend", () => {
+            draggingId = null;
+            div.classList.remove("isDragging");
+          });
+
+          div.addEventListener("click", () => openInspect(it, v));
+
+          slotEl.innerHTML = "";
+          slotEl.appendChild(div);
+
+          // Allow dropping onto occupied slot to swap
+          slotEl.addEventListener("dragover", (e) => { e.preventDefault(); setSlotOver(slotEl, true); });
+          slotEl.addEventListener("dragleave", () => setSlotOver(slotEl, false));
+          slotEl.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            setSlotOver(slotEl, false);
+            const id = draggingId;
+            if (!id) return;
+
+            const toShelf = slotEl.getAttribute("data-shelf");
+            const toSlot = parseInt(slotEl.getAttribute("data-slot") || "0", 10);
+            await moveItemTo(id, toShelf, toSlot);
+          });
+        }
+      }
+
       function renderAll() {
         const spot = buildSpotNormalized();
 
@@ -1322,20 +1851,16 @@
         let pureOz = { gold: 0, silver: 0, platinum: 0 };
         let totalMarket = 0;
 
-        // precompute valuations by id
-        const byId = new Map();
+        // Totals
         for (const item of state.items) {
           const v = computeItemValuation(item, spot);
-          byId.set(String(item.id), { item, v });
+          const m = item.metal;
 
-          const m = (item.metal || "").toLowerCase();
           if (Number.isFinite(num(v.market))) {
             totalMarket += num(v.market);
-            if (m === "gold" || m === "silver" || m === "platinum") totals[m] += num(v.market);
+            totals[m] += num(v.market);
           }
-          if (Number.isFinite(num(v.pureOz)) && (m === "gold" || m === "silver" || m === "platinum")) {
-            pureOz[m] += num(v.pureOz);
-          }
+          if (Number.isFinite(num(v.pureOz))) pureOz[m] += num(v.pureOz);
         }
 
         totalValueEl.textContent = money(totalMarket);
@@ -1345,6 +1870,7 @@
         kPureSub.textContent = `Au ${fmt4(pureOz.gold)} • Ag ${fmt4(pureOz.silver)} • Pt ${fmt4(pureOz.platinum)}`;
 
         kBreakdown.textContent = `${money(totals.gold)} / ${money(totals.silver)} / ${money(totals.platinum)}`;
+
         summaryLineEl.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"} • drag to organize • updates every 60s`;
 
         if (state.lastTotal != null && Number.isFinite(num(totalMarket))) {
@@ -1369,125 +1895,29 @@
         const tier = getTier();
         const locked = (tier === "free");
         const kpiLocked = el("kpiLocked");
-        if (kpiLocked) kpiLocked.setAttribute("data-locked", locked ? "true" : "false");
+        kpiLocked.setAttribute("data-locked", locked ? "true" : "false");
 
-        // Shelves UI
-        if (!shelvesGrid) return;
-        shelvesGrid.innerHTML = "";
+        // Shelf summaries
+        sumGold.textContent = money(totals.gold);
+        sumSilver.textContent = money(totals.silver);
+        sumPlatinum.textContent = money(totals.platinum);
 
-        for (const s of SHELVES) {
-          const ids = (state.layout.shelves[s.id] || []).map(String).filter(id => byId.has(id));
-          let shelfMarket = 0;
-          let shelfPure = 0;
+        const gCount = itemsOnShelf("Gold").length;
+        const sCount = itemsOnShelf("Silver").length;
+        const pCount = itemsOnShelf("Platinum").length;
 
-          ids.forEach(id => {
-            const { item, v } = byId.get(id);
-            if (Number.isFinite(num(v.market))) shelfMarket += num(v.market);
-            if (Number.isFinite(num(v.pureOz))) shelfPure += num(v.pureOz);
-          });
+        capGold.textContent = `${gCount}/${SHELF_CAP}`;
+        capSilver.textContent = `${sCount}/${SHELF_CAP}`;
+        capPlatinum.textContent = `${pCount}/${SHELF_CAP}`;
 
-          const headAccent =
-            s.id === "gold" ? "rgba(245,200,90,.10)" :
-            s.id === "silver" ? "rgba(210,220,232,.08)" :
-            "rgba(180,195,255,.10)";
+        metaGold.textContent = `Au items • ${fmt4(pureOz.gold)} oz`;
+        metaSilver.textContent = `Ag items • ${fmt4(pureOz.silver)} oz`;
+        metaPlatinum.textContent = `Pt items • ${fmt4(pureOz.platinum)} oz`;
 
-          const shelfEl = document.createElement("div");
-          shelfEl.className = "shelf";
-          shelfEl.innerHTML = `
-            <div class="shelfHead" style="background: linear-gradient(180deg, ${headAccent}, rgba(255,255,255,.02));">
-              <div class="shelfTitle">
-                <b>${escapeHtml(s.label)}</b>
-                <span class="mono">${escapeHtml(s.sub)}</span>
-              </div>
-              <div class="shelfTotals">
-                <div class="t1 mono">${money(shelfMarket)}</div>
-                <div class="t2 mono">${fmt4(shelfPure)} oz</div>
-              </div>
-            </div>
-            <div class="shelfBody">
-              <div class="dropZone" data-shelf="${escapeHtml(s.id)}" aria-label="Drop zone: ${escapeHtml(s.label)}"></div>
-            </div>
-          `;
-          shelvesGrid.appendChild(shelfEl);
-
-          const zone = shelfEl.querySelector(".dropZone");
-          wireDropZone(zone, s.id);
-
-          if (!ids.length) {
-            const empty = document.createElement("div");
-            empty.className = "emptyShelf";
-            empty.textContent = "Drop items here";
-            zone.appendChild(empty);
-            continue;
-          }
-
-          for (const id of ids) {
-            const { item, v } = byId.get(id);
-
-            const sub = [
-              item.item_type ? String(item.item_type) : "",
-              item.notes ? String(item.notes) : ""
-            ].filter(Boolean).join(" • ");
-
-            const card = document.createElement("div");
-            card.className = "vaultCard";
-            card.setAttribute("draggable", "true");
-            card.setAttribute("data-id", String(item.id));
-            card.innerHTML = `
-              <div class="vaultCardTop">
-                <div class="vaultCardName">
-                  <b>${escapeHtml(item.label || "—")}</b>
-                  <span class="mono">${sub ? escapeHtml(sub) : "&nbsp;"}</span>
-                </div>
-              </div>
-
-              <div class="vaultCardMeta">
-                <div class="metaPill">
-                  <div class="k">Pure oz</div>
-                  <div class="v mono">${fmt4(v.pureOz)}</div>
-                </div>
-                <div class="metaPill">
-                  <div class="k">Market</div>
-                  <div class="v mono">${money(v.market)}</div>
-                </div>
-              </div>
-
-              <div class="vaultCardActions">
-                <button class="miniBtn miniBtn--danger" type="button" data-del="${escapeHtml(item.id)}">Delete</button>
-              </div>
-            `;
-
-            card.addEventListener("dragstart", onDragStartCard);
-            card.addEventListener("dragend", onDragEndCard);
-
-            zone.appendChild(card);
-          }
-        }
-
-        // Wire deletes
-        shelvesGrid.querySelectorAll("[data-del]").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const id = btn.getAttribute("data-del");
-            if (!id) return;
-            if (!confirm("Delete this item?")) return;
-            btn.disabled = true;
-            try {
-              await postVault({ action: "delete", id });
-              // remove from layout locally
-              ["gold","silver","platinum"].forEach(k => {
-                state.layout.shelves[k] = (state.layout.shelves[k] || []).filter(x => String(x) !== String(id));
-              });
-              saveLayout();
-
-              await refreshVaultOnly();
-              renderAll();
-            } catch (e) {
-              alert(String(e.message || e));
-            } finally {
-              btn.disabled = false;
-            }
-          });
-        });
+        // Render shelves
+        renderShelfGrid(gridGold, "Gold", spot);
+        renderShelfGrid(gridSilver, "Silver", spot);
+        renderShelfGrid(gridPlatinum, "Platinum", spot);
       }
 
       const state = {
@@ -1495,8 +1925,8 @@
         spots: { gold: null, silver: null, platinum: null },
         updatedAt: null,
         lastTotal: null,
-        activeMetalForPills: () => "gold",
-        layout: loadLayout(),
+        inspectingId: null,
+        activeMetalForPills: () => "gold"
       };
 
       purityPresetSelect.addEventListener("change", () => {
@@ -1519,17 +1949,22 @@
       });
 
       btnAdd.addEventListener("click", async () => {
+        const metal = metalSelect.value;
+        const shelf_section = shelfNameForMetal(metal);
+
         const payload = {
           action: "create",
           label: (labelInput.value || "").trim(),
-          metal: metalSelect.value,
+          metal,
           item_type: itemTypeSelect.value,
           weight_value: num(weightValueInput.value),
           weight_unit: weightUnitSelect.value,
           purity: num(purityInput.value),
           premium_pct: (premiumPctInput.value || "").trim() === "" ? null : num(premiumPctInput.value),
           notes: (notesInput.value || "").trim(),
-          source: "manual"
+          source: "manual",
+          shelf_section
+          // shelf_slot auto-assigns server-side if omitted
         };
 
         if (!payload.label) return setStatus("Add a label (what is this item?).", "bad");
@@ -1541,18 +1976,12 @@
 
         btnAdd.disabled = true;
         try {
-          const res = await postVault(payload);
+          await postVault(payload);
           setStatus("Added to vault.", "good");
-
           labelInput.value = "";
           weightValueInput.value = "";
           notesInput.value = "";
-
           await refreshVaultOnly();
-
-          // ensure new item appears in layout (default shelf = metal)
-          ensureLayoutCoversItems();
-
           renderAll();
         } catch (e) {
           setStatus("Add failed: " + (e?.message || String(e)), "bad");
@@ -1564,7 +1993,6 @@
       async function refreshVaultOnly() {
         try {
           await loadVaultItems();
-          ensureLayoutCoversItems();
         } catch (e) {
           setStatus(e?.message ? String(e.message) : "Sign in to load vault items.", "warn");
           state.items = [];
@@ -1578,20 +2006,15 @@
         renderAll();
       }
 
-      async function pollSpotOnly() {
-        await fetchSpots();
-      }
-
       (async function init() {
         setStatus("Fetching live spot…", "");
 
-        // Wait for Clerk script to be present
         await new Promise((r) => setTimeout(r, 0));
         await initClerkIfPossible();
 
         await refreshAll();
 
-        setInterval(() => { pollSpotOnly().catch(() => {}); }, 60_000);
+        setInterval(() => { fetchSpots().catch(() => {}); }, 60_000);
       })();
     })();
   </script>
