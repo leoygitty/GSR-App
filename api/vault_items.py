@@ -1,3 +1,4 @@
+# api/vault_items.py
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import os
@@ -10,6 +11,9 @@ except Exception:
     from api._utils import db_connect, send_json
 
 # ---- JWT / Clerk verification helpers ----
+# IMPORTANT: add these to requirements.txt:
+# PyJWT==2.9.0
+# requests==2.32.3
 try:
     import jwt  # PyJWT
     import requests
@@ -20,6 +24,9 @@ except Exception:
 _JWKS_CACHE = {"keys": None, "exp": 0}
 
 
+# ----------------------------
+# Small utilities
+# ----------------------------
 def _get_bearer_token(headers):
     auth = headers.get("Authorization") or headers.get("authorization") or ""
     if not auth.startswith("Bearer "):
@@ -69,6 +76,23 @@ def _is_allowed_metal(m):
     return m in ("gold", "silver", "platinum")
 
 
+def _is_allowed_item_type(t):
+    return t in ("bullion", "coin", "bar", "jewelry", "other")
+
+
+def _default_accent_for_metal(metal: str):
+    if metal == "gold":
+        return "gold"
+    if metal == "silver":
+        return "silver"
+    if metal == "platinum":
+        return "plat"
+    return None
+
+
+# ----------------------------
+# DB bootstrap / migrations
+# ----------------------------
 def ensure_table(conn):
     """
     Makes vault_items self-healing on new DBs.
@@ -96,11 +120,42 @@ def ensure_table(conn):
         );
         """
     )
-    # Helpful index for fast per-user loads
-    cur.execute("create index if not exists vault_items_user_created_idx on vault_items (user_id, created_at desc);")
+
+    # Helpful indexes
+    cur.execute(
+        "create index if not exists vault_items_user_created_idx on vault_items (user_id, created_at desc);"
+    )
+    cur.execute(
+        "create index if not exists vault_items_user_shelf_idx on vault_items (user_id, shelf_section, shelf_slot);"
+    )
     conn.commit()
 
 
+def _next_shelf_slot(cur, user_id: str, shelf_section: str):
+    """
+    Auto-assign a shelf slot if none is provided.
+    This makes the "virtual shelf" ordering work immediately.
+    """
+    cur.execute(
+        """
+        select coalesce(max(shelf_slot), -1) + 1
+        from vault_items
+        where user_id = %s
+          and coalesce(shelf_section, 'Main') = %s
+          and shelf_slot is not null
+        """,
+        (user_id, shelf_section),
+    )
+    row = cur.fetchone()
+    try:
+        return int(row[0]) if row and row[0] is not None else 0
+    except Exception:
+        return 0
+
+
+# ----------------------------
+# Clerk JWT verification
+# ----------------------------
 def _fetch_jwks(jwks_url: str, ttl_seconds: int = 3600):
     now = int(time.time())
     if _JWKS_CACHE["keys"] and now < _JWKS_CACHE["exp"]:
@@ -128,7 +183,8 @@ def _verify_clerk_jwt(token: str):
     if not jwks_url:
         raise RuntimeError("Missing env var CLERK_JWKS_URL")
 
-    issuer = (os.environ.get("CLERK_ISSUER") or "").strip()  # recommended
+    # Recommended hardening (set these in Vercel env vars)
+    issuer = (os.environ.get("CLERK_ISSUER") or "").strip()      # e.g. https://<instance>.clerk.accounts.dev
     audience = (os.environ.get("CLERK_AUDIENCE") or "").strip()  # optional
 
     unverified_header = jwt.get_unverified_header(token)
@@ -162,8 +218,12 @@ def _verify_clerk_jwt(token: str):
     return {"sub": user_id, "claims": decoded}
 
 
+# ----------------------------
+# Handler
+# ----------------------------
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
+        # Same-origin usually doesn't need this, but harmless.
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "authorization, content-type")
@@ -191,6 +251,9 @@ class handler(BaseHTTPRequestHandler):
             try:
                 ensure_table(conn)
                 cur = conn.cursor()
+
+                # Premium-ready shelf ordering:
+                # section asc -> slot asc (nulls last) -> created desc for tie-break
                 cur.execute(
                     """
                     select
@@ -201,9 +264,9 @@ class handler(BaseHTTPRequestHandler):
                     from vault_items
                     where user_id = %s
                     order by
-  coalesce(shelf_section, 'Main') asc,
-  (case when shelf_slot is null then 999999 else shelf_slot end) asc,
-  created_at desc
+                      coalesce(shelf_section, 'Main') asc,
+                      (case when shelf_slot is null then 999999 else shelf_slot end) asc,
+                      created_at desc
                     limit %s
                     """,
                     (user_id, limit),
@@ -212,32 +275,38 @@ class handler(BaseHTTPRequestHandler):
 
                 items = []
                 for r in rows:
-                    items.append({
-                        "id": str(r[0]),
-                        "label": r[1],
-                        "metal": r[2],
-                        "item_type": r[3],
-                        "weight_value": float(r[4]) if r[4] is not None else None,
-                        "weight_unit": r[5],
-                        "purity": float(r[6]) if r[6] is not None else None,
-                        "premium_pct": float(r[7]) if r[7] is not None else None,
-                        "notes": r[8] or "",
-                        "source": r[9] or "",
-                        "shelf_section": r[10] or "Main",
-                        "shelf_slot": int(r[11]) if r[11] is not None else None,
-                        "accent": r[12] or None,
-                        "created_at": r[13].isoformat() if r[13] else None,
-                    })
+                    items.append(
+                        {
+                            "id": str(r[0]),
+                            "label": r[1],
+                            "metal": r[2],
+                            "item_type": r[3],
+                            "weight_value": float(r[4]) if r[4] is not None else None,
+                            "weight_unit": r[5],
+                            "purity": float(r[6]) if r[6] is not None else None,
+                            "premium_pct": float(r[7]) if r[7] is not None else None,
+                            "notes": r[8] or "",
+                            "source": r[9] or "",
+                            "shelf_section": r[10] or "Main",
+                            "shelf_slot": int(r[11]) if r[11] is not None else None,
+                            "accent": r[12] or None,
+                            "created_at": r[13].isoformat() if r[13] else None,
+                        }
+                    )
 
-                return send_json(self, 200, {
-                    "ok": True,
-                    "items": items,
-                    "meta": {
-                        "tier": "free",
-                        "count": len(items),
-                        "limit": limit
-                    }
-                })
+                return send_json(
+                    self,
+                    200,
+                    {
+                        "ok": True,
+                        "items": items,
+                        "meta": {
+                            "tier": "free",  # stub until entitlements
+                            "count": len(items),
+                            "limit": limit,
+                        },
+                    },
+                )
             finally:
                 try:
                     conn.close()
@@ -282,10 +351,13 @@ class handler(BaseHTTPRequestHandler):
                     shelf_slot = body.get("shelf_slot", None)
                     accent = _safe_str(body.get("accent"), 24) or None
 
+                    # Validate
                     if not label:
                         return send_json(self, 400, {"ok": False, "error": "Label required"})
                     if not _is_allowed_metal(metal):
                         return send_json(self, 400, {"ok": False, "error": "Invalid metal"})
+                    if not _is_allowed_item_type(item_type):
+                        item_type = "other"
                     if weight_unit not in ("g", "oz"):
                         return send_json(self, 400, {"ok": False, "error": "Invalid weight_unit"})
                     if weight_value is None or weight_value <= 0:
@@ -296,12 +368,20 @@ class handler(BaseHTTPRequestHandler):
                     if premium_pct is not None and (premium_pct < 0 or premium_pct > 500):
                         return send_json(self, 400, {"ok": False, "error": "premium_pct out of range (0–500)"})
 
+                    # Shelf slot: clamp or auto-assign next slot
                     if shelf_slot is not None:
                         try:
                             shelf_slot = int(shelf_slot)
                         except Exception:
                             return send_json(self, 400, {"ok": False, "error": "Invalid shelf_slot"})
                         shelf_slot = _clamp(shelf_slot, 0, 9999)
+                    else:
+                        # AUTO-ASSIGN: makes your virtual shelf instantly usable
+                        shelf_slot = _next_shelf_slot(cur, user_id, shelf_section)
+
+                    # Accent: default to metal accent if not provided
+                    if not accent:
+                        accent = _default_accent_for_metal(metal)
 
                     cur.execute(
                         """
@@ -330,45 +410,59 @@ class handler(BaseHTTPRequestHandler):
                     new_id, created_at = cur.fetchone()
                     conn.commit()
 
-                    return send_json(self, 200, {
-                        "ok": True,
-                        "item": {
-                            "id": str(new_id),
-                            "label": label,
-                            "metal": metal,
-                            "item_type": item_type,
-                            "weight_value": float(weight_value),
-                            "weight_unit": weight_unit,
-                            "purity": float(purity),
-                            "premium_pct": float(premium_pct) if premium_pct is not None else None,
-                            "notes": notes,
-                            "source": source,
-                            "shelf_section": shelf_section,
-                            "shelf_slot": shelf_slot,
-                            "accent": accent,
-                            "created_at": created_at.isoformat() if created_at else None,
-                        }
-                    })
+                    return send_json(
+                        self,
+                        200,
+                        {
+                            "ok": True,
+                            "item": {
+                                "id": str(new_id),
+                                "label": label,
+                                "metal": metal,
+                                "item_type": item_type,
+                                "weight_value": float(weight_value),
+                                "weight_unit": weight_unit,
+                                "purity": float(purity),
+                                "premium_pct": float(premium_pct) if premium_pct is not None else None,
+                                "notes": notes,
+                                "source": source,
+                                "shelf_section": shelf_section,
+                                "shelf_slot": shelf_slot,
+                                "accent": accent,
+                                "created_at": created_at.isoformat() if created_at else None,
+                            },
+                        },
+                    )
 
                 if action == "delete":
                     item_id = _safe_str(body.get("id"), 80)
                     if not item_id:
                         return send_json(self, 400, {"ok": False, "error": "Missing id"})
 
-                    cur.execute("delete from vault_items where id = %s and user_id = %s", (item_id, user_id))
+                    cur.execute(
+                        "delete from vault_items where id = %s and user_id = %s",
+                        (item_id, user_id),
+                    )
                     conn.commit()
                     return send_json(self, 200, {"ok": True})
 
-                # update
+                # action == "update"
                 item_id = _safe_str(body.get("id"), 80)
                 if not item_id:
                     return send_json(self, 400, {"ok": False, "error": "Missing id"})
 
+                # Update surface (premium-ready):
+                # - shelf_section / shelf_slot: drives virtual shelf layout
+                # - accent: UI styling hook (gold/silver/plat/blue/etc.)
+                # - notes / premium_pct: valuation + retention features
                 shelf_section = _safe_str(body.get("shelf_section"), 60) if ("shelf_section" in body) else None
                 shelf_slot = body.get("shelf_slot", None) if ("shelf_slot" in body) else None
                 accent = _safe_str(body.get("accent"), 24) if ("accent" in body) else None
                 notes = _safe_str(body.get("notes"), 2000) if ("notes" in body) else None
                 premium_pct = _num(body.get("premium_pct")) if ("premium_pct" in body) else None
+
+                if shelf_section is not None and shelf_section.strip() == "":
+                    shelf_section = "Main"
 
                 if shelf_slot is not None:
                     try:
@@ -382,18 +476,24 @@ class handler(BaseHTTPRequestHandler):
 
                 sets = []
                 vals = []
+
                 if shelf_section is not None:
                     sets.append("shelf_section = %s")
                     vals.append(shelf_section)
-                if shelf_slot is not None:
+
+                if ("shelf_slot" in body):
+                    # allow setting null explicitly by sending shelf_slot: null
                     sets.append("shelf_slot = %s")
-                    vals.append(shelf_slot)
+                    vals.append(shelf_slot if shelf_slot is not None else None)
+
                 if accent is not None:
                     sets.append("accent = %s")
                     vals.append(accent)
+
                 if notes is not None:
                     sets.append("notes = %s")
                     vals.append(notes)
+
                 if ("premium_pct" in body):
                     sets.append("premium_pct = %s")
                     vals.append(float(premium_pct) if premium_pct is not None else None)
@@ -402,7 +502,10 @@ class handler(BaseHTTPRequestHandler):
                     return send_json(self, 400, {"ok": False, "error": "Nothing to update"})
 
                 vals.extend([item_id, user_id])
-                cur.execute(f"update vault_items set {', '.join(sets)} where id = %s and user_id = %s", tuple(vals))
+                cur.execute(
+                    f"update vault_items set {', '.join(sets)} where id = %s and user_id = %s",
+                    tuple(vals),
+                )
                 conn.commit()
                 return send_json(self, 200, {"ok": True})
 
